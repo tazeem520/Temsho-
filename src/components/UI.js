@@ -11,9 +11,10 @@ export const Badge = ({ text, tone = 'brand', small }) => {
   const tones = {
     brand: [C.brandSoft, C.brand],
     green: [C.greenSoft, C.green],
-    accent: [C.accentSoft, '#9A6208'],
+    accent: [C.accentSoft, '#D97706'],
     red: [C.redSoft, C.red],
-    grey: ['#EFF1F6', C.ink2],
+    purple: [C.purpleSoft, C.purple],
+    grey: ['#F3F4F6', C.ink2],
   };
   const [bg, fg] = tones[tone] || tones.brand;
   return (
@@ -23,18 +24,18 @@ export const Badge = ({ text, tone = 'brand', small }) => {
   );
 };
 
-/* Flipkart Assured style badge */
+/* Verified Assured Badge */
 export const TemshoAssuredBadge = ({ small }) => (
   <View style={[st.assuredBadge, small && { paddingVertical: 2, paddingHorizontal: 6 }]}>
-    <MaterialCommunityIcons name="check-decagram" size={small ? 12 : 14} color="#0F7A4A" />
-    <Text style={[st.assuredText, small && { fontSize: 9.5 }]}>Temsho Verified</Text>
+    <MaterialCommunityIcons name="check-decagram" size={small ? 12 : 14} color="#059669" />
+    <Text style={[st.assuredText, small && { fontSize: 9.5 }]}>Verified Human</Text>
   </View>
 );
 
 export const HumanTag = ({ small }) => (
   <View style={[st.human, small && { paddingVertical: 2, paddingHorizontal: 6 }]}>
-    <MaterialCommunityIcons name="account-check" size={small ? 11 : 13} color="#0F7A4A" />
-    <Text style={{ color: '#0F7A4A', fontSize: small ? 9 : 10.5, fontWeight: '800', marginLeft: 4 }}>
+    <MaterialCommunityIcons name="account-check" size={small ? 11 : 13} color="#059669" />
+    <Text style={{ color: '#059669', fontSize: small ? 9 : 10.5, fontWeight: '800', marginLeft: 4 }}>
       100% HUMAN SELLER
     </Text>
   </View>
@@ -43,14 +44,14 @@ export const HumanTag = ({ small }) => (
 export const Stars = ({ value = 4.5, count, size = 10 }) => (
   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
     <View style={st.star}>
-      <Text style={{ color: '#fff', fontSize: size, fontWeight: '800' }}>{Number(value).toFixed(1)}</Text>
+      <Text style={{ color: '#fff', fontSize: size, fontWeight: '800' }}>{Number(value || 4.5).toFixed(1)}</Text>
       <MaterialCommunityIcons name="star" size={size - 1} color="#fff" style={{ marginLeft: 2 }} />
     </View>
     {count != null && <Text style={{ color: C.ink3, fontSize: 11, marginLeft: 6 }}>({count})</Text>}
   </View>
 );
 
-/* Flipkart Flash Deal Countdown Timer */
+/* Flash Deal Countdown Timer */
 export const CountdownTimer = ({ hours = 4, minutes = 28, seconds = 45 }) => {
   const [sec, setSec] = useState(hours * 3600 + minutes * 60 + seconds);
 
@@ -68,8 +69,8 @@ export const CountdownTimer = ({ hours = 4, minutes = 28, seconds = 45 }) => {
 
   return (
     <View style={st.timerWrap}>
-      <MaterialCommunityIcons name="clock-outline" size={14} color="#C0392B" />
-      <Text style={st.timerText}>{pad(h)}h : {pad(m)}m : {pad(s)}s bache hain</Text>
+      <MaterialCommunityIcons name="clock-outline" size={14} color={C.redDark} />
+      <Text style={st.timerText}>{pad(h)}h : {pad(m)}m : {pad(s)}s left</Text>
     </View>
   );
 };
@@ -77,10 +78,10 @@ export const CountdownTimer = ({ hours = 4, minutes = 28, seconds = 45 }) => {
 export const Btn = ({ title, onPress, tone = 'brand', style, disabled, icon }) => {
   const map = {
     brand: [C.brand, '#fff'],
-    accent: [C.accent, '#3B2A00'],
+    accent: [C.accent, '#111827'],
     outline: ['transparent', C.brand],
     green: [C.green, '#fff'],
-    ghost: ['#EFF1F6', C.ink],
+    ghost: ['#F3F4F6', C.ink],
   };
   const [bg, fg] = map[tone] || map.brand;
   return (
@@ -112,18 +113,18 @@ export const Thumb = ({ img, title = '', tint, size = 90, radius = R.md }) => {
   if (img) {
     return (
       <Image
-        source={img}
+        source={typeof img === 'string' ? { uri: img } : img}
         resizeMode="cover"
-        style={{ width: '100%', height: size, borderRadius: radius, backgroundColor: '#F0F1F5' }}
+        style={{ width: '100%', height: size, borderRadius: radius, backgroundColor: '#F3F4F6' }}
       />
     );
   }
   return (
-    <View style={{ width: '100%', height: size, backgroundColor: tint || '#F0F1F5', borderRadius: radius, alignItems: 'center', justifyContent: 'center' }}>
-      <MaterialCommunityIcons name="image-outline" size={Math.max(20, size * 0.24)} color="#00000030" />
+    <View style={{ width: '100%', height: size, backgroundColor: tint || '#F3F4F6', borderRadius: radius, alignItems: 'center', justifyContent: 'center' }}>
+      <MaterialCommunityIcons name="image-outline" size={Math.max(22, size * 0.25)} color="#00000030" />
       {size > 75 && (
-        <Text style={{ marginTop: 6, fontSize: 9.5, color: '#00000055', fontWeight: '800', letterSpacing: 0.3, textAlign: 'center', paddingHorizontal: 6 }}>
-          SELLER KI PHOTO
+        <Text style={{ marginTop: 6, fontSize: 10, color: '#00000055', fontWeight: '800', letterSpacing: 0.3, textAlign: 'center', paddingHorizontal: 6 }}>
+          SELLER PHOTO
         </Text>
       )}
     </View>
@@ -138,14 +139,15 @@ export const Avatar = ({ name = '?', hue = C.brand, size = 44 }) => (
   </View>
 );
 
-/* Flipkart-style Product Card */
+/* Modern Product Card */
 export const ProductCard = ({ p, onPress, width, sellerName }) => {
-  const off = Math.round(((p.mrp - p.price) / p.mrp) * 100);
+  const mrp = p.mrp || p.price;
+  const off = mrp > p.price ? Math.round(((mrp - p.price) / mrp) * 100) : 0;
   return (
     <TouchableOpacity activeOpacity={0.9} onPress={onPress} style={[st.card, shadow, { width }]}>
       <View style={{ position: 'relative' }}>
         <Thumb img={p.img} title={p.title} tint={p.tint} size={138} radius={0} />
-        {off >= 50 && (
+        {off >= 10 && (
           <View style={st.dealTag}>
             <Text style={{ color: '#fff', fontSize: 9.5, fontWeight: '900' }}>{off}% OFF</Text>
           </View>
@@ -157,14 +159,16 @@ export const ProductCard = ({ p, onPress, width, sellerName }) => {
         </Text>
         <View style={{ flexDirection: 'row', alignItems: 'baseline', marginTop: 5 }}>
           <Text style={{ color: C.ink, fontSize: 16, fontWeight: '900' }}>{money(p.price)}</Text>
-          <Text style={{ color: C.ink3, fontSize: 11, textDecorationLine: 'line-through', marginLeft: 6 }}>
-            {money(p.mrp)}
-          </Text>
-          <Text style={{ color: C.green, fontSize: 11.5, fontWeight: '800', marginLeft: 6 }}>{off}%</Text>
+          {mrp > p.price && (
+            <Text style={{ color: C.ink3, fontSize: 11, textDecorationLine: 'line-through', marginLeft: 6 }}>
+              {money(mrp)}
+            </Text>
+          )}
+          {off > 0 && <Text style={{ color: C.green, fontSize: 11.5, fontWeight: '800', marginLeft: 6 }}>{off}%</Text>}
         </View>
 
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
-          <Stars value={p.rating} count={p.ratingCount} size={9} />
+          <Stars value={p.rating || 4.8} count={p.ratingCount} size={9} />
           <TemshoAssuredBadge small />
         </View>
 
@@ -181,13 +185,13 @@ export const ProductCard = ({ p, onPress, width, sellerName }) => {
   );
 };
 
-/* Flipkart Ratings Breakdown Bar Chart */
-export const RatingsBreakdown = ({ rating = 4.7, totalCount = 1250 }) => {
+/* Ratings Breakdown Bar Chart */
+export const RatingsBreakdown = ({ rating = 4.8, totalCount = 120 }) => {
   const bars = [
-    { star: 5, pct: 72, color: C.green },
-    { star: 4, pct: 18, color: '#27AE60' },
-    { star: 3, pct: 6, color: '#F39C12' },
-    { star: 2, pct: 2, color: '#E67E22' },
+    { star: 5, pct: 75, color: C.green },
+    { star: 4, pct: 16, color: '#10B981' },
+    { star: 3, pct: 5, color: C.accent },
+    { star: 2, pct: 2, color: C.orange },
     { star: 1, pct: 2, color: C.red },
   ];
 
@@ -195,11 +199,11 @@ export const RatingsBreakdown = ({ rating = 4.7, totalCount = 1250 }) => {
     <View style={st.ratingBox}>
       <View style={{ alignItems: 'center', justifyContent: 'center', paddingRight: 16, borderRightWidth: 1, borderRightColor: C.line }}>
         <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-          <Text style={{ fontSize: 32, fontWeight: '900', color: C.ink }}>{rating.toFixed(1)}</Text>
+          <Text style={{ fontSize: 32, fontWeight: '900', color: C.ink }}>{Number(rating).toFixed(1)}</Text>
           <MaterialCommunityIcons name="star" size={22} color={C.accent} style={{ marginLeft: 4 }} />
         </View>
         <Text style={{ color: C.ink3, fontSize: 11, marginTop: 2 }}>{totalCount} Ratings &</Text>
-        <Text style={{ color: C.ink3, fontSize: 11 }}>340 Reviews</Text>
+        <Text style={{ color: C.ink3, fontSize: 11 }}>Verified Reviews</Text>
       </View>
 
       <View style={{ flex: 1, marginLeft: 16 }}>
@@ -217,20 +221,20 @@ export const RatingsBreakdown = ({ rating = 4.7, totalCount = 1250 }) => {
   );
 };
 
-/* Flipkart Bank & UPI Offers Accordion */
+/* Bank & UPI Offers Accordion */
 export const BankOffers = () => {
   const offers = [
-    { title: 'UPI Instant Discount', desc: 'GPay / PhonePe / Paytm par ₹50 instant chhoot (Min order ₹499)', code: 'AUTO-APPLY' },
-    { title: 'Temsho Wallet Cashback', desc: 'Har order par flat 1% unlimited cashback seedha wallet me', code: 'NO CODE' },
-    { title: 'Special Kaarigar Offer', desc: 'Handmade aur Handloom samaan par extra 15% discount', code: 'BIG15' },
-    { title: 'Free Delivery', desc: '₹499 se upar ke sabhi orders par 100% free delivery', code: 'FREESHIP' },
+    { title: 'UPI Instant Discount', desc: 'Flat ₹50 discount on orders above ₹499 via UPI', code: 'AUTO-APPLIED' },
+    { title: 'New Customer Welcome', desc: 'Extra ₹50 off on first order with coupon NAYA50', code: 'NAYA50' },
+    { title: 'Mega Savings Coupon', desc: '₹100 discount on cart values ₹799+ with coupon TEM100', code: 'TEM100' },
+    { title: 'Free Express Shipping', desc: 'Zero delivery charges on all orders above ₹499', code: 'FREESHIP' },
   ];
 
   return (
     <View style={st.bankWrap}>
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
         <MaterialCommunityIcons name="tag-multiple" size={17} color={C.green} />
-        <Text style={{ color: C.ink, fontWeight: '900', fontSize: 13.5, marginLeft: 8 }}>Available Offers</Text>
+        <Text style={{ color: C.ink, fontWeight: '900', fontSize: 13.5, marginLeft: 8 }}>Available Offers & Coupons</Text>
       </View>
       {offers.map((o, idx) => (
         <View key={idx} style={st.offerRow}>
@@ -284,26 +288,26 @@ export const Empty = ({ icon = 'inbox-outline', title, sub, children }) => (
     <View style={st.emptyIcon}>
       <MaterialCommunityIcons name={icon} size={34} color={C.ink3} />
     </View>
-    <Text style={{ color: C.ink, fontSize: 17, fontWeight: '800', marginTop: 16 }}>{title}</Text>
+    <Text style={{ color: C.ink, fontSize: 17, fontWeight: '800', marginTop: 16, textAlign: 'center' }}>{title}</Text>
     <Text style={{ color: C.ink2, fontSize: 13, textAlign: 'center', marginTop: 6, lineHeight: 19 }}>{sub}</Text>
-    <View style={{ marginTop: 18, alignSelf: 'stretch' }}>{children}</View>
+    {!!children && <View style={{ marginTop: 18, alignSelf: 'stretch' }}>{children}</View>}
   </View>
 );
 
 const st = StyleSheet.create({
   badge: { paddingVertical: 4, paddingHorizontal: 8, borderRadius: R.pill, alignSelf: 'flex-start' },
   assuredBadge: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: '#E9F9EF',
-    paddingVertical: 3, paddingHorizontal: 7, borderRadius: R.sm, borderWidth: 1, borderColor: '#B5E8C8',
+    flexDirection: 'row', alignItems: 'center', backgroundColor: '#ECFDF5',
+    paddingVertical: 3, paddingHorizontal: 7, borderRadius: R.sm, borderWidth: 1, borderColor: '#A7F3D0',
   },
-  assuredText: { color: '#0F7A4A', fontSize: 10.5, fontWeight: '900', marginLeft: 4 },
+  assuredText: { color: '#059669', fontSize: 10.5, fontWeight: '900', marginLeft: 4 },
   human: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: C.greenSoft,
     paddingVertical: 3, paddingHorizontal: 7, borderRadius: R.pill,
   },
   star: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.green, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
-  timerWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FDECE8', paddingHorizontal: 8, paddingVertical: 4, borderRadius: R.pill },
-  timerText: { color: '#C0392B', fontSize: 11, fontWeight: '800', marginLeft: 4 },
+  timerWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF2F2', paddingHorizontal: 8, paddingVertical: 4, borderRadius: R.pill },
+  timerText: { color: C.redDark, fontSize: 11, fontWeight: '800', marginLeft: 4 },
   btn: { flexDirection: 'row', borderRadius: R.md, paddingVertical: 13, alignItems: 'center', justifyContent: 'center' },
   label: { color: C.ink2, fontSize: 12, fontWeight: '700', marginBottom: 6 },
   input: {
@@ -319,11 +323,11 @@ const st = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16, marginBottom: 12,
   },
-  emptyIcon: { width: 72, height: 72, borderRadius: 36, backgroundColor: '#EFF1F6', alignItems: 'center', justifyContent: 'center' },
+  emptyIcon: { width: 72, height: 72, borderRadius: 36, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' },
   ratingBox: { flexDirection: 'row', backgroundColor: C.bg, borderRadius: R.md, padding: 14, marginVertical: 12 },
-  barTrack: { flex: 1, height: 6, backgroundColor: '#E5E8F0', borderRadius: 3, marginHorizontal: 8, overflow: 'hidden' },
+  barTrack: { flex: 1, height: 6, backgroundColor: '#E5E7EB', borderRadius: 3, marginHorizontal: 8, overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: 3 },
-  bankWrap: { backgroundColor: '#F6FAF7', borderRadius: R.md, padding: 12, borderWidth: 1, borderColor: '#D4ECD9', marginTop: 14 },
+  bankWrap: { backgroundColor: '#F0FDF4', borderRadius: R.md, padding: 12, borderWidth: 1, borderColor: '#BBF7D0', marginTop: 14 },
   offerRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 6 },
   specBox: { backgroundColor: C.surface, borderRadius: R.md, borderWidth: 1, borderColor: C.line, marginTop: 10 },
   specRow: { flexDirection: 'row', paddingVertical: 10, paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: C.line },

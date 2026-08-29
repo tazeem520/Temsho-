@@ -4,7 +4,6 @@ import { MaterialCommunityIcons as MC } from '@expo/vector-icons';
 import QRCode from 'react-native-qrcode-svg';
 import { C, R, money } from '../theme';
 
-// upi://pay?pa=<upi>&pn=<naam>&am=<paisa>&cu=INR&tn=<note>
 export const upiLink = ({ upi, name, amount, note }) =>
   `upi://pay?pa=${encodeURIComponent(upi || '')}&pn=${encodeURIComponent(name || 'Seller')}` +
   `&am=${Number(amount || 0).toFixed(2)}&cu=INR&tn=${encodeURIComponent(note || 'Temsho order')}`;
@@ -25,12 +24,12 @@ export function UpiQR({ upi, name, amount, note, size = 150 }) {
   return (
     <View style={{ alignItems: 'center' }}>
       <View style={q.box}>
-        <QRCode value={value} size={size} color="#141726" backgroundColor="#fff" />
+        <QRCode value={value} size={size} color="#0F172A" backgroundColor="#fff" />
       </View>
       <Text style={{ color: C.ink2, fontSize: 11.5, marginTop: 10, textAlign: 'center', lineHeight: 17 }}>
-        Apne GPay / PhonePe / Paytm se{'\n'}ye QR scan kijiye
+        Scan this QR code using any UPI App{'\n'}(Google Pay, PhonePe, Paytm, BHIM)
       </Text>
-      <Text style={{ color: C.ink, fontWeight: '900', fontSize: 15, marginTop: 6 }}>{money(amount)}</Text>
+      <Text style={{ color: C.ink, fontWeight: '900', fontSize: 16, marginTop: 6 }}>{money(amount)}</Text>
     </View>
   );
 }
@@ -40,7 +39,7 @@ export function PayNowBtn({ upi, name, amount, note }) {
     <TouchableOpacity activeOpacity={0.85} onPress={() => openUpi({ upi, name, amount, note })} style={q.btn}>
       <MC name="cellphone-check" size={18} color="#fff" />
       <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13.5, marginLeft: 8 }}>
-        GPay / PhonePe kholein — {money(amount)}
+        Pay via UPI App — {money(amount)}
       </Text>
     </TouchableOpacity>
   );
@@ -50,6 +49,6 @@ const q = StyleSheet.create({
   box: { backgroundColor: '#fff', padding: 12, borderRadius: R.md, borderWidth: 1, borderColor: C.line },
   btn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    backgroundColor: '#0F7A4A', borderRadius: R.md, paddingVertical: 13, marginTop: 12,
+    backgroundColor: C.green, borderRadius: R.md, paddingVertical: 13, marginTop: 12,
   },
 });

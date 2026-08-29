@@ -9,15 +9,15 @@ import { checkPincodeServiceability } from '../lib/shiprocket';
 import * as cloud from '../lib/cloud';
 
 const REVIEWS_INITIAL = [
-  { n: 'Sunita Kushwaha', c: 'Kanpur, UP', r: 5, t: 'Kapda aur finishing behad shandar hai! Photo se bhi sundar mila. Delivery 2 din me aa gayi.', v: true, date: '2 din pehle' },
-  { n: 'Mohd. Imran', c: 'Hyderabad, TS', r: 5, t: 'Paisa vasool! Original handloom product hai. Packing aur quality 10/10.', v: true, date: '1 hafta pehle' },
-  { n: 'Deepak Rathore', c: 'Indore, MP', r: 4, t: 'Seller ne khud call karke size aur delivery confirm ki. Bahut accha insaani support hai.', v: true, date: '2 hafte pehle' },
+  { n: 'Sunita Kushwaha', c: 'Kanpur, UP', r: 5, t: 'The product quality and finishing is excellent! Looks even better than the photos. Received delivery in 2 days.', v: true, date: '2 days ago' },
+  { n: 'Mohd. Imran', c: 'Hyderabad, TS', r: 5, t: 'Great value for money. 100% genuine handmade product. Safe packaging and prompt shipping.', v: true, date: '1 week ago' },
+  { n: 'Deepak Rathore', c: 'Indore, MP', r: 4, t: 'The seller personally called to confirm the size and delivery schedule. Genuine human support.', v: true, date: '2 weeks ago' },
 ];
 
 const QA_LIST = [
-  { q: 'Kya isme Cash on Delivery (COD) uplabdh hai?', a: 'Haan ji, poore Bharat me sabhi pincode par COD uplabdh hai.' },
-  { q: 'Saman pasand na aane par return kaise hoga?', a: 'Delivery ke 7 din ke andar 1-click me return request kar sakte hain. Free pickup hoga.' },
-  { q: 'Kya ye 100% original product hai?', a: 'Ji haan, Temsho par koi bot ya fake shop nahi hai. Har product verified seller dwara direct bheja jata hai.' },
+  { q: 'Is Cash on Delivery (COD) available for this item?', a: 'Yes, Cash on Delivery is supported across all serviceable pincodes in India.' },
+  { q: 'How do returns work if I want to return the product?', a: 'You can request a 1-click return within 7 days of delivery. Doorstep pickup is free.' },
+  { q: 'Is this a genuine item from a verified seller?', a: 'Yes, Temsho prohibits automated bot listings. Every product is dispatched directly by verified human sellers.' },
 ];
 
 export function Product({ go, params }) {
@@ -32,18 +32,19 @@ export function Product({ go, params }) {
   const [myReviewText, setMyReviewText] = useState('');
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
-  if (!p) return <Empty icon="package-variant-closed-remove" title="Product nahi mila" sub="Shayad hata diya gaya hai." />;
+  if (!p) return <Empty icon="package-variant-closed-remove" title="Product Not Found" sub="This listing may have been removed or updated." />;
 
   const s = SELLERS[p.seller] || {
-    name: p.sellerName || 'Temsho Verified Seller',
+    name: p.sellerName || 'Verified Independent Seller',
     city: p.sellerCity || 'India',
     rating: 4.8,
     hue: C.brand,
-    orders: 14500,
-    since: 2021,
+    orders: 1450,
+    since: 2024,
   };
 
-  const off = Math.round(((p.mrp - p.price) / p.mrp) * 100);
+  const mrp = p.mrp || p.price;
+  const off = mrp > p.price ? Math.round(((mrp - p.price) / mrp) * 100) : 0;
   const wished = state.wishlist.includes(p.id);
   const related = state.products.filter((x) => x.cat === p.cat && x.id !== p.id).slice(0, 6);
   const pinResult = checkPincodeServiceability(pinInput);
@@ -51,12 +52,12 @@ export function Product({ go, params }) {
   const submitReview = () => {
     if (!myReviewText.trim()) return;
     const newRev = {
-      n: state.user?.name || 'Verified Buyer',
+      n: state.user?.name || 'Verified Customer',
       c: state.user?.city || 'India',
       r: myRating,
       t: myReviewText.trim(),
       v: true,
-      date: 'Abhi',
+      date: 'Just now',
     };
     setReviews([newRev, ...reviews]);
     if (cloud.cloudOn()) {
@@ -85,12 +86,12 @@ export function Product({ go, params }) {
 
       <ScrollView contentContainerStyle={{ paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
         {/* Main Product Image */}
-        <View style={{ height: 340, backgroundColor: '#F0F1F5' }}>
+        <View style={{ height: 340, backgroundColor: '#F3F4F6' }}>
           <Thumb img={p.img} title={p.title} tint={p.tint} size={340} radius={0} />
         </View>
 
         <View style={sx.sheet}>
-          {/* Tags & Assured */}
+          {/* Tags & Assured Badge */}
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
               {p.tags?.map((t) => <Badge key={t} text={t} tone="accent" small />)}
@@ -103,29 +104,35 @@ export function Product({ go, params }) {
 
           {/* Ratings Summary */}
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
-            <Stars value={p.rating} count={p.ratingCount + ' ratings'} size={11} />
-            <Text style={{ color: C.ink3, fontSize: 11, marginLeft: 8 }}>· {reviews.length + 337} Reviews</Text>
+            <Stars value={p.rating || 4.8} count={(p.ratingCount || 1) + ' ratings'} size={11} />
+            <Text style={{ color: C.ink3, fontSize: 11, marginLeft: 8 }}>· {reviews.length} Customer Reviews</Text>
           </View>
 
           {/* Pricing & Discount */}
           <View style={{ flexDirection: 'row', alignItems: 'baseline', marginTop: 12 }}>
             <Text style={{ fontSize: 28, fontWeight: '900', color: C.ink }}>{money(p.price)}</Text>
-            <Text style={{ color: C.ink3, fontSize: 14, textDecorationLine: 'line-through', marginLeft: 10 }}>{money(p.mrp)}</Text>
-            <View style={{ marginLeft: 10 }}><Badge text={`${off}% OFF`} tone="green" /></View>
+            {mrp > p.price && (
+              <Text style={{ color: C.ink3, fontSize: 14, textDecorationLine: 'line-through', marginLeft: 10 }}>{money(mrp)}</Text>
+            )}
+            {off > 0 && (
+              <View style={{ marginLeft: 10 }}><Badge text={`${off}% OFF`} tone="green" /></View>
+            )}
           </View>
-          <Text style={{ color: C.green, fontSize: 13, fontWeight: '800', marginTop: 3 }}>
-            Aap is deal par {money(p.mrp - p.price)} bacha rahe hain!
-          </Text>
+          {mrp > p.price && (
+            <Text style={{ color: C.green, fontSize: 13, fontWeight: '800', marginTop: 3 }}>
+              You save {money(mrp - p.price)} on this item!
+            </Text>
+          )}
 
-          {/* Flipkart Bank & UPI Offers */}
+          {/* Bank & Promotional Offers */}
           <BankOffers />
 
           {/* Size Selector */}
           {(p.cat === 'fashion' || p.cat === 'kids') && (
             <View style={{ marginTop: 18 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Text style={sx.h2}>Size Chunein</Text>
-                <Text style={{ color: C.brand, fontSize: 12, fontWeight: '700' }}>Size Chart</Text>
+                <Text style={sx.h2}>Select Size</Text>
+                <Text style={{ color: C.brand, fontSize: 12, fontWeight: '700' }}>Size Guide</Text>
               </View>
               <View style={{ flexDirection: 'row', marginTop: 8, gap: 8 }}>
                 {['S', 'M', 'L', 'XL', 'XXL'].map((z) => (
@@ -147,7 +154,7 @@ export function Product({ go, params }) {
               <TextInput
                 value={pinInput}
                 onChangeText={setPinInput}
-                placeholder="6 Digit PIN code"
+                placeholder="6-digit PIN code"
                 keyboardType="number-pad"
                 maxLength={6}
                 style={sx.pinInput}
@@ -176,10 +183,10 @@ export function Product({ go, params }) {
           <Text style={[sx.h2, { marginTop: 22 }]}>Product Highlights</Text>
           <View style={{ marginTop: 8 }}>
             {(p.highlights || [
-              '100% Original & Quality Checked',
+              '100% Genuine & Quality Checked',
               '7 Days Replacement / Return Policy',
               'Cash on Delivery Available',
-              'Direct from Verified Indian Seller',
+              'Direct from Verified Indian Producer',
             ]).map((h, i) => (
               <View key={i} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
                 <View style={sx.bullet} />
@@ -189,22 +196,30 @@ export function Product({ go, params }) {
           </View>
 
           {/* Description */}
-          <Text style={[sx.h2, { marginTop: 18 }]}>Product Description</Text>
-          <Text style={{ color: C.ink2, fontSize: 13, lineHeight: 20, marginTop: 6 }}>{p.desc}</Text>
+          {!!p.desc && (
+            <>
+              <Text style={[sx.h2, { marginTop: 18 }]}>Product Description</Text>
+              <Text style={{ color: C.ink2, fontSize: 13, lineHeight: 20, marginTop: 6 }}>{p.desc}</Text>
+            </>
+          )}
 
           {/* Specifications Table */}
-          <Text style={[sx.h2, { marginTop: 20 }]}>Specifications</Text>
-          <SpecTable specs={p.specs} />
+          {p.specs && Object.keys(p.specs).length > 0 && (
+            <>
+              <Text style={[sx.h2, { marginTop: 20 }]}>Specifications</Text>
+              <SpecTable specs={p.specs} />
+            </>
+          )}
 
           {/* Seller Profile Card */}
           <View style={[sx.sellerBox, shadow]}>
             <Avatar name={s.name} hue={s.hue || C.brand} size={48} />
             <View style={{ flex: 1, marginLeft: 12 }}>
               <Text style={{ fontWeight: '900', color: C.ink, fontSize: 14.5 }}>{s.name}</Text>
-              <Text style={{ color: C.ink3, fontSize: 11.5, marginTop: 1 }}>{s.city} · {s.since} se · {s.rating} ★</Text>
+              <Text style={{ color: C.ink3, fontSize: 11.5, marginTop: 1 }}>{s.city} · Verified Seller</Text>
               <View style={{ marginTop: 6, flexDirection: 'row', gap: 6 }}>
                 <HumanTag small />
-                <Badge text="OTP VERIFIED" tone="brand" small />
+                <Badge text="PHONE VERIFIED" tone="brand" small />
               </View>
             </View>
           </View>
@@ -214,22 +229,22 @@ export function Product({ go, params }) {
             <Text style={sx.h2}>Ratings & Reviews</Text>
             <TouchableOpacity onPress={() => setWritingReview(!writingReview)} style={sx.writeRevBtn}>
               <MC name="pencil-outline" size={14} color={C.brand} />
-              <Text style={{ color: C.brand, fontWeight: '800', fontSize: 12, marginLeft: 4 }}>Review Likhein</Text>
+              <Text style={{ color: C.brand, fontWeight: '800', fontSize: 12, marginLeft: 4 }}>Write a Review</Text>
             </TouchableOpacity>
           </View>
 
           {reviewSubmitted && (
             <View style={sx.revThanks}>
               <MC name="check-circle" size={16} color={C.green} />
-              <Text style={{ color: '#0F7A4A', fontWeight: '800', fontSize: 12, marginLeft: 6 }}>
-                Dhanyawad! Aapka review safalta-purvak jud gaya.
+              <Text style={{ color: '#059669', fontWeight: '800', fontSize: 12, marginLeft: 6 }}>
+                Thank you! Your verified review has been published.
               </Text>
             </View>
           )}
 
           {writingReview && (
             <View style={[sx.writeCard, shadow]}>
-              <Text style={{ fontWeight: '800', color: C.ink, fontSize: 13.5, marginBottom: 8 }}>Aapka Rating</Text>
+              <Text style={{ fontWeight: '800', color: C.ink, fontSize: 13.5, marginBottom: 8 }}>Your Rating</Text>
               <View style={{ flexDirection: 'row', gap: 10, marginBottom: 12 }}>
                 {[1, 2, 3, 4, 5].map((star) => (
                   <TouchableOpacity key={star} onPress={() => setMyRating(star)}>
@@ -238,7 +253,7 @@ export function Product({ go, params }) {
                 ))}
               </View>
               <TextInput
-                placeholder="Product kaisa laga? Apni raye likhein..."
+                placeholder="Share your experience with this product..."
                 placeholderTextColor={C.ink3}
                 multiline
                 value={myReviewText}
@@ -252,7 +267,7 @@ export function Product({ go, params }) {
             </View>
           )}
 
-          <RatingsBreakdown rating={p.rating} totalCount={p.ratingCount} />
+          <RatingsBreakdown rating={p.rating || 4.8} totalCount={reviews.length} />
 
           {/* Customer Reviews List */}
           {reviews.map((r, i) => (
@@ -292,7 +307,7 @@ export function Product({ go, params }) {
           {/* Similar Products */}
           {related.length > 0 && (
             <>
-              <Text style={[sx.h2, { marginTop: 22, marginBottom: 10 }]}>Similar Products You May Like</Text>
+              <Text style={[sx.h2, { marginTop: 22, marginBottom: 10 }]}>Similar Products</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {related.map((x) => (
                   <View key={x.id} style={{ marginRight: 12 }}>
@@ -305,7 +320,7 @@ export function Product({ go, params }) {
         </View>
       </ScrollView>
 
-      {/* Flipkart Sticky Bottom Bar */}
+      {/* Sticky Bottom Actions */}
       <View style={sx.bottomBar}>
         <Btn
           title="Add to Cart"
@@ -327,13 +342,13 @@ export function Product({ go, params }) {
 }
 
 export function Cart({ go }) {
-  const { cartLines, dispatch, subtotal, saved, delivery, total, state, couponOff, coupon } = useApp();
+  const { cartLines, dispatch, subtotal, saved, delivery, total, couponOff, coupon } = useApp();
   if (cartLines.length === 0)
     return (
       <View style={{ flex: 1, backgroundColor: C.bg }}>
         <Header title="My Cart" go={go} />
-        <Empty icon="cart-outline" title="Aapka cart khali hai" sub="Behtareen products dhoondhkar cart me add karein.">
-          <Btn title="Shopping Shuru Karein" onPress={() => go('home')} />
+        <Empty icon="cart-outline" title="Your cart is currently empty" sub="Explore genuine items and add them to your cart to begin shopping.">
+          <Btn title="Start Shopping" onPress={() => go('home')} />
         </Empty>
       </View>
     );
@@ -345,8 +360,8 @@ export function Cart({ go }) {
         {/* Safe & Secure banner */}
         <View style={sx.safeBanner}>
           <MC name="shield-check" size={17} color={C.green} />
-          <Text style={{ flex: 1, marginLeft: 8, color: '#0F7A4A', fontSize: 11.5, fontWeight: '700' }}>
-            100% Safe & Secure Payments · Seedha Verified Seller Ko
+          <Text style={{ flex: 1, marginLeft: 8, color: '#059669', fontSize: 11.5, fontWeight: '700' }}>
+            100% Safe & Secure Payments · Direct to Verified Seller
           </Text>
         </View>
 
@@ -360,10 +375,14 @@ export function Cart({ go }) {
               <Text style={{ color: C.ink3, fontSize: 11, marginTop: 2 }}>{SELLERS[l.product.seller]?.name || 'Verified Seller'}</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
                 <Text style={{ fontWeight: '900', color: C.ink, fontSize: 15.5 }}>{money(l.product.price)}</Text>
-                <Text style={{ color: C.ink3, fontSize: 11, textDecorationLine: 'line-through', marginLeft: 6 }}>{money(l.product.mrp)}</Text>
-                <Text style={{ color: C.green, fontSize: 11, fontWeight: '800', marginLeft: 6 }}>
-                  {Math.round(((l.product.mrp - l.product.price) / l.product.mrp) * 100)}% off
-                </Text>
+                {l.product.mrp > l.product.price && (
+                  <Text style={{ color: C.ink3, fontSize: 11, textDecorationLine: 'line-through', marginLeft: 6 }}>{money(l.product.mrp)}</Text>
+                )}
+                {l.product.mrp > l.product.price && (
+                  <Text style={{ color: C.green, fontSize: 11, fontWeight: '800', marginLeft: 6 }}>
+                    {Math.round(((l.product.mrp - l.product.price) / l.product.mrp) * 100)}% off
+                  </Text>
+                )}
               </View>
 
               <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10 }}>
@@ -386,10 +405,10 @@ export function Cart({ go }) {
       {/* Checkout Bottom Bar */}
       <View style={sx.bottomBar}>
         <View style={{ flex: 1 }}>
-          <Text style={{ color: C.ink3, fontSize: 11, fontWeight: '600' }}>Payable Amount</Text>
+          <Text style={{ color: C.ink3, fontSize: 11, fontWeight: '600' }}>Total Amount</Text>
           <Text style={{ color: C.ink, fontWeight: '900', fontSize: 20 }}>{money(total)}</Text>
         </View>
-        <Btn title="Place Order" icon="arrow-right-bold" tone="accent" style={{ flex: 1.2 }} onPress={() => go('checkout')} />
+        <Btn title="Proceed to Checkout" icon="arrow-right-bold" tone="accent" style={{ flex: 1.3 }} onPress={() => go('checkout')} />
       </View>
     </View>
   );
@@ -404,18 +423,20 @@ export function Bill({ subtotal, saved, delivery, total, couponOff = 0, couponCo
   );
   return (
     <View style={[sx.bill, shadow]}>
-      <Text style={{ fontWeight: '900', color: C.ink, fontSize: 14.5, borderBottomWidth: 1, borderBottomColor: C.line, paddingBottom: 8 }}>Price Details</Text>
-      <Row l="Price (Items Total)" v={money(subtotal)} />
-      <Row l="Discount" v={'− ' + money(saved)} c={C.green} />
-      {couponOff > 0 && <Row l={`Coupon (${couponCode})`} v={'− ' + money(couponOff)} c={C.green} />}
+      <Text style={{ fontWeight: '900', color: C.ink, fontSize: 14.5, borderBottomWidth: 1, borderBottomColor: C.line, paddingBottom: 8 }}>Price Breakdown</Text>
+      <Row l="Items Total" v={money(subtotal)} />
+      {saved > 0 && <Row l="Discount" v={'− ' + money(saved)} c={C.green} />}
+      {couponOff > 0 && <Row l={`Coupon Discount (${couponCode})`} v={'− ' + money(couponOff)} c={C.green} />}
       <Row l="Delivery Charges" v={delivery === 0 ? 'FREE Delivery' : money(delivery)} c={delivery === 0 ? C.green : C.ink} />
       <View style={{ height: 1, backgroundColor: C.line, marginTop: 10 }} />
-      <Row l="Total Amount" v={money(total)} b />
-      <View style={{ backgroundColor: C.greenSoft, borderRadius: R.sm, padding: 10, marginTop: 12 }}>
-        <Text style={{ color: '#0F7A4A', fontSize: 12, fontWeight: '800' }}>
-          🎉 You will save {money(saved + couponOff)} on this order!
-        </Text>
-      </View>
+      <Row l="Total Payable" v={money(total)} b />
+      {saved + couponOff > 0 && (
+        <View style={{ backgroundColor: C.greenSoft, borderRadius: R.sm, padding: 10, marginTop: 12 }}>
+          <Text style={{ color: '#059669', fontSize: 12, fontWeight: '800' }}>
+            🎉 You will save {money(saved + couponOff)} on this order!
+          </Text>
+        </View>
+      )}
     </View>
   );
 }

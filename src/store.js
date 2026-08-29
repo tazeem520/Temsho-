@@ -1,24 +1,24 @@
 import React, { createContext, useContext, useMemo, useReducer, useEffect, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PRODUCTS } from './data/catalog';
-import { DEFAULT_ADMIN, isOwner, OTP_PROVIDER } from './config';
+import { DEFAULT_ADMIN, isOwner } from './config';
 import * as cloud from './lib/cloud';
 import * as shiprocket from './lib/shiprocket';
 
 const Ctx = createContext(null);
 export const useApp = () => useContext(Ctx);
-const KEY = '@temsho/v1';
+const KEY = '@temsho/v2_clean';
 
 export const COUPONS = [
-  { code: 'TEM100', off: 100, min: 799, desc: '₹100 off ₹799 se upar ke order par' },
-  { code: 'NAYA50', off: 50, min: 299, desc: 'Naye grahak ke liye ₹50 off' },
-  { code: 'BIG15', pct: 15, max: 400, min: 1499, desc: '15% off (max ₹400) ₹1499+ par' },
-  { code: 'FREESHIP', ship: true, min: 0, desc: 'Delivery bilkul free' },
+  { code: 'TEM100', off: 100, min: 799, desc: '₹100 discount on orders above ₹799' },
+  { code: 'NAYA50', off: 50, min: 299, desc: 'Flat ₹50 discount for new customers' },
+  { code: 'BIG15', pct: 15, max: 400, min: 1499, desc: '15% discount (up to ₹400) on orders ₹1499+' },
+  { code: 'FREESHIP', ship: true, min: 0, desc: '100% Free Delivery on this order' },
 ];
 
 const refCode = (phone) => 'TEM' + (phone ? phone.slice(-4) : '2026') + 'X';
 
-const LANGS = ['Hindi', 'English', 'Bhojpuri', 'Marathi', 'Bangla', 'Tamil', 'Telugu', 'Kannada', 'Gujarati', 'Punjabi', 'Odia'];
+const LANGS = ['English', 'Hindi', 'Bengali', 'Marathi', 'Tamil', 'Telugu', 'Gujarati', 'Kannada', 'Malayalam', 'Punjabi'];
 export { LANGS };
 
 const init = {
@@ -27,7 +27,7 @@ const init = {
   admin: { ...DEFAULT_ADMIN },
   banned: [],
   settings: {
-    lang: 'Hindi',
+    lang: 'English',
     notifOrders: true,
     notifOffers: true,
     notifWhatsapp: true,
@@ -47,17 +47,16 @@ const init = {
   wishlist: [],
   orders: [],
   coupon: null,
-  wallet: 0,
   addresses: [
-    { id: 'a1', name: 'Ghar', line: '221, Gomti Nagar, Vibhuti Khand', city: 'Lucknow', state: 'Uttar Pradesh', pin: '226010', phone: '98XXXXXX21' },
+    { id: 'a1', name: 'Home', line: '221, Gomti Nagar, Vibhuti Khand', city: 'Lucknow', state: 'Uttar Pradesh', pin: '226010', phone: '9044468663' },
   ],
   notifications: [
-    { id: 'n1', icon: 'party-popper', title: 'Swagat hai Temsho me!', body: 'Pehle order par NAYA50 lagayein aur ₹50 bachayein.', at: Date.now() - 3600000, read: false },
-    { id: 'n2', icon: 'hand-heart-outline', title: 'Artisan Bazaar live hai', body: 'Handmade saman seedha kaarigar se — 40% tak kam daam.', at: Date.now() - 86400000, read: false },
-    { id: 'n3', icon: 'shield-check-outline', title: '100% Insaani Guarantee', body: 'Temsho par koi bot nahi hai — har seller aur support real human hai.', at: Date.now() - 172800000, read: false },
+    { id: 'n1', icon: 'party-popper', title: 'Welcome to Temsho!', body: 'Use coupon NAYA50 at checkout to save ₹50 on your first purchase.', at: Date.now() - 3600000, read: false },
+    { id: 'n2', icon: 'shield-check-outline', title: '100% Human Marketplace', body: 'No bots or automated shops on Temsho. Every seller is a real verified human.', at: Date.now() - 86400000, read: false },
+    { id: 'n3', icon: 'truck-fast-outline', title: 'Free Delivery Active', body: 'Enjoy free delivery across India on all orders above ₹499.', at: Date.now() - 172800000, read: false },
   ],
   supportChat: [
-    { id: 'm0', who: 'agent', agent: 'Priya S.', text: 'Namaste! Main Priya hoon, Temsho ki support executive. Yahan koi bot nahi hai — main khud aapse baat kar rahi hoon. Kaise madad karun?', at: Date.now() },
+    { id: 'm0', who: 'agent', agent: 'Priya S.', text: 'Hello! I am Priya, your dedicated Temsho Support Executive. There are no bots here — I am a real human assistant. How may I help you today?', at: Date.now() },
   ],
   deliveryMode: 'standard', // 'standard' | 'local' | 'indiapost'
 };
@@ -72,7 +71,7 @@ function reducer(s, a) {
     case 'HYDRATE':
       return { ...s, ...a.data, products: mergeProducts(a.data.products), ready: true };
     case 'CLOUD_PRODUCTS':
-      return { ...s, products: [...a.list, ...PRODUCTS], cloudOn: true };
+      return { ...s, products: [...a.list], cloudOn: true };
     case 'CLOUD_SETTINGS':
       return { ...s, admin: { ...s.admin, ...a.data } };
     case 'READY':
@@ -86,14 +85,14 @@ function reducer(s, a) {
     case 'ADMIN_BAN':
       return { ...s, banned: s.banned.includes(a.id) ? s.banned.filter((x) => x !== a.id) : [...s.banned, a.id] };
     case 'ADMIN_BROADCAST':
-      return notif(s, 'bullhorn-outline', a.title, a.body, '#F5A623');
+      return notif(s, 'bullhorn-outline', a.title, a.body, '#FF9F00');
     case 'LOGIN':
       return notif(
-        { ...s, user: { ...a.user, referral: refCode(a.user.phone), isOwner: isOwner(a.user.phone) }, wallet: s.wallet || 0 },
-        'hand-wave-outline', 'Login safal', `Namaste ${a.user.name}! Aapka Temsho khaata taiyar hai.`
+        { ...s, user: { ...a.user, referral: refCode(a.user.phone), isOwner: isOwner(a.user.phone) } },
+        'hand-wave-outline', 'Login Successful', `Welcome ${a.user.name}! Your Temsho account is ready.`
       );
     case 'LOGOUT':
-      return { ...init, ready: true, products: PRODUCTS };
+      return { ...init, ready: true, products: [] };
     case 'UPDATE_USER':
       return { ...s, user: { ...s.user, ...a.patch } };
     case 'UPDATE_SETTINGS':
@@ -105,11 +104,11 @@ function reducer(s, a) {
         user: { ...s.user, shopName: a.patch.name ?? s.user?.shopName, shopCity: a.patch.city ?? s.user?.shopCity },
       };
     case 'DELETE_ACCOUNT':
-      return { ...init, ready: true, products: PRODUCTS.filter((p) => p.seller !== 'me') };
+      return { ...init, ready: true, products: [] };
     case 'BECOME_SELLER':
       return notif(
         { ...s, shop: { ...s.shop, ...a.shop, name: a.shopName, city: a.shopCity }, user: { ...s.user, isSeller: true, shopName: a.shopName, shopCity: a.shopCity } },
-        'storefront-outline', 'Dukaan live ho gayi', `${a.shopName} ab Temsho par hai. Pehla product list karein.`
+        'storefront-outline', 'Shop Created Successfully', `${a.shopName} is now live on Temsho. You can list your first product.`
       );
     case 'ADD_CART': {
       const ex = s.cart.find((c) => c.id === a.id);
@@ -134,8 +133,8 @@ function reducer(s, a) {
       return { ...s, deliveryMode: a.mode };
     case 'PLACE_ORDER':
       return notif(
-        { ...s, cart: [], coupon: null, orders: [a.order, ...s.orders], wallet: s.wallet + Math.round((a.order.total * (s.admin?.cashbackPct ?? 1)) / 100) },
-        'check-circle-outline', 'Order confirm', `#${a.order.id} confirm ho gaya. Delivery ${a.order.eta} tak.`
+        { ...s, cart: [], coupon: null, orders: [a.order, ...s.orders] },
+        'check-circle-outline', 'Order Placed Successfully', `Order #${a.order.id} is confirmed. Estimated delivery by ${a.order.eta}.`
       );
     case 'ADVANCE_ORDER': {
       const steps = ['Confirmed', 'Packed', 'Shipped', 'Out for Delivery', 'Delivered'];
@@ -147,7 +146,7 @@ function reducer(s, a) {
         return { ...o, status: nx, deliveredAt: nx === 'Delivered' ? Date.now() : o.deliveredAt };
       });
       const ns = { ...s, orders };
-      return msg ? notif(ns, 'truck-fast-outline', 'Order update', `#${a.id} ab "${msg}" hai.`) : ns;
+      return msg ? notif(ns, 'truck-fast-outline', 'Order Status Update', `Order #${a.id} is now ${msg}.`) : ns;
     }
     case 'ATTACH_AWB': {
       return {
@@ -157,15 +156,15 @@ function reducer(s, a) {
     }
     case 'CANCEL_ORDER':
       return notif({ ...s, orders: s.orders.map((o) => (o.id === a.id ? { ...o, status: 'Cancelled' } : o)) },
-        'close-circle-outline', 'Order cancel', `#${a.id} cancel ho gaya. Refund 3-5 din me.`, '#E5484D');
+        'close-circle-outline', 'Order Cancelled', `Order #${a.id} has been cancelled.`, '#EF4444');
     case 'RETURN_ORDER':
       return notif(
         { ...s, orders: s.orders.map((o) => (o.id === a.id ? { ...o, status: 'Return Requested', returnReason: a.reason } : o)) },
-        'backup-restore', 'Return request mili', `#${a.id} ke liye pickup 2 din me. Refund wallet ya bank me.`
+        'backup-restore', 'Return Requested', `Pickup for Order #${a.id} will be scheduled within 2 business days.`
       );
     case 'ADD_PRODUCT':
       return notif({ ...s, products: [a.product, ...s.products] },
-        'tag-outline', 'Product live', `"${a.product.title}" ab bazaar me dikh raha hai.`);
+        'tag-outline', 'Product Listed', `"${a.product.title}" is now active in the marketplace.`);
     case 'RM_PRODUCT':
       return { ...s, products: s.products.filter((p) => p.id !== a.id) };
     case 'ADDRESS':
@@ -182,16 +181,15 @@ function reducer(s, a) {
 }
 
 function mergeProducts(saved) {
-  if (!saved) return PRODUCTS;
-  const mine = saved.filter((p) => p.seller === 'me');
-  return [...mine, ...PRODUCTS];
+  if (!saved || !Array.isArray(saved)) return [];
+  return saved;
 }
 
 export function AppProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, init);
   const first = useRef(true);
 
-  // initial load from local storage
+  // Initial load from local storage
   useEffect(() => {
     (async () => {
       try {
@@ -204,7 +202,7 @@ export function AppProvider({ children }) {
     })();
   }, []);
 
-  // load cloud products & settings + setup realtime listeners
+  // Load cloud products & settings + setup realtime listeners
   useEffect(() => {
     if (!state.ready || !cloud.cloudOn()) return;
 
@@ -228,7 +226,7 @@ export function AppProvider({ children }) {
     };
   }, [state.ready]);
 
-  // sync state to local AsyncStorage
+  // Sync state to local AsyncStorage
   useEffect(() => {
     if (!state.ready) return;
     if (first.current) { first.current = false; }

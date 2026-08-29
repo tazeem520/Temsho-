@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking } from 'r
 import { C, R, shadow, money } from '../theme';
 import { MaterialCommunityIcons as MC } from '@expo/vector-icons';
 import { Btn, Badge, Empty, Thumb, Field } from '../components/UI';
-import { Header, Bill, sx } from './Product';
+import { Header, Bill } from './Product';
 import { useApp, COUPONS } from '../store';
 import { SELLERS } from '../data/catalog';
 import { UpiQR, PayNowBtn } from '../components/Upi';
@@ -11,10 +11,10 @@ import { DELIVERY_MODES, checkPincodeServiceability, getWhatsAppConnectUrl } fro
 import * as cloud from '../lib/cloud';
 
 const PAY = [
-  { id: 'cod', name: 'Cash on Delivery', sub: 'Saman milne par seller ko nakad dein', icon: 'cash' },
-  { id: 'upi', name: 'UPI — seedha seller ko', sub: 'GPay / PhonePe / Paytm se seller ke UPI par', icon: 'cellphone-check' },
-  { id: 'qr', name: 'Seller ka QR scan karein', sub: 'Apne UPI app se QR scan kijiye', icon: 'qrcode-scan' },
-  { id: 'card', name: 'Card / Net Banking', sub: 'Visa, RuPay, Mastercard, 50+ banks', icon: 'credit-card-outline' },
+  { id: 'cod', name: 'Cash on Delivery', sub: 'Pay in cash upon doorstep delivery', icon: 'cash' },
+  { id: 'upi', name: 'Direct UPI Payment', sub: 'Instant payment via GPay / PhonePe / Paytm', icon: 'cellphone-check' },
+  { id: 'qr', name: 'Scan Seller QR Code', sub: 'Scan and pay directly using any UPI app', icon: 'qrcode-scan' },
+  { id: 'card', name: 'Card / Net Banking', sub: 'Visa, RuPay, Mastercard & 50+ banks', icon: 'credit-card-outline' },
 ];
 
 const Radio = ({ on }) => (
@@ -26,7 +26,6 @@ export function Checkout({ go }) {
   const [addr, setAddr] = useState(state.addresses[0]?.id);
   const [pay, setPay] = useState('cod');
   const [delMode, setDelMode] = useState(state.deliveryMode || 'standard');
-  const [useWallet, setUseWallet] = useState(false);
   const [code, setCode] = useState('');
   const [adding, setAdding] = useState(false);
   const [f, setF] = useState({ name: '', line: '', city: '', state: '', pin: '', phone: '' });
@@ -38,23 +37,20 @@ export function Checkout({ go }) {
     return (
       <View style={{ flex: 1, backgroundColor: C.bg }}>
         <Header title="Checkout" go={go} />
-        <Empty icon="cart-outline" title="Cart khali hai" sub="Pehle kuch add karein.">
-          <Btn title="Home jayein" onPress={() => go('home')} />
+        <Empty icon="cart-outline" title="Your cart is empty" sub="Add items to your cart before proceeding to checkout.">
+          <Btn title="Go to Home" onPress={() => go('home')} />
         </Empty>
       </View>
     );
 
-  const walletUsed = useWallet ? Math.min(state.wallet, total) : 0;
-  const payable = total - walletUsed;
-
-  // har seller ka apna hissa — paisa seedha unhe
+  // Split amounts per seller for direct settlement
   const sellerPays = Object.values(
     cartLines.reduce((acc, l) => {
       const isMine = l.product.seller === 'me';
       const key = l.product.seller;
       const info = isMine
-        ? { name: state.shop.name || 'Meri dukaan', upi: state.shop.upi || 'set nahi' }
-        : { name: SELLERS[key]?.name || 'Seller', upi: (SELLERS[key]?.name || 'seller').split(' ')[0].toLowerCase() + '@upi' };
+        ? { name: state.shop.name || 'My Shop', upi: state.shop.upi || 'Not set' }
+        : { name: SELLERS[key]?.name || 'Verified Seller', upi: (SELLERS[key]?.name || 'seller').split(' ')[0].toLowerCase() + '@upi' };
       if (!acc[key]) acc[key] = { key, ...info, amount: 0 };
       acc[key].amount += l.product.price * l.qty;
       return acc;
@@ -81,12 +77,11 @@ export function Checkout({ go }) {
         qty: l.qty,
         price: l.product.price,
       })),
-      total: payable,
+      total,
       pay,
       address: a,
       status: 'Confirmed',
       coupon: coupon?.code || null,
-      walletUsed,
       deliveryMode: delMode,
       eta: etaFormatted,
       pincode: a?.pin || '226010',
@@ -94,7 +89,6 @@ export function Checkout({ go }) {
 
     dispatch({ type: 'PLACE_ORDER', order });
 
-    // Cloud push if connected
     if (cloud.cloudOn()) {
       cloud.pushOrder(order, state.user?.cloudId || null).catch(() => {});
     }
@@ -107,7 +101,7 @@ export function Checkout({ go }) {
       <Header title="Checkout" go={go} />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 130 }}>
         {/* 1. DELIVERY ADDRESS */}
-        <Text style={ck.sec}>1 · Delivery address</Text>
+        <Text style={ck.sec}>1 · Delivery Address</Text>
         {state.addresses.map((a) => (
           <TouchableOpacity key={a.id} onPress={() => setAddr(a.id)} style={[ck.opt, addr === a.id && ck.optOn]}>
             <Radio on={addr === a.id} />
@@ -126,28 +120,28 @@ export function Checkout({ go }) {
         {!adding ? (
           <TouchableOpacity onPress={() => setAdding(true)} style={[ck.addBtn, { flexDirection: 'row' }]}>
             <MC name="plus" size={15} color={C.brand} />
-            <Text style={{ color: C.brand, fontWeight: '800', fontSize: 13, marginLeft: 5 }}>Naya address add karein</Text>
+            <Text style={{ color: C.brand, fontWeight: '800', fontSize: 13, marginLeft: 5 }}>Add New Delivery Address</Text>
           </TouchableOpacity>
         ) : (
           <View style={[ck.form, shadow]}>
-            <Field label="Address ka naam" placeholder="Ghar / Office" value={f.name} onChangeText={(v) => setF({ ...f, name: v })} />
-            <Field label="Poora pata" placeholder="House no, street, area" value={f.line} onChangeText={(v) => setF({ ...f, line: v })} />
+            <Field label="Address Label" placeholder="Home / Office" value={f.name} onChangeText={(v) => setF({ ...f, name: v })} />
+            <Field label="Full Address" placeholder="House / Flat No., Street, Area" value={f.line} onChangeText={(v) => setF({ ...f, line: v })} />
             <View style={{ flexDirection: 'row', gap: 10 }}>
-              <View style={{ flex: 1 }}><Field label="Sheher" placeholder="Lucknow" value={f.city} onChangeText={(v) => setF({ ...f, city: v })} /></View>
-              <View style={{ flex: 1 }}><Field label="Rajya" placeholder="Uttar Pradesh" value={f.state} onChangeText={(v) => setF({ ...f, state: v })} /></View>
+              <View style={{ flex: 1 }}><Field label="City" placeholder="e.g. Lucknow" value={f.city} onChangeText={(v) => setF({ ...f, city: v })} /></View>
+              <View style={{ flex: 1 }}><Field label="State" placeholder="e.g. Uttar Pradesh" value={f.state} onChangeText={(v) => setF({ ...f, state: v })} /></View>
             </View>
             <View style={{ flexDirection: 'row', gap: 10 }}>
-              <View style={{ flex: 1 }}><Field label="PIN code" keyboardType="number-pad" placeholder="226010" value={f.pin} onChangeText={(v) => setF({ ...f, pin: v })} /></View>
-              <View style={{ flex: 1 }}><Field label="Mobile" keyboardType="number-pad" placeholder="10 digit" value={f.phone} onChangeText={(v) => setF({ ...f, phone: v })} /></View>
+              <View style={{ flex: 1 }}><Field label="PIN Code" keyboardType="number-pad" placeholder="226010" value={f.pin} onChangeText={(v) => setF({ ...f, pin: v })} /></View>
+              <View style={{ flex: 1 }}><Field label="Contact Mobile" keyboardType="number-pad" placeholder="10-digit number" value={f.phone} onChangeText={(v) => setF({ ...f, phone: v })} /></View>
             </View>
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <Btn title="Cancel" tone="ghost" style={{ flex: 1 }} onPress={() => setAdding(false)} />
               <Btn
-                title="Save"
+                title="Save Address"
                 style={{ flex: 1 }}
                 disabled={!f.line || !f.city || !f.pin}
                 onPress={() => {
-                  const a = { ...f, id: 'a' + Date.now(), name: f.name || 'Naya' };
+                  const a = { ...f, id: 'a' + Date.now(), name: f.name || 'Delivery' };
                   dispatch({ type: 'ADDRESS', address: a });
                   setAddr(a.id);
                   setAdding(false);
@@ -158,8 +152,8 @@ export function Checkout({ go }) {
           </View>
         )}
 
-        {/* 2. DELIVERY & LOGISTICS METHOD */}
-        <Text style={[ck.sec, { marginTop: 22 }]}>2 · Delivery ka Tareeka</Text>
+        {/* 2. DELIVERY METHOD */}
+        <Text style={[ck.sec, { marginTop: 22 }]}>2 · Delivery & Shipping Method</Text>
         <View style={[ck.box, shadow, { marginBottom: 12 }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
             <MC name="map-marker-check" size={18} color={C.green} />
@@ -197,7 +191,7 @@ export function Checkout({ go }) {
         </View>
 
         {/* 3. ORDER SUMMARY */}
-        <Text style={[ck.sec, { marginTop: 14 }]}>3 · Order summary</Text>
+        <Text style={[ck.sec, { marginTop: 14 }]}>3 · Order Summary</Text>
         <View style={[ck.box, shadow]}>
           {cartLines.map((l) => (
             <View key={l.id} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
@@ -209,20 +203,20 @@ export function Checkout({ go }) {
           ))}
         </View>
 
-        {/* 4. COUPON & WALLET */}
-        <Text style={[ck.sec, { marginTop: 22 }]}>4 · Coupon aur Wallet</Text>
+        {/* 4. COUPONS */}
+        <Text style={[ck.sec, { marginTop: 22 }]}>4 · Promo Codes & Coupons</Text>
         <View style={[ck.box, shadow]}>
           <View style={{ flexDirection: 'row', gap: 8 }}>
             <View style={{ flex: 1 }}>
               <Field
-                placeholder="Coupon code daalein"
+                placeholder="Enter Coupon Code"
                 autoCapitalize="characters"
                 value={code}
                 onChangeText={(v) => setCode(v.toUpperCase())}
               />
             </View>
             <Btn
-              title="Lagayein"
+              title="Apply"
               tone="brand"
               style={{ paddingHorizontal: 18, height: 48 }}
               onPress={() => dispatch({ type: 'COUPON', code })}
@@ -231,16 +225,16 @@ export function Checkout({ go }) {
           {!!state.coupon && (
             <View style={[ck.couponOn, !coupon && { backgroundColor: C.redSoft }]}>
               <MC name={coupon ? 'check-circle' : 'close-circle'} size={15} color={coupon ? C.green : C.red} />
-              <Text style={{ flex: 1, marginLeft: 7, color: coupon ? '#0F7A4A' : C.red, fontSize: 12.5, fontWeight: '700' }}>
-                {coupon ? `${coupon.code} laga — ${money(couponOff)} bachaye` : `${state.coupon} is order par nahi lagega`}
+              <Text style={{ flex: 1, marginLeft: 7, color: coupon ? '#059669' : C.red, fontSize: 12.5, fontWeight: '700' }}>
+                {coupon ? `${coupon.code} applied — Saved ${money(couponOff)}` : `${state.coupon} is not valid for this order`}
               </Text>
               <TouchableOpacity onPress={() => { dispatch({ type: 'COUPON', code: null }); setCode(''); }}>
-                <Text style={{ color: C.ink2, fontWeight: '800', fontSize: 12 }}>Hatayein</Text>
+                <Text style={{ color: C.ink2, fontWeight: '800', fontSize: 12 }}>Remove</Text>
               </TouchableOpacity>
             </View>
           )}
 
-          <Text style={{ color: C.ink2, fontSize: 12, fontWeight: '800', marginTop: 14, marginBottom: 8 }}>UPLABDH OFFERS</Text>
+          <Text style={{ color: C.ink2, fontSize: 12, fontWeight: '800', marginTop: 14, marginBottom: 8 }}>AVAILABLE COUPONS</Text>
           {COUPONS.map((c) => {
             const usable = subtotal >= c.min;
             return (
@@ -255,26 +249,15 @@ export function Checkout({ go }) {
               </TouchableOpacity>
             );
           })}
-
-          {state.wallet > 0 && (
-            <TouchableOpacity onPress={() => setUseWallet(!useWallet)} style={[ck.wallet, useWallet && { borderColor: C.green, backgroundColor: C.greenSoft }]}>
-              <MC name={useWallet ? 'checkbox-marked' : 'checkbox-blank-outline'} size={19} color={useWallet ? C.green : C.ink3} />
-              <View style={{ flex: 1, marginLeft: 10 }}>
-                <Text style={{ color: C.ink, fontWeight: '800', fontSize: 13 }}>Temsho Wallet use karein</Text>
-                <Text style={{ color: C.ink3, fontSize: 11.5, marginTop: 2 }}>Balance {money(state.wallet)}</Text>
-              </View>
-              {useWallet && <Text style={{ color: C.green, fontWeight: '900', fontSize: 13 }}>− {money(walletUsed)}</Text>}
-            </TouchableOpacity>
-          )}
         </View>
 
-        {/* 5. PAYMENT */}
-        <Text style={[ck.sec, { marginTop: 22 }]}>5 · Payment — Seedha Seller ko</Text>
+        {/* 5. PAYMENT METHOD */}
+        <Text style={[ck.sec, { marginTop: 22 }]}>5 · Payment — Direct to Seller</Text>
 
         <View style={ck.directBox}>
           <MC name="shield-check-outline" size={18} color={C.green} />
-          <Text style={{ flex: 1, marginLeft: 10, color: '#0F7A4A', fontSize: 11.5, fontWeight: '700', lineHeight: 17 }}>
-            Aapka paisa SEEDHA seller ko jaata hai. Temsho beech me paisa nahi rakhta.
+          <Text style={{ flex: 1, marginLeft: 10, color: '#059669', fontSize: 11.5, fontWeight: '700', lineHeight: 17 }}>
+            Your payment goes DIRECTLY to the verified seller. Temsho does not hold your funds.
           </Text>
         </View>
 
@@ -290,22 +273,22 @@ export function Checkout({ go }) {
                 <View style={ck.upiRow}>
                   <MC name="cellphone-check" size={15} color={C.green} />
                   <Text style={{ flex: 1, marginLeft: 8, color: C.ink2, fontSize: 12 }}>
-                    UPI: <Text style={{ fontWeight: '800', color: C.ink }}>{sp.upi}</Text>
+                    Seller UPI: <Text style={{ fontWeight: '800', color: C.ink }}>{sp.upi}</Text>
                   </Text>
                 </View>
                 {pay === 'upi' && (
-                  <PayNowBtn upi={sp.upi} name={sp.name} amount={sp.amount} note={'Temsho'} />
+                  <PayNowBtn upi={sp.upi} name={sp.name} amount={sp.amount} note={'Temsho Order'} />
                 )}
                 {pay === 'qr' && (
                   <View style={{ marginTop: 14 }}>
-                    <UpiQR upi={sp.upi} name={sp.name} amount={sp.amount} note={'Temsho'} size={150} />
+                    <UpiQR upi={sp.upi} name={sp.name} amount={sp.amount} note={'Temsho Order'} size={150} />
                   </View>
                 )}
               </>
             )}
             {pay === 'cod' && (
               <Text style={{ color: C.ink3, fontSize: 11.5, marginTop: 8 }}>
-                Delivery ke waqt {money(sp.amount)} nakad dein
+                Pay {money(sp.amount)} in cash upon delivery
               </Text>
             )}
           </View>
@@ -327,26 +310,26 @@ export function Checkout({ go }) {
             subtotal={subtotal}
             saved={saved}
             delivery={delivery}
-            total={payable}
-            couponOff={couponOff + walletUsed}
-            couponCode={walletUsed ? 'coupon + wallet' : coupon?.code}
+            total={total}
+            couponOff={couponOff}
+            couponCode={coupon?.code}
           />
         </View>
 
         <View style={ck.human}>
           <MC name="account-check-outline" size={17} color={C.green} />
           <Text style={{ flex: 1, marginLeft: 10, color: C.ink2, fontSize: 11.5, lineHeight: 17 }}>
-            Har order ek verified insaan pack karta hai. Dikkat aayi to asli support agent se turant baat kar sakte hain.
+            Every order is verified and dispatched by real humans. Dedicated human support is available 24x7.
           </Text>
         </View>
       </ScrollView>
 
       <View style={sx.bottomBar}>
         <View style={{ flex: 1 }}>
-          <Text style={{ color: C.ink3, fontSize: 11 }}>Dena hai</Text>
-          <Text style={{ color: C.ink, fontWeight: '900', fontSize: 19 }}>{money(payable)}</Text>
+          <Text style={{ color: C.ink3, fontSize: 11 }}>Payable Amount</Text>
+          <Text style={{ color: C.ink, fontWeight: '900', fontSize: 19 }}>{money(total)}</Text>
         </View>
-        <Btn title="Order place karein" tone="green" style={{ flex: 1.3 }} onPress={place} />
+        <Btn title="Place Order" tone="green" style={{ flex: 1.3 }} onPress={place} />
       </View>
     </View>
   );
@@ -356,19 +339,19 @@ export function Success({ go, params }) {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center', padding: 30 }}>
       <View style={ck.tick}><MC name="check-bold" size={44} color={C.green} /></View>
-      <Text style={{ fontSize: 22, fontWeight: '900', color: C.ink, marginTop: 20 }}>Order ho gaya!</Text>
+      <Text style={{ fontSize: 22, fontWeight: '900', color: C.ink, marginTop: 20 }}>Order Confirmed!</Text>
       <Text style={{ color: C.ink2, fontSize: 13.5, textAlign: 'center', marginTop: 8, lineHeight: 20 }}>
-        Order ID <Text style={{ fontWeight: '800', color: C.ink }}>{params?.id}</Text>{'\n'}
-        Anumaanit delivery: <Text style={{ fontWeight: '800', color: C.green }}>{params?.eta}</Text>
+        Order ID: <Text style={{ fontWeight: '800', color: C.ink }}>{params?.id}</Text>{'\n'}
+        Estimated Delivery: <Text style={{ fontWeight: '800', color: C.green }}>{params?.eta}</Text>
       </Text>
       <View style={ck.humanCard}>
         <MC name="account-tie-outline" size={22} color={C.brand} />
         <Text style={{ flex: 1, marginLeft: 10, color: C.ink2, fontSize: 12, lineHeight: 18 }}>
-          Seller ko aapka order mil gaya hai. Vo khud confirmation message ya call karenge — koi automated bot nahi.
+          The seller has received your order details and will dispatch your package shortly.
         </Text>
       </View>
-      <Btn title="Mere orders dekhein" style={{ alignSelf: 'stretch', marginTop: 24 }} onPress={() => go('orders')} />
-      <Btn title="Aur shopping karein" tone="outline" style={{ alignSelf: 'stretch', marginTop: 10 }} onPress={() => go('home')} />
+      <Btn title="View My Orders" style={{ alignSelf: 'stretch', marginTop: 24 }} onPress={() => go('orders')} />
+      <Btn title="Continue Shopping" tone="outline" style={{ alignSelf: 'stretch', marginTop: 10 }} onPress={() => go('home')} />
     </View>
   );
 }
@@ -378,7 +361,7 @@ export function Orders({ go }) {
   const [tab, setTab] = useState('all');
   const [retFor, setRetFor] = useState(null);
 
-  const REASONS = ['Saman kharab mila', 'Galat item aaya', 'Size fit nahi hua', 'Quality expected se kam', 'Ab zarurat nahi'];
+  const REASONS = ['Item damaged during transit', 'Wrong product delivered', 'Size does not fit', 'Quality did not match description', 'No longer required'];
   const steps = ['Confirmed', 'Packed', 'Shipped', 'Out for Delivery', 'Delivered'];
 
   const list = state.orders.filter((o) =>
@@ -391,18 +374,18 @@ export function Orders({ go }) {
   if (state.orders.length === 0)
     return (
       <View style={{ flex: 1, backgroundColor: C.bg }}>
-        <Header title="Mere Orders" go={go} />
-        <Empty icon="package-variant" title="Abhi koi order nahi" sub="Aapke orders yahan dikhenge.">
-          <Btn title="Shopping karein" onPress={() => go('home')} />
+        <Header title="My Orders" go={go} />
+        <Empty icon="package-variant" title="No Orders Yet" sub="Your past and current orders will be listed here.">
+          <Btn title="Start Shopping" onPress={() => go('home')} />
         </Empty>
       </View>
     );
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <Header title="Mere Orders" go={go} />
+      <Header title="My Orders" go={go} />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ maxHeight: 50, flexGrow: 0, backgroundColor: C.surface }} contentContainerStyle={{ paddingHorizontal: 12, alignItems: 'center' }}>
-        {[['all', 'Sab'], ['active', 'Chal rahe'], ['done', 'Delivered'], ['other', 'Cancel / Return']].map(([k, l]) => (
+        {[['all', 'All Orders'], ['active', 'In Transit'], ['done', 'Delivered'], ['other', 'Cancelled / Returns']].map(([k, l]) => (
           <TouchableOpacity key={k} onPress={() => setTab(k)} style={[ck.tab, tab === k && { borderBottomColor: C.brand }]}>
             <Text style={{ color: tab === k ? C.brand : C.ink3, fontWeight: tab === k ? '800' : '600', fontSize: 13 }}>{l}</Text>
           </TouchableOpacity>
@@ -411,7 +394,7 @@ export function Orders({ go }) {
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
         {list.length === 0 && (
-          <Text style={{ color: C.ink3, textAlign: 'center', marginTop: 40, fontSize: 13 }}>Is filter me koi order nahi.</Text>
+          <Text style={{ color: C.ink3, textAlign: 'center', marginTop: 40, fontSize: 13 }}>No orders found under this filter.</Text>
         )}
         {list.map((o) => {
           const si = steps.indexOf(o.status);
@@ -426,7 +409,7 @@ export function Orders({ go }) {
                 <Badge text={o.status} tone={o.status === 'Cancelled' ? 'red' : o.status === 'Return Requested' ? 'accent' : o.status === 'Delivered' ? 'green' : 'brand'} />
               </View>
               <Text style={{ color: C.ink3, fontSize: 11, marginBottom: 12 }}>
-                {new Date(o.at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                Placed on {new Date(o.at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
               </Text>
 
               {o.items.map((it) => (
@@ -449,7 +432,7 @@ export function Orders({ go }) {
                 </View>
               )}
 
-              {/* Shipment / AWB info */}
+              {/* Shipment info */}
               {o.shipment && (
                 <View style={ck.awbBox}>
                   <MC name="truck-fast" size={17} color={C.brand} />
@@ -458,24 +441,24 @@ export function Orders({ go }) {
                       {o.shipment.courier} · AWB: {o.shipment.awb}
                     </Text>
                     <Text style={{ color: C.ink3, fontSize: 10.5, marginTop: 1 }}>
-                      Pickup: {o.shipment.pickupScheduled}
+                      Scheduled Pickup: {o.shipment.pickupScheduled}
                     </Text>
                   </View>
                 </View>
               )}
 
               {o.returnReason && (
-                <Text style={{ color: C.ink2, fontSize: 11.5, marginTop: 8, fontStyle: 'italic' }}>Wajah: {o.returnReason}</Text>
+                <Text style={{ color: C.ink2, fontSize: 11.5, marginTop: 8, fontStyle: 'italic' }}>Reason: {o.returnReason}</Text>
               )}
 
               <View style={{ height: 1, backgroundColor: C.line, marginVertical: 10 }} />
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: C.ink2, fontSize: 12 }}>
-                    {o.status === 'Delivered' ? 'Mil gaya' : 'Delivery'}: <Text style={{ fontWeight: '800', color: C.ink }}>{o.eta}</Text>
+                    {o.status === 'Delivered' ? 'Delivered on' : 'Estimated Delivery'}: <Text style={{ fontWeight: '800', color: C.ink }}>{o.eta}</Text>
                   </Text>
                   <Text style={{ color: C.ink3, fontSize: 11, marginTop: 2 }}>
-                    {o.pay === 'cod' ? 'Cash on Delivery' : 'Paid online'}{o.coupon ? ` · ${o.coupon}` : ''}
+                    {o.pay === 'cod' ? 'Cash on Delivery' : 'Paid Online'}{o.coupon ? ` · Coupon ${o.coupon}` : ''}
                   </Text>
                 </View>
                 <Text style={{ fontWeight: '900', color: C.ink, fontSize: 16 }}>{money(o.total)}</Text>
@@ -491,17 +474,17 @@ export function Orders({ go }) {
                       style={{ flex: 1, minWidth: 110 }}
                       onPress={() => dispatch({ type: 'ADVANCE_ORDER', id: o.id })}
                     />
-                    <Btn title="Cancel" tone="outline" style={{ flex: 0.7, minWidth: 90 }} onPress={() => dispatch({ type: 'CANCEL_ORDER', id: o.id })} />
+                    <Btn title="Cancel Order" tone="outline" style={{ flex: 0.8, minWidth: 90 }} onPress={() => dispatch({ type: 'CANCEL_ORDER', id: o.id })} />
                   </>
                 )}
                 {o.status === 'Delivered' && (
                   <>
-                    <Btn title="Return / Refund" tone="outline" style={{ flex: 1, minWidth: 130 }} onPress={() => setRetFor(retFor === o.id ? null : o.id)} />
-                    <Btn title="Dobara khareedein" tone="ghost" style={{ flex: 1, minWidth: 130 }} onPress={() => { o.items.forEach((it) => dispatch({ type: 'ADD_CART', id: it.id })); go('cart'); }} />
+                    <Btn title="Request Return" tone="outline" style={{ flex: 1, minWidth: 130 }} onPress={() => setRetFor(retFor === o.id ? null : o.id)} />
+                    <Btn title="Buy Again" tone="ghost" style={{ flex: 1, minWidth: 130 }} onPress={() => { o.items.forEach((it) => dispatch({ type: 'ADD_CART', id: it.id })); go('cart'); }} />
                   </>
                 )}
                 <Btn
-                  title="WhatsApp Seller"
+                  title="Contact Seller"
                   icon="whatsapp"
                   tone="green"
                   style={{ flex: 1, minWidth: 130 }}
@@ -510,19 +493,19 @@ export function Orders({ go }) {
                     Linking.openURL(waUrl).catch(() => {});
                   }}
                 />
-                <Btn title="Human Support" icon="headset" tone="ghost" style={{ flex: 1, minWidth: 130 }} onPress={() => go('support')} />
+                <Btn title="Support" icon="headset" tone="ghost" style={{ flex: 1, minWidth: 110 }} onPress={() => go('support')} />
               </View>
 
               {retFor === o.id && (
                 <View style={ck.retBox}>
-                  <Text style={{ fontWeight: '800', color: C.ink, fontSize: 13, marginBottom: 8 }}>Return ki wajah chunein</Text>
+                  <Text style={{ fontWeight: '800', color: C.ink, fontSize: 13, marginBottom: 8 }}>Select Return Reason</Text>
                   {REASONS.map((r) => (
                     <TouchableOpacity key={r} onPress={() => { dispatch({ type: 'RETURN_ORDER', id: o.id, reason: r }); setRetFor(null); }} style={ck.retOpt}>
                       <Text style={{ color: C.ink2, fontSize: 12.5 }}>{r}</Text>
                     </TouchableOpacity>
                   ))}
                   <Text style={{ color: C.ink3, fontSize: 10.5, marginTop: 6, lineHeight: 15 }}>
-                    7 din ke andar free pickup. Paisa 3–5 din me wallet ya bank me.
+                    Free doorstep pickup within 7 days.
                   </Text>
                 </View>
               )}
@@ -548,7 +531,7 @@ const ck = StyleSheet.create({
   delCardOn: { borderColor: C.brand, backgroundColor: C.brandSoft },
   delIco: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
   estBadge: { backgroundColor: C.brandSoft, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginLeft: 8 },
-  addBtn: { paddingVertical: 12, alignItems: 'center', borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#C7CAEA', borderRadius: R.md },
+  addBtn: { paddingVertical: 12, alignItems: 'center', borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#C7D2FE', borderRadius: R.md },
   form: { backgroundColor: C.surface, borderRadius: R.lg, padding: 16, marginTop: 12 },
   box: { backgroundColor: C.surface, borderRadius: R.lg, padding: 14 },
   directBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.greenSoft, borderRadius: R.md, padding: 12, marginBottom: 12 },
@@ -559,7 +542,6 @@ const ck = StyleSheet.create({
   couponOn: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.greenSoft, borderRadius: R.sm, padding: 10, marginTop: 2, marginBottom: 4 },
   cpn: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: C.line, borderStyle: 'dashed', borderRadius: R.sm, padding: 10, marginBottom: 8 },
   cpnTag: { backgroundColor: C.brandSoft, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 },
-  wallet: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: C.line, borderRadius: R.md, padding: 12, marginTop: 8 },
   tab: { paddingHorizontal: 14, paddingVertical: 14, borderBottomWidth: 2.5, borderBottomColor: 'transparent' },
   retBox: { backgroundColor: C.bg, borderRadius: R.md, padding: 12, marginTop: 12 },
   retOpt: { backgroundColor: C.surface, borderRadius: R.sm, padding: 10, marginBottom: 6, borderWidth: 1, borderColor: C.line },

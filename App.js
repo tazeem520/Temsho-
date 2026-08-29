@@ -29,11 +29,11 @@ const SCREENS = {
 };
 
 const TABS = [
-  { id: 'home', label: 'होम', on: 'home', off: 'home-outline' },
-  { id: 'category', label: 'कैटेगरी', on: 'view-grid', off: 'view-grid-outline' },
-  { id: 'offers', label: 'बेहतरीन', on: 'sale', off: 'sale-outline' },
-  { id: 'account', label: 'अकाउंट', on: 'account', off: 'account-outline' },
-  { id: 'cart', label: 'कार्ट', on: 'cart', off: 'cart-outline' },
+  { id: 'home', label: 'Home', on: 'home', off: 'home-outline' },
+  { id: 'category', label: 'Categories', on: 'view-grid', off: 'view-grid-outline' },
+  { id: 'offers', label: 'Deals', on: 'sale', off: 'sale-outline' },
+  { id: 'account', label: 'Account', on: 'account', off: 'account-outline' },
+  { id: 'cart', label: 'Cart', on: 'cart', off: 'cart-outline' },
 ];
 
 function Shell() {
@@ -54,10 +54,10 @@ function Shell() {
 
   if (!state.ready)
     return (
-      <View style={{ flex: 1, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ flex: 1, backgroundColor: C.brandNavy, alignItems: 'center', justifyContent: 'center' }}>
         <MC name="storefront" size={54} color="#fff" />
-        <Text style={{ color: '#fff', fontSize: 22, fontWeight: '900', marginTop: 14, letterSpacing: -0.5 }}>Temsho</Text>
-        <Text style={{ color: '#ffffff99', fontSize: 12, fontWeight: '600', marginTop: 6 }}>No bots. Only humans.</Text>
+        <Text style={{ color: '#fff', fontSize: 24, fontWeight: '900', marginTop: 14, letterSpacing: -0.5 }}>Temsho</Text>
+        <Text style={{ color: '#ffffffaa', fontSize: 13, fontWeight: '600', marginTop: 6 }}>No bots. Only humans.</Text>
         <ActivityIndicator color="#fff" style={{ marginTop: 26 }} />
       </View>
     );
@@ -82,12 +82,12 @@ function Shell() {
                 <View style={{ alignItems: 'center' }}>
                   {on && <View style={s.tabTop} />}
                   <View>
-                    <MC name={on ? t.on : t.off} size={23} color={on ? C.brand : '#8A90A6'} />
+                    <MC name={on ? t.on : t.off} size={23} color={on ? C.brand : '#9CA3AF'} />
                     {t.id === 'cart' && cartCount > 0 && (
                       <View style={s.badge}><Text style={{ color: '#fff', fontSize: 9, fontWeight: '900' }}>{cartCount}</Text></View>
                     )}
                   </View>
-                  <Text numberOfLines={1} style={{ fontSize: 10.5, marginTop: 4, fontWeight: on ? '900' : '600', color: on ? C.brand : '#8A90A6' }}>
+                  <Text numberOfLines={1} style={{ fontSize: 10.5, marginTop: 4, fontWeight: on ? '900' : '600', color: on ? C.brand : '#6B7280' }}>
                     {t.label}
                   </Text>
                 </View>
@@ -116,7 +116,7 @@ export default function App() {
 const isWeb = Platform.OS === 'web';
 const s = StyleSheet.create({
   root: isWeb
-    ? { flex: 1, backgroundColor: '#1B1E3B', alignItems: 'center', justifyContent: 'center' }
+    ? { flex: 1, backgroundColor: '#0F172A', alignItems: 'center', justifyContent: 'center' }
     : { flex: 1 },
   phone: isWeb
     ? {
