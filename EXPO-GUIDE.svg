@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1350" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#14172E"/>
+      <stop offset="100%" stop-color="#23274D"/>
+    </linearGradient>
+    <linearGradient id="headerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2B2D6E"/>
+      <stop offset="50%" stop-color="#4E54C8"/>
+      <stop offset="100%" stop-color="#F5A623"/>
+    </linearGradient>
+    <linearGradient id="btnGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#12A150"/>
+      <stop offset="100%" stop-color="#27AE60"/>
+    </linearGradient>
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#F8F9FE"/>
+    </linearGradient>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="900" height="1350" fill="url(#bgGrad)"/>
+
+  <!-- Top Header Banner -->
+  <rect x="30" y="30" width="840" height="130" rx="20" fill="url(#headerGrad)" filter="url(#shadow)"/>
+  <circle cx="85" cy="95" r="32" fill="#FFFFFF" fill-opacity="0.2"/>
+  <text x="85" y="105" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="34" font-weight="900" fill="#FFFFFF" text-anchor="middle">▲</text>
+  <text x="135" y="80" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="28" font-weight="900" fill="#FFFFFF">Expo Setup — फ़ॉर्म में क्या भरना है?</text>
+  <text x="135" y="112" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="600" fill="#FFEAA7">इस पेज पर सिर्फ़ 2 चीज़ें लिखनी हैं — 1 मिनट का काम!</text>
+
+  <!-- Main Mobile Card Mockup -->
+  <g transform="translate(60, 190)" filter="url(#shadow)">
+    <!-- White Card -->
+    <rect width="780" height="880" rx="24" fill="url(#cardGrad)" stroke="#E0E4F0" stroke-width="2"/>
+
+    <!-- Expo Logo & Title -->
+    <circle cx="390" cy="55" r="24" fill="#000000"/>
+    <text x="390" y="64" font-family="sans-serif" font-size="24" font-weight="900" fill="#FFFFFF" text-anchor="middle">▲</text>
+    <text x="390" y="115" font-family="sans-serif" font-size="26" font-weight="900" fill="#141726" text-anchor="middle">Create an organization</text>
+
+    <!-- STEP 1: Organization Name -->
+    <g transform="translate(40, 150)">
+      <rect x="0" y="0" width="700" height="175" rx="16" fill="#F0F4FF" stroke="#4E54C8" stroke-width="2"/>
+      
+      <!-- Number Badge -->
+      <circle cx="35" cy="35" r="16" fill="#2B2D6E"/>
+      <text x="35" y="41" font-family="sans-serif" font-size="15" font-weight="900" fill="#FFFFFF" text-anchor="middle">1</text>
+      
+      <text x="65" y="38" font-family="sans-serif" font-size="18" font-weight="900" fill="#141726">Organization name</text>
+      <text x="65" y="58" font-family="sans-serif" font-size="13" font-weight="600" fill="#6B7280">यहाँ अपने ऐप का नाम लिखिए:</text>
+      
+      <!-- Input Mockup -->
+      <rect x="35" y="75" width="630" height="52" rx="10" fill="#FFFFFF" stroke="#2B2D6E" stroke-width="2"/>
+      <text x="55" y="108" font-family="monospace" font-size="20" font-weight="900" fill="#12A150">Temsho</text>
+
+      <!-- Arrow & Hindi Tip -->
+      <rect x="440" y="82" width="210" height="36" rx="6" fill="#E4F7EC" stroke="#12A150" stroke-width="1.5"/>
+      <text x="545" y="105" font-family="sans-serif" font-size="14" font-weight="800" fill="#0F7A4A" text-anchor="middle">👈 यह लिखिए: Temsho</text>
+      
+      <text x="35" y="152" font-family="sans-serif" font-size="13" font-weight="700" fill="#4B5563">💡 Name me bas "Temsho" likh dijiye.</text>
+    </g>
+
+    <!-- STEP 2: Organization Slug -->
+    <g transform="translate(40, 345)">
+      <rect x="0" y="0" width="700" height="175" rx="16" fill="#F0F4FF" stroke="#4E54C8" stroke-width="2"/>
+      
+      <!-- Number Badge -->
+      <circle cx="35" cy="35" r="16" fill="#2B2D6E"/>
+      <text x="35" y="41" font-family="sans-serif" font-size="15" font-weight="900" fill="#FFFFFF" text-anchor="middle">2</text>
+      
+      <text x="65" y="38" font-family="sans-serif" font-size="18" font-weight="900" fill="#141726">Organization slug</text>
+      <text x="65" y="58" font-family="sans-serif" font-size="13" font-weight="600" fill="#6B7280">यह अपने-आप भर जाएगा या छोटे अक्षरों में लिखिए:</text>
+      
+      <!-- Input Mockup -->
+      <rect x="35" y="75" width="630" height="52" rx="10" fill="#FFFFFF" stroke="#2B2D6E" stroke-width="2"/>
+      <text x="55" y="108" font-family="monospace" font-size="20" font-weight="900" fill="#12A150">temsho</text>
+
+      <!-- Arrow & Hindi Tip -->
+      <rect x="440" y="82" width="210" height="36" rx="6" fill="#E4F7EC" stroke="#12A150" stroke-width="1.5"/>
+      <text x="545" y="105" font-family="sans-serif" font-size="14" font-weight="800" fill="#0F7A4A" text-anchor="middle">👈 स्मॉल लेटर्स: temsho</text>
+      
+      <text x="35" y="152" font-family="sans-serif" font-size="13" font-weight="700" fill="#4B5563">💡 Slug me saare letters chote (small) hone chahiye.</text>
+    </g>
+
+    <!-- STEP 3: Invite Members (Optional) -->
+    <g transform="translate(40, 540)">
+      <rect x="0" y="0" width="700" height="145" rx="16" fill="#FAFAFD" stroke="#D1D5DB" stroke-width="1.5"/>
+      
+      <circle cx="35" cy="32" r="16" fill="#9CA3AF"/>
+      <text x="35" y="38" font-family="sans-serif" font-size="15" font-weight="900" fill="#FFFFFF" text-anchor="middle">3</text>
+      
+      <text x="65" y="35" font-family="sans-serif" font-size="17" font-weight="800" fill="#4B5563">Invite members (Optional) &amp; Avatar</text>
+      
+      <rect x="35" y="60" width="630" height="42" rx="8" fill="#FFFFFF" stroke="#E5E7EB"/>
+      <text x="50" y="86" font-family="sans-serif" font-size="14" font-weight="600" fill="#9CA3AF">friend@company.dev</text>
+
+      <rect x="420" y="64" width="230" height="32" rx="6" fill="#FFF3CD" stroke="#FFE69C"/>
+      <text x="535" y="85" font-family="sans-serif" font-size="13" font-weight="800" fill="#856404" text-anchor="middle">खाली छोड़ दें (Skip karein)</text>
+
+      <text x="35" y="125" font-family="sans-serif" font-size="13" font-weight="700" fill="#6B7280">💡 इसमें कुछ नहीं भरना है — यह सिर्फ़ टीम मेंबर्स के लिए होता है।</text>
+    </g>
+
+    <!-- STEP 4: Submit Button -->
+    <g transform="translate(40, 715)">
+      <rect x="0" y="0" width="700" height="130" rx="16" fill="#E4F7EC" stroke="#12A150" stroke-width="2"/>
+      
+      <circle cx="35" cy="35" r="16" fill="#12A150"/>
+      <text x="35" y="41" font-family="sans-serif" font-size="15" font-weight="900" fill="#FFFFFF" text-anchor="middle">4</text>
+      
+      <text x="65" y="38" font-family="sans-serif" font-size="18" font-weight="900" fill="#0F7A4A">नीचे स्क्रॉल करके बटन दबाएं:</text>
+
+      <!-- Big Button -->
+      <rect x="35" y="60" width="630" height="52" rx="12" fill="url(#btnGrad)"/>
+      <text x="350" y="94" font-family="sans-serif" font-size="18" font-weight="900" fill="#FFFFFF" text-anchor="middle">Create organization / Continue  ➔</text>
+    </g>
+  </g>
+
+  <!-- Bottom Next Steps Card -->
+  <g transform="translate(60, 1100)" filter="url(#shadow)">
+    <rect width="780" height="200" rx="20" fill="#1F2347" stroke="#F5A623" stroke-width="2"/>
+    
+    <text x="40" y="40" font-family="sans-serif" font-size="19" font-weight="900" fill="#FFD54F">🚀 इसके बाद क्या होगा?</text>
+    
+    <text x="40" y="75" font-family="sans-serif" font-size="15" font-weight="700" fill="#FFFFFF">1. जैसे ही आप बटन दबाएंगे, आपका Expo Organization तैयार हो जाएगा।</text>
+    <text x="40" y="110" font-family="sans-serif" font-size="15" font-weight="700" fill="#FFFFFF">2. इसके बाद मुझे बता दीजिए — मैं तुरंत क्लाउड पर Android APK बिल्ड चला दूंगा!</text>
+    
+    <rect x="40" y="135" width="700" height="46" rx="8" fill="#2B2D6E"/>
+    <text x="390" y="164" font-family="monospace" font-size="15" font-weight="800" fill="#25D366" text-anchor="middle">कमांड: npx eas build -p android --profile preview</text>
+  </g>
+</svg>

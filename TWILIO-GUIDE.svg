@@ -1,0 +1,239 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="2760" viewBox="0 0 1000 2760" font-family="Segoe UI, Roboto, Noto Sans, Arial, sans-serif">
+<defs>
+  <linearGradient id="hdr" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#2B2D6E"/><stop offset="0.6" stop-color="#4B2F9E"/><stop offset="1" stop-color="#F5A623"/>
+  </linearGradient>
+  <linearGradient id="gold" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0" stop-color="#F5A623"/><stop offset="1" stop-color="#FFC85C"/>
+  </linearGradient>
+  <filter id="sh" x="-20%" y="-20%" width="140%" height="140%">
+    <feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="#2B2D6E" flood-opacity="0.13"/>
+  </filter>
+  <marker id="arw" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto">
+    <path d="M0 1 L10 6 L0 11 Z" fill="#E5484D"/>
+  </marker>
+</defs>
+
+<rect width="1000" height="2760" fill="#F6F7FB"/>
+
+<!-- ============ HEADER ============ -->
+<rect x="0" y="0" width="1000" height="150" fill="url(#hdr)"/>
+<circle cx="78" cy="75" r="34" fill="#F5A623"/>
+<path d="M62 66 h32 a4 4 0 0 1 4 4 l4 22 a3 3 0 0 1-3 3 h-42 a3 3 0 0 1-3-3 l4-22 a4 4 0 0 1 4-4 z" fill="#2B2D6E"/>
+<path d="M70 66 a8 9 0 0 1 16 0" stroke="#2B2D6E" stroke-width="4" fill="none"/>
+<text x="132" y="66" font-size="34" font-weight="800" fill="#fff">Twilio Message Service SID</text>
+<text x="132" y="104" font-size="20" fill="#EADCFF">Temsho ke OTP ke liye — 5 minute ka poora raasta</text>
+<rect x="132" y="118" width="196" height="22" rx="11" fill="#ffffff" opacity="0.22"/>
+<text x="146" y="134" font-size="13" font-weight="700" fill="#fff">MG se shuru hoti hai</text>
+
+<!-- ============ STEP 1 ============ -->
+<g filter="url(#sh)">
+<rect x="40" y="190" width="920" height="290" rx="18" fill="#fff"/></g>
+<circle cx="86" cy="238" r="24" fill="#2B2D6E"/><text x="86" y="247" font-size="24" font-weight="800" fill="#fff" text-anchor="middle">1</text>
+<text x="126" y="234" font-size="25" font-weight="800" fill="#1A1C33">Twilio Console kholiye</text>
+<text x="126" y="264" font-size="17" fill="#5B6079">console.twilio.com par login kijiye</text>
+
+<!-- mock console -->
+<rect x="126" y="286" width="560" height="168" rx="12" fill="#0B0F1C"/>
+<rect x="126" y="286" width="560" height="34" rx="12" fill="#151B2E"/>
+<circle cx="146" cy="303" r="5" fill="#E5484D"/><circle cx="164" cy="303" r="5" fill="#F5A623"/><circle cx="182" cy="303" r="5" fill="#30A46C"/>
+<text x="206" y="308" font-size="12" fill="#7C89A8">Account Info</text>
+<text x="150" y="352" font-size="13" fill="#8A96B4">Account SID</text>
+<rect x="150" y="362" width="330" height="26" rx="6" fill="#1B2340"/>
+<text x="162" y="380" font-size="14" font-weight="700" fill="#F5A623" font-family="monospace">ACxxxxxxxxxxxxxxxxxxxx</text>
+<text x="150" y="412" font-size="13" fill="#8A96B4">Auth Token</text>
+<rect x="150" y="422" width="330" height="26" rx="6" fill="#1B2340"/>
+<text x="162" y="440" font-size="14" font-weight="700" fill="#8A96B4" font-family="monospace">••••••••••••  </text>
+<rect x="492" y="422" width="60" height="26" rx="6" fill="#2B6CE5"/><text x="522" y="440" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">Show</text>
+
+<rect x="716" y="300" width="216" height="154" rx="12" fill="#E9FBF0" stroke="#30A46C" stroke-width="2"/>
+<text x="736" y="330" font-size="15" font-weight="800" fill="#15774A">Ye 2 mil gayin ✓</text>
+<text x="736" y="358" font-size="13.5" fill="#2E6B52">1. Account SID</text>
+<text x="736" y="382" font-size="13.5" fill="#2E6B52">2. Auth Token</text>
+<line x1="736" y1="398" x2="912" y2="398" stroke="#BCE6CE" stroke-width="1.5"/>
+<text x="736" y="422" font-size="13" fill="#5B6079">Teesri (MG...) ke liye</text>
+<text x="736" y="442" font-size="13" fill="#5B6079">aage badhiye</text>
+
+<!-- ============ STEP 2 ============ -->
+<g filter="url(#sh)"><rect x="40" y="512" width="920" height="310" rx="18" fill="#fff"/></g>
+<circle cx="86" cy="560" r="24" fill="#2B2D6E"/><text x="86" y="569" font-size="24" font-weight="800" fill="#fff" text-anchor="middle">2</text>
+<text x="126" y="556" font-size="25" font-weight="800" fill="#1A1C33">Ek phone number khareediye</text>
+<text x="126" y="586" font-size="17" fill="#5B6079">Menu &#9776; &#8594; Phone Numbers &#8594; Manage &#8594; Buy a number</text>
+
+<rect x="126" y="608" width="560" height="186" rx="12" fill="#0B0F1C"/>
+<rect x="126" y="608" width="560" height="34" rx="12" fill="#151B2E"/>
+<text x="150" y="630" font-size="12" fill="#7C89A8">Buy a Number</text>
+<text x="150" y="672" font-size="13" fill="#8A96B4">Country</text>
+<rect x="150" y="682" width="240" height="30" rx="6" fill="#1B2340" stroke="#F5A623" stroke-width="2"/>
+<text x="164" y="702" font-size="14" font-weight="700" fill="#fff">United States  ▾</text>
+<text x="150" y="740" font-size="13" fill="#8A96B4">Capabilities</text>
+<rect x="150" y="752" width="18" height="18" rx="4" fill="#30A46C"/><path d="M154 761 l4 4 l7-8" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+<text x="178" y="766" font-size="14" font-weight="700" fill="#fff">SMS</text>
+<rect x="240" y="752" width="18" height="18" rx="4" fill="#1B2340" stroke="#3A456B"/>
+<text x="268" y="766" font-size="14" fill="#6E7A99">Voice</text>
+<rect x="560" y="748" width="106" height="30" rx="6" fill="#2B6CE5"/><text x="613" y="768" font-size="13" font-weight="800" fill="#fff" text-anchor="middle">Buy $1.00</text>
+
+<rect x="716" y="620" width="216" height="174" rx="12" fill="#FFF4E0" stroke="#F5A623" stroke-width="2"/>
+<text x="736" y="650" font-size="15" font-weight="800" fill="#9A6208">Zaroori baat</text>
+<text x="736" y="678" font-size="13" fill="#7A5410">India ka number</text>
+<text x="736" y="698" font-size="13" fill="#7A5410">MAT lijiye — uske</text>
+<text x="736" y="718" font-size="13" fill="#7A5410">liye DLT chahiye,</text>
+<text x="736" y="738" font-size="13" fill="#7A5410">mahine lag jate hain.</text>
+<text x="736" y="768" font-size="13" font-weight="700" fill="#15774A">US number se India</text>
+<text x="736" y="786" font-size="13" font-weight="700" fill="#15774A">par SMS aata hai ✓</text>
+
+<!-- ============ STEP 3 ============ -->
+<g filter="url(#sh)"><rect x="40" y="854" width="920" height="300" rx="18" fill="#fff"/></g>
+<circle cx="86" cy="902" r="24" fill="#E5484D"/><text x="86" y="911" font-size="24" font-weight="800" fill="#fff" text-anchor="middle">3</text>
+<text x="126" y="898" font-size="25" font-weight="800" fill="#1A1C33">Messaging Service banaiye</text>
+<rect x="500" y="878" width="150" height="26" rx="13" fill="#FCE9EA"/><text x="575" y="896" font-size="13" font-weight="800" fill="#C1272D" text-anchor="middle">SID YAHIN BANEGA</text>
+<text x="126" y="928" font-size="17" fill="#5B6079">Menu &#9776; &#8594; Messaging &#8594; Services &#8594; Create Messaging Service</text>
+
+<rect x="126" y="950" width="560" height="180" rx="12" fill="#0B0F1C"/>
+<rect x="126" y="950" width="560" height="34" rx="12" fill="#151B2E"/>
+<text x="150" y="972" font-size="12" fill="#7C89A8">Create Messaging Service</text>
+<text x="150" y="1012" font-size="13" fill="#8A96B4">Messaging Service friendly name</text>
+<rect x="150" y="1022" width="360" height="30" rx="6" fill="#1B2340" stroke="#2B6CE5" stroke-width="2"/>
+<text x="164" y="1042" font-size="14" font-weight="700" fill="#fff">Temsho OTP</text>
+<text x="150" y="1080" font-size="13" fill="#8A96B4">Select what you want to use Messaging for</text>
+<rect x="150" y="1090" width="360" height="30" rx="6" fill="#1B2340" stroke="#3A456B"/>
+<text x="164" y="1110" font-size="14" font-weight="700" fill="#fff">Verify users  ▾</text>
+<rect x="560" y="1090" width="106" height="30" rx="6" fill="#2B6CE5"/><text x="613" y="1110" font-size="13" font-weight="800" fill="#fff" text-anchor="middle">Create</text>
+
+<rect x="716" y="962" width="216" height="168" rx="12" fill="#F0EEFF" stroke="#7A5AF8" stroke-width="2"/>
+<text x="736" y="992" font-size="15" font-weight="800" fill="#4B2F9E">Seedha link</text>
+<text x="736" y="1018" font-size="11.5" fill="#5B4A9E" font-family="monospace">console.twilio.com</text>
+<text x="736" y="1036" font-size="11.5" fill="#5B4A9E" font-family="monospace">/us1/service/sms</text>
+<text x="736" y="1054" font-size="11.5" fill="#5B4A9E" font-family="monospace">/services</text>
+<line x1="736" y1="1070" x2="912" y2="1070" stroke="#D5CCFF" stroke-width="1.5"/>
+<text x="736" y="1094" font-size="12.5" fill="#5B6079">Ye page baad me bhi</text>
+<text x="736" y="1112" font-size="12.5" fill="#5B6079">yahin se khulega</text>
+
+<!-- ============ STEP 4 ============ -->
+<g filter="url(#sh)"><rect x="40" y="1186" width="920" height="266" rx="18" fill="#fff"/></g>
+<circle cx="86" cy="1234" r="24" fill="#2B2D6E"/><text x="86" y="1243" font-size="24" font-weight="800" fill="#fff" text-anchor="middle">4</text>
+<text x="126" y="1230" font-size="25" font-weight="800" fill="#1A1C33">Wizard ke 4 step nipta dijiye</text>
+<text x="126" y="1260" font-size="17" fill="#5B6079">Number jodna hai, baaki sab skip</text>
+
+<g>
+<rect x="126" y="1284" width="196" height="140" rx="12" fill="#EEF1FF" stroke="#C7CFF5"/>
+<circle cx="152" cy="1310" r="14" fill="#2B2D6E"/><text x="152" y="1316" font-size="14" font-weight="800" fill="#fff" text-anchor="middle">1</text>
+<text x="176" y="1316" font-size="15" font-weight="800" fill="#2B2D6E">Sender Pool</text>
+<text x="146" y="1346" font-size="13" fill="#3C4363">Add Senders dabaiye</text>
+<text x="146" y="1368" font-size="13" fill="#3C4363">Type = Phone Number</text>
+<text x="146" y="1390" font-size="13" fill="#3C4363">Apna number ✔ tick</text>
+<text x="146" y="1412" font-size="13" font-weight="700" fill="#15774A">Add Phone Numbers</text>
+
+<rect x="338" y="1284" width="196" height="140" rx="12" fill="#F4F5FA" stroke="#DDE1EC"/>
+<circle cx="364" cy="1310" r="14" fill="#8A90A6"/><text x="364" y="1316" font-size="14" font-weight="800" fill="#fff" text-anchor="middle">2</text>
+<text x="388" y="1316" font-size="15" font-weight="800" fill="#5B6079">Integration</text>
+<text x="358" y="1352" font-size="13" fill="#6E7690">Kuch mat chhuiye</text>
+<text x="358" y="1382" font-size="19" font-weight="800" fill="#2B6CE5">Next &#8594;</text>
+
+<rect x="550" y="1284" width="196" height="140" rx="12" fill="#F4F5FA" stroke="#DDE1EC"/>
+<circle cx="576" cy="1310" r="14" fill="#8A90A6"/><text x="576" y="1316" font-size="14" font-weight="800" fill="#fff" text-anchor="middle">3</text>
+<text x="600" y="1316" font-size="15" font-weight="800" fill="#5B6079">Compliance</text>
+<text x="570" y="1352" font-size="13" fill="#6E7690">Zaroorat nahi</text>
+<text x="570" y="1382" font-size="19" font-weight="800" fill="#2B6CE5">Skip</text>
+
+<rect x="762" y="1284" width="170" height="140" rx="12" fill="#E9FBF0" stroke="#30A46C" stroke-width="2"/>
+<circle cx="788" cy="1310" r="14" fill="#30A46C"/><text x="788" y="1316" font-size="14" font-weight="800" fill="#fff" text-anchor="middle">4</text>
+<text x="812" y="1316" font-size="15" font-weight="800" fill="#15774A">Complete</text>
+<text x="782" y="1352" font-size="13" fill="#2E6B52">View my new</text>
+<text x="782" y="1372" font-size="13" fill="#2E6B52">Messaging Service</text>
+<text x="782" y="1402" font-size="13" font-weight="800" fill="#15774A">Ho gaya ✓</text>
+</g>
+
+<!-- ============ STEP 5 — THE SID ============ -->
+<g filter="url(#sh)"><rect x="40" y="1484" width="920" height="272" rx="18" fill="#fff"/></g>
+<rect x="40" y="1484" width="920" height="6" rx="3" fill="url(#gold)"/>
+<circle cx="86" cy="1536" r="24" fill="#F5A623"/><text x="86" y="1545" font-size="24" font-weight="800" fill="#2B2D6E" text-anchor="middle">5</text>
+<text x="126" y="1532" font-size="25" font-weight="800" fill="#1A1C33">Yahan hai aapki SID</text>
+<text x="126" y="1562" font-size="17" fill="#5B6079">Service khulte hi sabse upar dikhegi — copy ka icon dabaiye</text>
+
+<rect x="126" y="1586" width="806" height="146" rx="12" fill="#0B0F1C"/>
+<rect x="126" y="1586" width="806" height="36" rx="12" fill="#151B2E"/>
+<text x="150" y="1609" font-size="13" font-weight="700" fill="#fff">Temsho OTP</text>
+<rect x="256" y="1596" width="58" height="18" rx="9" fill="#1D4A33"/><text x="285" y="1609" font-size="10.5" font-weight="700" fill="#4ADE80" text-anchor="middle">Active</text>
+<text x="150" y="1656" font-size="14" fill="#8A96B4">Messaging Service SID</text>
+<rect x="150" y="1668" width="600" height="42" rx="8" fill="#1B2340" stroke="#F5A623" stroke-width="2.5"/>
+<text x="168" y="1695" font-size="19" font-weight="800" fill="#F5A623" font-family="monospace">MG1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p</text>
+<rect x="766" y="1668" width="46" height="42" rx="8" fill="#2B6CE5"/>
+<rect x="780" y="1681" width="12" height="14" rx="2" fill="none" stroke="#fff" stroke-width="2"/>
+<rect x="785" y="1686" width="12" height="14" rx="2" fill="#2B6CE5" stroke="#fff" stroke-width="2"/>
+<line x1="880" y1="1660" x2="812" y2="1686" stroke="#E5484D" stroke-width="3" marker-end="url(#arw)"/>
+<text x="836" y="1650" font-size="14" font-weight="800" fill="#E5484D">COPY</text>
+
+<!-- ============ STEP 6 — PASTE IN SUPABASE ============ -->
+<g filter="url(#sh)"><rect x="40" y="1788" width="920" height="330" rx="18" fill="#fff"/></g>
+<circle cx="86" cy="1836" r="24" fill="#30A46C"/><text x="86" y="1845" font-size="24" font-weight="800" fill="#fff" text-anchor="middle">6</text>
+<text x="126" y="1832" font-size="25" font-weight="800" fill="#1A1C33">Supabase me teeno paste kijiye</text>
+<text x="126" y="1862" font-size="17" fill="#5B6079">Authentication &#8594; Sign In / Providers &#8594; Phone &#8594; ON</text>
+
+<rect x="126" y="1886" width="560" height="206" rx="12" fill="#0F1117"/>
+<rect x="126" y="1886" width="560" height="36" rx="12" fill="#1A1D26"/>
+<text x="150" y="1909" font-size="13" font-weight="700" fill="#fff">Phone</text>
+<rect x="612" y="1896" width="48" height="24" rx="12" fill="#30A46C"/><circle cx="648" cy="1908" r="9" fill="#fff"/>
+<text x="150" y="1946" font-size="12.5" fill="#8A96B4">SMS provider</text>
+<rect x="150" y="1954" width="150" height="28" rx="6" fill="#1E222E" stroke="#3A4152"/>
+<text x="164" y="1973" font-size="13" font-weight="700" fill="#fff">Twilio  ▾</text>
+<text x="150" y="2004" font-size="12" fill="#8A96B4">Twilio account SID</text>
+<rect x="150" y="2010" width="490" height="24" rx="5" fill="#1E222E"/><text x="162" y="2027" font-size="12.5" fill="#F5A623" font-family="monospace">ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</text>
+<text x="150" y="2052" font-size="12" fill="#8A96B4">Twilio auth token</text>
+<rect x="150" y="2058" width="490" height="24" rx="5" fill="#1E222E"/><text x="162" y="2075" font-size="12.5" fill="#8A96B4" font-family="monospace">••••••••••••••••••••••••</text>
+
+<rect x="716" y="1898" width="216" height="194" rx="12" fill="#E9FBF0" stroke="#30A46C" stroke-width="2"/>
+<text x="736" y="1928" font-size="15" font-weight="800" fill="#15774A">Teen cheezein</text>
+<circle cx="744" cy="1954" r="6" fill="#30A46C"/><text x="760" y="1959" font-size="13" fill="#2E6B52">Account SID</text>
+<text x="760" y="1977" font-size="11.5" fill="#6E8B7C" font-family="monospace">AC... (34)</text>
+<circle cx="744" cy="2002" r="6" fill="#30A46C"/><text x="760" y="2007" font-size="13" fill="#2E6B52">Auth Token</text>
+<text x="760" y="2025" font-size="11.5" fill="#6E8B7C">Show dabakar</text>
+<circle cx="744" cy="2050" r="6" fill="#F5A623"/><text x="760" y="2055" font-size="13" font-weight="800" fill="#9A6208">Message Svc SID</text>
+<text x="760" y="2073" font-size="11.5" fill="#9A6208" font-family="monospace">MG... (34)</text>
+
+<!-- ============ WARNING BOX ============ -->
+<g filter="url(#sh)"><rect x="40" y="2150" width="920" height="256" rx="18" fill="#FFF8EC" stroke="#F5A623" stroke-width="2"/></g>
+<circle cx="86" cy="2198" r="24" fill="#F5A623"/><text x="86" y="2208" font-size="26" font-weight="800" fill="#fff" text-anchor="middle">!</text>
+<text x="126" y="2196" font-size="24" font-weight="800" fill="#9A6208">Trial account me 2 pabandiyan</text>
+
+<rect x="126" y="2224" width="392" height="158" rx="12" fill="#fff" stroke="#F0DCB8"/>
+<text x="148" y="2254" font-size="16" font-weight="800" fill="#1A1C33">1. Verified Caller IDs</text>
+<text x="148" y="2282" font-size="13.5" fill="#5B6079">Trial me Twilio sirf un numbers par</text>
+<text x="148" y="2302" font-size="13.5" fill="#5B6079">SMS bhejta hai jo verify kiye hon.</text>
+<rect x="148" y="2314" width="348" height="26" rx="6" fill="#F4F5FA"/>
+<text x="158" y="2332" font-size="12" fill="#3C4363" font-family="monospace">Phone Numbers &#8594; Verified Caller IDs</text>
+<text x="148" y="2364" font-size="13.5" font-weight="700" fill="#15774A">Sab logon ke liye &#8594; account upgrade (~$20)</text>
+
+<rect x="540" y="2224" width="392" height="158" rx="12" fill="#fff" stroke="#F0DCB8"/>
+<text x="562" y="2254" font-size="16" font-weight="800" fill="#1A1C33">2. +91 par block ho sakta hai</text>
+<text x="562" y="2282" font-size="13.5" fill="#5B6079">Kuch naye Twilio accounts India par</text>
+<text x="562" y="2302" font-size="13.5" fill="#5B6079">SMS nahi bhejne dete.</text>
+<rect x="562" y="2314" width="348" height="26" rx="6" fill="#EEF1FF"/>
+<text x="572" y="2332" font-size="12" font-weight="700" fill="#2B2D6E">Aisa ho to MSG91 chuniye — India ka apna</text>
+<text x="562" y="2364" font-size="13.5" fill="#5B6079">Supabase usko bhi support karta hai</text>
+
+<!-- ============ FOOTER ============ -->
+<g filter="url(#sh)"><rect x="40" y="2438" width="920" height="256" rx="18" fill="#1B1E3B"/></g>
+<text x="80" y="2492" font-size="24" font-weight="800" fill="#fff">Ye ho jaye to app me kuch nahi badalna</text>
+<text x="80" y="2524" font-size="16" fill="#A9B0D4">Temsho ka code pehle se taiyar hai — OTP_PROVIDER = 'supabase' set ho chuka hai</text>
+
+<rect x="80" y="2548" width="270" height="112" rx="12" fill="#252A50"/>
+<circle cx="112" cy="2580" r="14" fill="#30A46C"/><path d="M106 2580 l4 4 l8-9" stroke="#fff" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+<text x="136" y="2586" font-size="15" font-weight="800" fill="#fff">Database</text>
+<text x="100" y="2614" font-size="13" fill="#A9B0D4">8 tables + storage</text>
+<text x="100" y="2636" font-size="13" font-weight="700" fill="#4ADE80">Chalu hai</text>
+
+<rect x="366" y="2548" width="270" height="112" rx="12" fill="#252A50"/>
+<circle cx="398" cy="2580" r="14" fill="#30A46C"/><path d="M392 2580 l4 4 l8-9" stroke="#fff" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+<text x="422" y="2586" font-size="15" font-weight="800" fill="#fff">Cloud sync</text>
+<text x="386" y="2614" font-size="13" fill="#A9B0D4">Saman sabko dikhega</text>
+<text x="386" y="2636" font-size="13" font-weight="700" fill="#4ADE80">Chalu hai</text>
+
+<rect x="652" y="2548" width="270" height="112" rx="12" fill="#3A2F1A" stroke="#F5A623" stroke-width="2"/>
+<circle cx="684" cy="2580" r="14" fill="#F5A623"/><text x="684" y="2588" font-size="17" font-weight="800" fill="#2B2D6E" text-anchor="middle">!</text>
+<text x="708" y="2586" font-size="15" font-weight="800" fill="#fff">SMS OTP</text>
+<text x="672" y="2614" font-size="13" fill="#E3C68A">Twilio jodna baaki</text>
+<text x="672" y="2636" font-size="13" font-weight="700" fill="#F5A623">Filhaal demo mode</text>
+
+<text x="500" y="2730" font-size="14" fill="#8A90A6" text-anchor="middle">Temsho — No bot, only humans   •   Kahin atkein to us screen ka screenshot bhej dijiye</text>
+</svg>

@@ -1,0 +1,487 @@
+import React, { useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
+import { C, R, shadow, money } from '../theme';
+import { MaterialCommunityIcons as MC } from '@expo/vector-icons';
+import { Btn, Badge, TemshoAssuredBadge, HumanTag, Stars, Thumb, Empty, ProductCard, Avatar, RatingsBreakdown, BankOffers, SpecTable } from '../components/UI';
+import { SELLERS } from '../data/catalog';
+import { useApp } from '../store';
+import { checkPincodeServiceability } from '../lib/shiprocket';
+import * as cloud from '../lib/cloud';
+
+const REVIEWS_INITIAL = [
+  { n: 'Sunita Kushwaha', c: 'Kanpur, UP', r: 5, t: 'Kapda aur finishing behad shandar hai! Photo se bhi sundar mila. Delivery 2 din me aa gayi.', v: true, date: '2 din pehle' },
+  { n: 'Mohd. Imran', c: 'Hyderabad, TS', r: 5, t: 'Paisa vasool! Original handloom product hai. Packing aur quality 10/10.', v: true, date: '1 hafta pehle' },
+  { n: 'Deepak Rathore', c: 'Indore, MP', r: 4, t: 'Seller ne khud call karke size aur delivery confirm ki. Bahut accha insaani support hai.', v: true, date: '2 hafte pehle' },
+];
+
+const QA_LIST = [
+  { q: 'Kya isme Cash on Delivery (COD) uplabdh hai?', a: 'Haan ji, poore Bharat me sabhi pincode par COD uplabdh hai.' },
+  { q: 'Saman pasand na aane par return kaise hoga?', a: 'Delivery ke 7 din ke andar 1-click me return request kar sakte hain. Free pickup hoga.' },
+  { q: 'Kya ye 100% original product hai?', a: 'Ji haan, Temsho par koi bot ya fake shop nahi hai. Har product verified seller dwara direct bheja jata hai.' },
+];
+
+export function Product({ go, params }) {
+  const { byId, dispatch, state, cartCount } = useApp();
+  const p = byId(params.id);
+  const [size, setSize] = useState('M');
+  const [pinInput, setPinInput] = useState('226010');
+  const [pinChecked, setPinChecked] = useState(true);
+  const [reviews, setReviews] = useState(REVIEWS_INITIAL);
+  const [writingReview, setWritingReview] = useState(false);
+  const [myRating, setMyRating] = useState(5);
+  const [myReviewText, setMyReviewText] = useState('');
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
+
+  if (!p) return <Empty icon="package-variant-closed-remove" title="Product nahi mila" sub="Shayad hata diya gaya hai." />;
+
+  const s = SELLERS[p.seller] || {
+    name: p.sellerName || 'Temsho Verified Seller',
+    city: p.sellerCity || 'India',
+    rating: 4.8,
+    hue: C.brand,
+    orders: 14500,
+    since: 2021,
+  };
+
+  const off = Math.round(((p.mrp - p.price) / p.mrp) * 100);
+  const wished = state.wishlist.includes(p.id);
+  const related = state.products.filter((x) => x.cat === p.cat && x.id !== p.id).slice(0, 6);
+  const pinResult = checkPincodeServiceability(pinInput);
+
+  const submitReview = () => {
+    if (!myReviewText.trim()) return;
+    const newRev = {
+      n: state.user?.name || 'Verified Buyer',
+      c: state.user?.city || 'India',
+      r: myRating,
+      t: myReviewText.trim(),
+      v: true,
+      date: 'Abhi',
+    };
+    setReviews([newRev, ...reviews]);
+    if (cloud.cloudOn()) {
+      cloud.pushReview(p.id, state.user?.cloudId || null, myRating, myReviewText.trim()).catch(() => {});
+    }
+    setMyReviewText('');
+    setWritingReview(false);
+    setReviewSubmitted(true);
+    setTimeout(() => setReviewSubmitted(false), 2500);
+  };
+
+  return (
+    <View style={{ flex: 1, backgroundColor: C.bg }}>
+      {/* Floating Top Nav */}
+      <View style={sx.topBar}>
+        <TouchableOpacity onPress={() => go(-1)} style={sx.round}><MC name="chevron-left" size={24} color={C.ink} /></TouchableOpacity>
+        <View style={{ flex: 1 }} />
+        <TouchableOpacity onPress={() => dispatch({ type: 'WISH', id: p.id })} style={sx.round}>
+          <MC name={wished ? 'heart' : 'heart-outline'} size={19} color={wished ? C.red : C.ink} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => go('cart')} style={[sx.round, { marginLeft: 8 }]}>
+          <MC name="cart-outline" size={19} color={C.ink} />
+          {cartCount > 0 && <View style={sx.cnt}><Text style={{ color: '#fff', fontSize: 9, fontWeight: '900' }}>{cartCount}</Text></View>}
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView contentContainerStyle={{ paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
+        {/* Main Product Image */}
+        <View style={{ height: 340, backgroundColor: '#F0F1F5' }}>
+          <Thumb img={p.img} title={p.title} tint={p.tint} size={340} radius={0} />
+        </View>
+
+        <View style={sx.sheet}>
+          {/* Tags & Assured */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+              {p.tags?.map((t) => <Badge key={t} text={t} tone="accent" small />)}
+            </View>
+            <TemshoAssuredBadge />
+          </View>
+
+          {/* Title */}
+          <Text style={{ fontSize: 18, fontWeight: '800', color: C.ink, lineHeight: 25 }}>{p.title}</Text>
+
+          {/* Ratings Summary */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
+            <Stars value={p.rating} count={p.ratingCount + ' ratings'} size={11} />
+            <Text style={{ color: C.ink3, fontSize: 11, marginLeft: 8 }}>· {reviews.length + 337} Reviews</Text>
+          </View>
+
+          {/* Pricing & Discount */}
+          <View style={{ flexDirection: 'row', alignItems: 'baseline', marginTop: 12 }}>
+            <Text style={{ fontSize: 28, fontWeight: '900', color: C.ink }}>{money(p.price)}</Text>
+            <Text style={{ color: C.ink3, fontSize: 14, textDecorationLine: 'line-through', marginLeft: 10 }}>{money(p.mrp)}</Text>
+            <View style={{ marginLeft: 10 }}><Badge text={`${off}% OFF`} tone="green" /></View>
+          </View>
+          <Text style={{ color: C.green, fontSize: 13, fontWeight: '800', marginTop: 3 }}>
+            Aap is deal par {money(p.mrp - p.price)} bacha rahe hain!
+          </Text>
+
+          {/* Flipkart Bank & UPI Offers */}
+          <BankOffers />
+
+          {/* Size Selector */}
+          {(p.cat === 'fashion' || p.cat === 'kids') && (
+            <View style={{ marginTop: 18 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text style={sx.h2}>Size Chunein</Text>
+                <Text style={{ color: C.brand, fontSize: 12, fontWeight: '700' }}>Size Chart</Text>
+              </View>
+              <View style={{ flexDirection: 'row', marginTop: 8, gap: 8 }}>
+                {['S', 'M', 'L', 'XL', 'XXL'].map((z) => (
+                  <TouchableOpacity key={z} onPress={() => setSize(z)} style={[sx.size, size === z && sx.sizeOn]}>
+                    <Text style={{ color: size === z ? C.brand : C.ink, fontWeight: '800', fontSize: 13 }}>{z}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {/* Pincode & Delivery Checker */}
+          <View style={sx.pinBox}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={sx.h2}>Delivery Options</Text>
+              <MC name="truck-fast-outline" size={18} color={C.brand} />
+            </View>
+            <View style={sx.pinRow}>
+              <TextInput
+                value={pinInput}
+                onChangeText={setPinInput}
+                placeholder="6 Digit PIN code"
+                keyboardType="number-pad"
+                maxLength={6}
+                style={sx.pinInput}
+              />
+              <TouchableOpacity onPress={() => setPinChecked(true)} style={sx.pinBtn}>
+                <Text style={{ color: C.brand, fontWeight: '800', fontSize: 12.5 }}>Check</Text>
+              </TouchableOpacity>
+            </View>
+
+            {pinChecked && pinResult.serviceable && (
+              <View style={{ marginTop: 10 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <MC name="check-circle" size={15} color={C.green} />
+                  <Text style={{ color: C.ink, fontSize: 12.5, fontWeight: '800', marginLeft: 6 }}>
+                    Delivery {pinResult.etaText} ({pinResult.city}, {pinResult.state})
+                  </Text>
+                </View>
+                <Text style={{ color: C.green, fontSize: 11.5, fontWeight: '700', marginTop: 3, marginLeft: 21 }}>
+                  FREE Delivery on orders above ₹499 · Cash on Delivery available
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {/* Highlights */}
+          <Text style={[sx.h2, { marginTop: 22 }]}>Product Highlights</Text>
+          <View style={{ marginTop: 8 }}>
+            {(p.highlights || [
+              '100% Original & Quality Checked',
+              '7 Days Replacement / Return Policy',
+              'Cash on Delivery Available',
+              'Direct from Verified Indian Seller',
+            ]).map((h, i) => (
+              <View key={i} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                <View style={sx.bullet} />
+                <Text style={{ color: C.ink2, fontSize: 12.5, marginLeft: 8 }}>{h}</Text>
+              </View>
+            ))}
+          </View>
+
+          {/* Description */}
+          <Text style={[sx.h2, { marginTop: 18 }]}>Product Description</Text>
+          <Text style={{ color: C.ink2, fontSize: 13, lineHeight: 20, marginTop: 6 }}>{p.desc}</Text>
+
+          {/* Specifications Table */}
+          <Text style={[sx.h2, { marginTop: 20 }]}>Specifications</Text>
+          <SpecTable specs={p.specs} />
+
+          {/* Seller Profile Card */}
+          <View style={[sx.sellerBox, shadow]}>
+            <Avatar name={s.name} hue={s.hue || C.brand} size={48} />
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={{ fontWeight: '900', color: C.ink, fontSize: 14.5 }}>{s.name}</Text>
+              <Text style={{ color: C.ink3, fontSize: 11.5, marginTop: 1 }}>{s.city} · {s.since} se · {s.rating} ★</Text>
+              <View style={{ marginTop: 6, flexDirection: 'row', gap: 6 }}>
+                <HumanTag small />
+                <Badge text="OTP VERIFIED" tone="brand" small />
+              </View>
+            </View>
+          </View>
+
+          {/* Ratings & Customer Reviews Breakdown */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 24 }}>
+            <Text style={sx.h2}>Ratings & Reviews</Text>
+            <TouchableOpacity onPress={() => setWritingReview(!writingReview)} style={sx.writeRevBtn}>
+              <MC name="pencil-outline" size={14} color={C.brand} />
+              <Text style={{ color: C.brand, fontWeight: '800', fontSize: 12, marginLeft: 4 }}>Review Likhein</Text>
+            </TouchableOpacity>
+          </View>
+
+          {reviewSubmitted && (
+            <View style={sx.revThanks}>
+              <MC name="check-circle" size={16} color={C.green} />
+              <Text style={{ color: '#0F7A4A', fontWeight: '800', fontSize: 12, marginLeft: 6 }}>
+                Dhanyawad! Aapka review safalta-purvak jud gaya.
+              </Text>
+            </View>
+          )}
+
+          {writingReview && (
+            <View style={[sx.writeCard, shadow]}>
+              <Text style={{ fontWeight: '800', color: C.ink, fontSize: 13.5, marginBottom: 8 }}>Aapka Rating</Text>
+              <View style={{ flexDirection: 'row', gap: 10, marginBottom: 12 }}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <TouchableOpacity key={star} onPress={() => setMyRating(star)}>
+                    <MC name="star" size={26} color={star <= myRating ? C.accent : C.line} />
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <TextInput
+                placeholder="Product kaisa laga? Apni raye likhein..."
+                placeholderTextColor={C.ink3}
+                multiline
+                value={myReviewText}
+                onChangeText={setMyReviewText}
+                style={sx.revInput}
+              />
+              <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+                <Btn title="Cancel" tone="ghost" style={{ flex: 1 }} onPress={() => setWritingReview(false)} />
+                <Btn title="Submit Review" tone="green" style={{ flex: 1 }} disabled={!myReviewText.trim()} onPress={submitReview} />
+              </View>
+            </View>
+          )}
+
+          <RatingsBreakdown rating={p.rating} totalCount={p.ratingCount} />
+
+          {/* Customer Reviews List */}
+          {reviews.map((r, i) => (
+            <View key={i} style={sx.review}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Avatar name={r.n} hue={C.brand} size={28} />
+                <View style={{ marginLeft: 8 }}>
+                  <Text style={{ fontWeight: '800', color: C.ink, fontSize: 13 }}>{r.n}</Text>
+                  <Text style={{ color: C.ink3, fontSize: 10.5 }}>{r.c} · {r.date}</Text>
+                </View>
+                <View style={{ flex: 1 }} />
+                <View style={{ flexDirection: 'row' }}>
+                  {[...Array(5)].map((_, k) => (
+                    <MC key={k} name="star" size={12} color={k < r.r ? C.accent : C.line} />
+                  ))}
+                </View>
+              </View>
+              <Text style={{ color: C.ink2, fontSize: 12.5, lineHeight: 18, marginTop: 6 }}>{r.t}</Text>
+              {r.v && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
+                  <MC name="check-decagram" size={13} color={C.green} />
+                  <Text style={{ color: C.green, fontSize: 11, fontWeight: '800', marginLeft: 4 }}>Verified Human Buyer</Text>
+                </View>
+              )}
+            </View>
+          ))}
+
+          {/* Questions & Answers */}
+          <Text style={[sx.h2, { marginTop: 22 }]}>Questions & Answers</Text>
+          {QA_LIST.map((qa, i) => (
+            <View key={i} style={sx.qaBox}>
+              <Text style={{ fontWeight: '800', color: C.ink, fontSize: 12.5 }}>Q: {qa.q}</Text>
+              <Text style={{ color: C.ink2, fontSize: 12, marginTop: 4, lineHeight: 17 }}>A: {qa.a}</Text>
+            </View>
+          ))}
+
+          {/* Similar Products */}
+          {related.length > 0 && (
+            <>
+              <Text style={[sx.h2, { marginTop: 22, marginBottom: 10 }]}>Similar Products You May Like</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {related.map((x) => (
+                  <View key={x.id} style={{ marginRight: 12 }}>
+                    <ProductCard p={x} width={150} onPress={() => go('product', { id: x.id })} />
+                  </View>
+                ))}
+              </ScrollView>
+            </>
+          )}
+        </View>
+      </ScrollView>
+
+      {/* Flipkart Sticky Bottom Bar */}
+      <View style={sx.bottomBar}>
+        <Btn
+          title="Add to Cart"
+          icon="cart-plus"
+          tone="ghost"
+          style={{ flex: 1, marginRight: 10 }}
+          onPress={() => { dispatch({ type: 'ADD_CART', id: p.id }); go('cart'); }}
+        />
+        <Btn
+          title="Buy Now"
+          icon="lightning-bolt"
+          tone="accent"
+          style={{ flex: 1.1 }}
+          onPress={() => { dispatch({ type: 'ADD_CART', id: p.id }); go('checkout'); }}
+        />
+      </View>
+    </View>
+  );
+}
+
+export function Cart({ go }) {
+  const { cartLines, dispatch, subtotal, saved, delivery, total, state, couponOff, coupon } = useApp();
+  if (cartLines.length === 0)
+    return (
+      <View style={{ flex: 1, backgroundColor: C.bg }}>
+        <Header title="My Cart" go={go} />
+        <Empty icon="cart-outline" title="Aapka cart khali hai" sub="Behtareen products dhoondhkar cart me add karein.">
+          <Btn title="Shopping Shuru Karein" onPress={() => go('home')} />
+        </Empty>
+      </View>
+    );
+
+  return (
+    <View style={{ flex: 1, backgroundColor: C.bg }}>
+      <Header title={`My Cart (${cartLines.length} items)`} go={go} />
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 130 }}>
+        {/* Safe & Secure banner */}
+        <View style={sx.safeBanner}>
+          <MC name="shield-check" size={17} color={C.green} />
+          <Text style={{ flex: 1, marginLeft: 8, color: '#0F7A4A', fontSize: 11.5, fontWeight: '700' }}>
+            100% Safe & Secure Payments · Seedha Verified Seller Ko
+          </Text>
+        </View>
+
+        {cartLines.map((l) => (
+          <View key={l.id} style={[sx.cartRow, shadow]}>
+            <View style={{ width: 80 }}>
+              <Thumb img={l.product.img} title={l.product.title} tint={l.product.tint} size={80} />
+            </View>
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text numberOfLines={2} style={{ color: C.ink, fontWeight: '700', fontSize: 13 }}>{l.product.title}</Text>
+              <Text style={{ color: C.ink3, fontSize: 11, marginTop: 2 }}>{SELLERS[l.product.seller]?.name || 'Verified Seller'}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
+                <Text style={{ fontWeight: '900', color: C.ink, fontSize: 15.5 }}>{money(l.product.price)}</Text>
+                <Text style={{ color: C.ink3, fontSize: 11, textDecorationLine: 'line-through', marginLeft: 6 }}>{money(l.product.mrp)}</Text>
+                <Text style={{ color: C.green, fontSize: 11, fontWeight: '800', marginLeft: 6 }}>
+                  {Math.round(((l.product.mrp - l.product.price) / l.product.mrp) * 100)}% off
+                </Text>
+              </View>
+
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10 }}>
+                <View style={sx.stepper}>
+                  <TouchableOpacity onPress={() => dispatch({ type: 'QTY', id: l.id, qty: l.qty - 1 })} style={sx.step}><MC name="minus" size={15} color={C.brand} /></TouchableOpacity>
+                  <Text style={{ width: 30, textAlign: 'center', fontWeight: '800', color: C.ink }}>{l.qty}</Text>
+                  <TouchableOpacity onPress={() => dispatch({ type: 'QTY', id: l.id, qty: l.qty + 1 })} style={sx.step}><MC name="plus" size={15} color={C.brand} /></TouchableOpacity>
+                </View>
+                <TouchableOpacity onPress={() => dispatch({ type: 'RM_CART', id: l.id })} style={{ marginLeft: 16 }}>
+                  <Text style={{ color: C.red, fontWeight: '800', fontSize: 12.5 }}>Remove</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        ))}
+
+        <Bill subtotal={subtotal} saved={saved} delivery={delivery} total={total} couponOff={couponOff} couponCode={coupon?.code} />
+      </ScrollView>
+
+      {/* Checkout Bottom Bar */}
+      <View style={sx.bottomBar}>
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: C.ink3, fontSize: 11, fontWeight: '600' }}>Payable Amount</Text>
+          <Text style={{ color: C.ink, fontWeight: '900', fontSize: 20 }}>{money(total)}</Text>
+        </View>
+        <Btn title="Place Order" icon="arrow-right-bold" tone="accent" style={{ flex: 1.2 }} onPress={() => go('checkout')} />
+      </View>
+    </View>
+  );
+}
+
+export function Bill({ subtotal, saved, delivery, total, couponOff = 0, couponCode }) {
+  const Row = ({ l, v, c, b }) => (
+    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 9 }}>
+      <Text style={{ color: b ? C.ink : C.ink2, fontSize: 13, fontWeight: b ? '800' : '500' }}>{l}</Text>
+      <Text style={{ color: c || (b ? C.ink : C.ink), fontSize: 13, fontWeight: b ? '900' : '700' }}>{v}</Text>
+    </View>
+  );
+  return (
+    <View style={[sx.bill, shadow]}>
+      <Text style={{ fontWeight: '900', color: C.ink, fontSize: 14.5, borderBottomWidth: 1, borderBottomColor: C.line, paddingBottom: 8 }}>Price Details</Text>
+      <Row l="Price (Items Total)" v={money(subtotal)} />
+      <Row l="Discount" v={'− ' + money(saved)} c={C.green} />
+      {couponOff > 0 && <Row l={`Coupon (${couponCode})`} v={'− ' + money(couponOff)} c={C.green} />}
+      <Row l="Delivery Charges" v={delivery === 0 ? 'FREE Delivery' : money(delivery)} c={delivery === 0 ? C.green : C.ink} />
+      <View style={{ height: 1, backgroundColor: C.line, marginTop: 10 }} />
+      <Row l="Total Amount" v={money(total)} b />
+      <View style={{ backgroundColor: C.greenSoft, borderRadius: R.sm, padding: 10, marginTop: 12 }}>
+        <Text style={{ color: '#0F7A4A', fontSize: 12, fontWeight: '800' }}>
+          🎉 You will save {money(saved + couponOff)} on this order!
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+export function Header({ title, go, right }) {
+  return (
+    <View style={sx.header}>
+      <TouchableOpacity onPress={() => go(-1)} style={{ paddingRight: 12 }}>
+        <MC name="chevron-left" size={26} color="#fff" />
+      </TouchableOpacity>
+      <Text style={{ color: '#fff', fontSize: 16.5, fontWeight: '800' }}>{title}</Text>
+      <View style={{ flex: 1 }} />
+      {right}
+    </View>
+  );
+}
+
+export const sx = StyleSheet.create({
+  topBar: {
+    position: 'absolute', top: 44, left: 16, right: 16, zIndex: 5,
+    flexDirection: 'row', alignItems: 'center',
+  },
+  round: {
+    width: 38, height: 38, borderRadius: 19, backgroundColor: '#ffffffee',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  cnt: {
+    position: 'absolute', top: -2, right: -2, minWidth: 16, height: 16, borderRadius: 8,
+    backgroundColor: C.red, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3,
+  },
+  sheet: {
+    backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl,
+    marginTop: -22, padding: 18,
+  },
+  h2: { fontSize: 14.5, fontWeight: '900', color: C.ink },
+  size: {
+    width: 48, height: 42, borderRadius: R.sm, borderWidth: 1.5, borderColor: C.line,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  sizeOn: { borderColor: C.brand, backgroundColor: C.brandSoft },
+  pinBox: { backgroundColor: C.bg, borderRadius: R.md, padding: 14, marginTop: 16 },
+  pinRow: { flexDirection: 'row', marginTop: 8, gap: 8 },
+  pinInput: {
+    flex: 1, backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, borderRadius: R.sm,
+    paddingHorizontal: 12, paddingVertical: 8, fontSize: 13, color: C.ink, outlineStyle: 'none',
+  },
+  pinBtn: { backgroundColor: C.brandSoft, paddingHorizontal: 14, justifyContent: 'center', borderRadius: R.sm },
+  bullet: { width: 5, height: 5, borderRadius: 3, backgroundColor: C.brand },
+  sellerBox: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: C.bg,
+    borderRadius: R.lg, padding: 14, marginTop: 18,
+  },
+  writeRevBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.brandSoft, paddingHorizontal: 10, paddingVertical: 6, borderRadius: R.sm },
+  revThanks: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.greenSoft, borderRadius: R.sm, padding: 10, marginTop: 10 },
+  writeCard: { backgroundColor: C.surface, borderRadius: R.md, padding: 14, marginTop: 10, borderWidth: 1, borderColor: C.line },
+  revInput: { backgroundColor: C.bg, borderRadius: R.sm, padding: 10, fontSize: 13, color: C.ink, height: 75, textAlignVertical: 'top' },
+  review: { borderTopWidth: 1, borderTopColor: C.line, paddingVertical: 12 },
+  qaBox: { backgroundColor: C.bg, borderRadius: R.sm, padding: 10, marginTop: 8 },
+  bottomBar: {
+    position: 'absolute', bottom: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center',
+    backgroundColor: C.surface, padding: 12, paddingBottom: 20, borderTopWidth: 1, borderTopColor: C.line,
+  },
+  header: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.brand, paddingTop: 46, paddingHorizontal: 16, paddingBottom: 16 },
+  cartRow: { flexDirection: 'row', backgroundColor: C.surface, borderRadius: R.lg, padding: 12, marginBottom: 12 },
+  safeBanner: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.greenSoft, borderRadius: R.sm, padding: 10, marginBottom: 12 },
+  stepper: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: C.line, borderRadius: R.sm },
+  step: { width: 30, height: 28, alignItems: 'center', justifyContent: 'center' },
+  bill: { backgroundColor: C.surface, borderRadius: R.lg, padding: 16, marginTop: 4 },
+});

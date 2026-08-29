@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#14172E"/>
+      <stop offset="100%" stop-color="#23274D"/>
+    </linearGradient>
+    <linearGradient id="headerGrad2" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2B2D6E"/>
+      <stop offset="50%" stop-color="#4E54C8"/>
+      <stop offset="100%" stop-color="#12A150"/>
+    </linearGradient>
+    <linearGradient id="blueBtn" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0080FF"/>
+      <stop offset="100%" stop-color="#0066FF"/>
+    </linearGradient>
+    <filter id="shadow2" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="900" height="1200" fill="url(#bgGrad2)"/>
+
+  <!-- Top Header Banner -->
+  <rect x="30" y="30" width="840" height="130" rx="20" fill="url(#headerGrad2)" filter="url(#shadow2)"/>
+  <circle cx="85" cy="95" r="32" fill="#FFFFFF" fill-opacity="0.2"/>
+  <text x="85" y="105" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="34" font-weight="900" fill="#FFFFFF" text-anchor="middle">▲</text>
+  <text x="135" y="80" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="28" font-weight="900" fill="#FFFFFF">Create a project — क्या भरना है?</text>
+  <text x="135" y="112" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="600" fill="#D4ECD9">बस ये 2 नाम भरिए और नीले रंग का Continue बटन दबाएं!</text>
+
+  <!-- Main Mobile Card Mockup -->
+  <g transform="translate(60, 190)" filter="url(#shadow2)">
+    <!-- White Card -->
+    <rect width="780" height="740" rx="24" fill="#FFFFFF" stroke="#E0E4F0" stroke-width="2"/>
+
+    <!-- Expo Logo & Title -->
+    <circle cx="390" cy="55" r="24" fill="#000000"/>
+    <text x="390" y="64" font-family="sans-serif" font-size="24" font-weight="900" fill="#FFFFFF" text-anchor="middle">▲</text>
+    <text x="390" y="115" font-family="sans-serif" font-size="26" font-weight="900" fill="#141726" text-anchor="middle">Create a project</text>
+
+    <!-- STEP 1: Display Name -->
+    <g transform="translate(40, 150)">
+      <rect x="0" y="0" width="700" height="175" rx="16" fill="#F0F4FF" stroke="#4E54C8" stroke-width="2"/>
+      
+      <circle cx="35" cy="35" r="16" fill="#2B2D6E"/>
+      <text x="35" y="41" font-family="sans-serif" font-size="15" font-weight="900" fill="#FFFFFF" text-anchor="middle">1</text>
+      
+      <text x="65" y="38" font-family="sans-serif" font-size="18" font-weight="900" fill="#141726">Display name</text>
+      <text x="65" y="58" font-family="sans-serif" font-size="13" font-weight="600" fill="#6B7280">अपने ऐप का नाम लिखिए:</text>
+      
+      <!-- Input Mockup -->
+      <rect x="35" y="75" width="630" height="52" rx="10" fill="#FFFFFF" stroke="#2B2D6E" stroke-width="2"/>
+      <text x="55" y="108" font-family="monospace" font-size="20" font-weight="900" fill="#12A150">Temsho</text>
+
+      <!-- Arrow & Hindi Tip -->
+      <rect x="440" y="82" width="210" height="36" rx="6" fill="#E4F7EC" stroke="#12A150" stroke-width="1.5"/>
+      <text x="545" y="105" font-family="sans-serif" font-size="14" font-weight="800" fill="#0F7A4A" text-anchor="middle">👈 यह लिखिए: Temsho</text>
+      
+      <text x="35" y="152" font-family="sans-serif" font-size="13" font-weight="700" fill="#4B5563">💡 Display name me "Temsho" likhiye.</text>
+    </g>
+
+    <!-- STEP 2: Slug -->
+    <g transform="translate(40, 345)">
+      <rect x="0" y="0" width="700" height="175" rx="16" fill="#F0F4FF" stroke="#4E54C8" stroke-width="2"/>
+      
+      <circle cx="35" cy="35" r="16" fill="#2B2D6E"/>
+      <text x="35" y="41" font-family="sans-serif" font-size="15" font-weight="900" fill="#FFFFFF" text-anchor="middle">2</text>
+      
+      <text x="65" y="38" font-family="sans-serif" font-size="18" font-weight="900" fill="#141726">Slug</text>
+      <text x="65" y="58" font-family="sans-serif" font-size="13" font-weight="600" fill="#6B7280">छोटे अक्षरों (small letters) में लिखिए:</text>
+      
+      <!-- Input Mockup -->
+      <rect x="35" y="75" width="630" height="52" rx="10" fill="#FFFFFF" stroke="#2B2D6E" stroke-width="2"/>
+      <text x="55" y="108" font-family="monospace" font-size="20" font-weight="900" fill="#12A150">temsho</text>
+
+      <!-- Arrow & Hindi Tip -->
+      <rect x="440" y="82" width="210" height="36" rx="6" fill="#E4F7EC" stroke="#12A150" stroke-width="1.5"/>
+      <text x="545" y="105" font-family="sans-serif" font-size="14" font-weight="800" fill="#0F7A4A" text-anchor="middle">👈 स्मॉल: temsho</text>
+      
+      <text x="35" y="152" font-family="sans-serif" font-size="13" font-weight="700" fill="#4B5563">💡 Slug hamesha small letters me hota hai: temsho</text>
+    </g>
+
+    <!-- STEP 3: Continue Button -->
+    <g transform="translate(40, 545)">
+      <rect x="35" y="20" width="630" height="54" rx="27" fill="url(#blueBtn)"/>
+      <text x="350" y="55" font-family="sans-serif" font-size="19" font-weight="900" fill="#FFFFFF" text-anchor="middle">Continue ➔ (यह नीला बटन दबाएं)</text>
+
+      <rect x="35" y="90" width="630" height="46" rx="23" fill="#F3F4F6"/>
+      <text x="350" y="119" font-family="sans-serif" font-size="15" font-weight="700" fill="#6B7280" text-anchor="middle">Skip (दबाने की ज़रूरत नहीं)</text>
+    </g>
+  </g>
+
+  <!-- Bottom Next Steps Card -->
+  <g transform="translate(60, 960)" filter="url(#shadow2)">
+    <rect width="780" height="200" rx="20" fill="#1F2347" stroke="#12A150" stroke-width="2"/>
+    
+    <text x="40" y="42" font-family="sans-serif" font-size="19" font-weight="900" fill="#25D366">🎉 लगभग पूरा हो गया!</text>
+    
+    <text x="40" y="78" font-family="sans-serif" font-size="15" font-weight="700" fill="#FFFFFF">1. जैसे ही आप "Continue" दबाएंगे, आपका Expo प्रोजेक्ट लाइव हो जाएगा।</text>
+    <text x="40" y="112" font-family="sans-serif" font-size="15" font-weight="700" fill="#FFFFFF">2. इसके बाद मुझे सिर्फ़ "हो गया" बोल दीजिए या अगला स्क्रीनशॉट भेज दीजिए।</text>
+    <text x="40" y="146" font-family="sans-serif" font-size="15" font-weight="700" fill="#FFEAA7">3. मैं तुरंत आपके लिए Android APK की बिल्ड शुरू कर दूंगा!</text>
+  </g>
+</svg>
