@@ -1,8 +1,6 @@
 // ============================================================
-//  TEMSHO — Logistics & Delivery Engine
-//  1. Dukaan se Local Delivery (Same Day / Next Day)
-//  2. Shiprocket Express (Delhivery, BlueDart, DTDC, Ekart)
-//  3. India Post / Speed Post (Poore Bharat ke har gaon tak)
+//  TEMSHO — Multi-Seller Logistics & Delivery Engine
+//  Each seller dispatches from their own registered pickup address
 // ============================================================
 
 import { SHIPROCKET } from '../config';
@@ -31,28 +29,28 @@ const PIN_DIRECTORY = {
 export const DELIVERY_MODES = [
   {
     id: 'standard',
-    title: 'Standard Delivery',
-    tagline: 'Shiprocket / Delhivery / DTDC',
-    days: '2 – 4 din',
-    badge: 'Sabse Lokpriya',
+    title: 'Standard Express Courier',
+    tagline: 'Shiprocket / Delhivery / BlueDart / Ekart',
+    days: '2 – 4 Days',
+    badge: 'Most Popular',
     icon: 'truck-fast-outline',
     fee: 49,
   },
   {
     id: 'local',
-    title: 'Dukaan Se Seedha (Local)',
-    tagline: 'Seller khud ya local rider se bhejega',
-    days: '24 ghante me',
-    badge: 'Superfast',
+    title: 'Direct Seller Dispatch (Local)',
+    tagline: 'Delivered directly by the seller / local rider',
+    days: 'Within 24 Hours',
+    badge: 'Same City',
     icon: 'moped-outline',
     fee: 29,
   },
   {
     id: 'indiapost',
-    title: 'India Post / Gaon Tak',
-    tagline: 'Gaon aur door-daraaz ilaqon ke liye',
-    days: '4 – 6 din',
-    badge: '100% Bharat',
+    title: 'India Post / Rural Delivery',
+    tagline: 'Covers every village and remote area in India',
+    days: '4 – 6 Days',
+    badge: 'All India',
     icon: 'post-outline',
     fee: 39,
   },
@@ -64,14 +62,14 @@ export function checkPincodeServiceability(pin) {
   if (p.length !== 6) {
     return {
       serviceable: false,
-      msg: 'Kripya 6 digit ka valid PIN code daaliye',
+      msg: 'Please enter a valid 6-digit PIN code',
     };
   }
 
   const prefix = p.slice(0, 3);
   const info = PIN_DIRECTORY[prefix];
 
-  const city = info?.city || 'Bharat';
+  const city = info?.city || 'India';
   const state = info?.state || 'India';
   const estDays = info?.days || 3;
 
@@ -82,72 +80,47 @@ export function checkPincodeServiceability(pin) {
     state,
     zone: info?.zone || 'All India',
     estimatedDays: estDays,
-    etaText: `${estDays}–${estDays + 2} din me delivery`,
+    etaText: `Delivery in ${estDays}–${estDays + 2} business days`,
     availableCouriers: [
-      { name: 'Delhivery Surface', rating: '4.8', est: `${estDays + 1} din` },
-      { name: 'BlueDart Air', rating: '4.9', est: `${estDays} din` },
-      { name: 'DTDC Express', rating: '4.6', est: `${estDays + 1} din` },
-      { name: 'Ekart Logistics', rating: '4.7', est: `${estDays + 1} din` },
-      { name: 'India Post Speed Post', rating: '4.5', est: `${estDays + 2} din` },
+      { name: 'Delhivery Surface', rating: '4.8', est: `${estDays + 1} days` },
+      { name: 'BlueDart Express', rating: '4.9', est: `${estDays} days` },
+      { name: 'DTDC Air Express', rating: '4.6', est: `${estDays + 1} days` },
+      { name: 'Ekart Logistics', rating: '4.7', est: `${estDays + 1} days` },
+      { name: 'India Post Speed Post', rating: '4.5', est: `${estDays + 2} days` },
     ],
   };
 }
 
-/* ---------------- SHIPROCKET API TOKEN (Optional Real Config) ---------------- */
-let _cachedToken = null;
-
-export async function getShiprocketToken() {
-  if (_cachedToken) return _cachedToken;
-  if (!SHIPROCKET.email || SHIPROCKET.email.startsWith('YAHAN')) {
-    return null;
-  }
-
-  try {
-    const res = await fetch('https://apiv2.shiprocket.in/v1/external/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: SHIPROCKET.email,
-        password: SHIPROCKET.password,
-      }),
-    });
-    const data = await res.json();
-    if (data?.token) {
-      _cachedToken = data.token;
-      return _cachedToken;
-    }
-    return null;
-  } catch (e) {
-    console.log('Shiprocket auth error:', e.message);
-    return null;
-  }
-}
-
-/* ---------------- CREATE SHIPMENT / AWB GENERATION ---------------- */
+/* ---------------- CREATE SHIPMENT (FROM SELLER'S OWN ADDRESS) ---------------- */
 export async function createShipment(order, sellerShop) {
   const isReal = SHIPROCKET.email && !SHIPROCKET.email.startsWith('YAHAN');
 
-  // Realistic mock / production AWB generator
-  const courierNames = ['Delhivery Surface', 'BlueDart Express', 'DTDC Air', 'Ekart Express', 'Shadowfax'];
+  const courierNames = ['Delhivery Surface', 'BlueDart Express', 'DTDC Air', 'Ekart Logistics', 'Shadowfax'];
   const chosenCourier = courierNames[Math.floor(Math.random() * courierNames.length)];
-  const awbCode = 'TEM' + Math.floor(1000000000 + Math.random() * 9000000000);
+  const awbCode = 'TM' + Math.floor(1000000000 + Math.random() * 9000000000);
+
+  const pickupLocation = sellerShop?.pickup || `${sellerShop?.city || 'Seller Location'}, ${sellerShop?.state || 'India'}`;
+  const pickupPin = sellerShop?.pin || SHIPROCKET.pickupPincode || '226010';
 
   const shipment = {
     orderId: order.id,
     awb: awbCode,
     courier: chosenCourier,
     status: 'Manifest Generated',
-    pickupScheduled: 'Kal subah 10:00 AM',
-    trackingUrl: `https://shiprocket.co/tracking/${awbCode}`,
-    pickupPincode: sellerShop?.pin || SHIPROCKET.pickupPincode,
+    pickupScheduled: 'Tomorrow 10:00 AM',
+    pickupAddress: pickupLocation,
+    pickupPincode: pickupPin,
+    pickupPhone: sellerShop?.contact || '9044468663',
+    deliveryAddress: `${order.address?.line || ''}, ${order.address?.city || ''}, ${order.address?.state || ''}`,
     deliveryPincode: order.address?.pin || '226010',
+    trackingUrl: `https://shiprocket.co/tracking/${awbCode}`,
     createdAt: new Date().toISOString(),
     steps: [
-      { title: 'Order Confirmed', time: 'Abhi', done: true },
-      { title: 'Pickup Booked', time: 'Schedule ho gaya', done: true },
-      { title: 'In Transit', time: 'Aage badh raha hai', done: false },
-      { title: 'Out for Delivery', time: 'Rider ke paas', done: false },
-      { title: 'Delivered', time: 'Grahak tak pahunch gaya', done: false },
+      { title: 'Order Confirmed', time: 'Completed', done: true },
+      { title: 'Doorstep Pickup Scheduled', time: `From Seller PIN ${pickupPin}`, done: true },
+      { title: 'In Transit', time: 'In Progress', done: false },
+      { title: 'Out for Delivery', time: 'Pending', done: false },
+      { title: 'Delivered', time: 'Pending', done: false },
     ],
   };
 
@@ -155,7 +128,7 @@ export async function createShipment(order, sellerShop) {
     ok: true,
     shipment,
     isReal,
-    msg: `Shiprocket AWB #${awbCode} ban gaya (${chosenCourier})`,
+    msg: `Shipment booked successfully with ${chosenCourier}. AWB: ${awbCode}`,
   };
 }
 
@@ -163,7 +136,7 @@ export async function createShipment(order, sellerShop) {
 export function getWhatsAppConnectUrl(phone, orderId, productName) {
   const p = String(phone || '').replace(/\D/g, '').slice(-10);
   const text = encodeURIComponent(
-    `Namaste! Main Temsho app se bol raha hoon. Order #${orderId} (${productName || 'product'}) ke baare me baat karni hai.`
+    `Hello! I am contacting you regarding your Temsho Order #${orderId} (${productName || 'product'}).`
   );
   return `https://wa.me/91${p}?text=${text}`;
 }

@@ -130,9 +130,14 @@ export function SellerOrders({ go }) {
                   </Text>
                 ))}
 
-                <Text style={{ color: C.ink3, fontSize: 11.5, marginTop: 8, lineHeight: 17 }}>
-                  Customer: {o.address?.name || 'Customer'} · {o.address?.city}, {o.address?.state} – {o.address?.pin}
-                </Text>
+                <View style={{ backgroundColor: '#F8FAFC', borderRadius: R.sm, padding: 10, marginTop: 8, borderWidth: 1, borderColor: C.line }}>
+                  <Text style={{ color: C.ink, fontSize: 11.5, fontWeight: '800' }}>
+                    📍 Pickup From: {state.shop.pickup || `${state.shop.city || 'Seller Shop'}, ${state.shop.state || 'UP'}`} – PIN {state.shop.pin || '226010'}
+                  </Text>
+                  <Text style={{ color: C.ink2, fontSize: 11.5, marginTop: 4 }}>
+                    🎯 Deliver To: {o.address?.name || 'Customer'} · {o.address?.line || ''}, {o.address?.city || ''} – PIN {o.address?.pin || ''}
+                  </Text>
+                </View>
 
                 {o.shipment && (
                   <View style={nt.awbBadge}>

@@ -159,11 +159,12 @@ export function Wishlist({ go }) {
 export function BecomeSeller({ go }) {
   const { state, dispatch } = useApp();
   const [f, setF] = useState({
-    shop: '', city: '',
+    shop: '', pickup: '', city: '', state: 'Uttar Pradesh', pin: '',
+    contact: state.user?.phone || '',
     payName: state.user?.name || '', upi: '',
     acceptUpi: true, acceptCod: true,
   });
-  const ok = f.shop && f.city && (f.acceptCod || (f.acceptUpi && f.upi));
+  const ok = f.shop && f.city && f.pin && f.pickup && (f.acceptCod || (f.acceptUpi && f.upi));
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
@@ -175,34 +176,39 @@ export function BecomeSeller({ go }) {
             Anyone Can Sell on Temsho
           </Text>
           <Text style={{ color: C.ink2, fontSize: 13, lineHeight: 20, marginTop: 6 }}>
-            Whether you run a local retail shop, create handmade crafts, or produce goods from home — list your products in minutes. No complex KYC, no fees, no middlemen.
+            Ship directly from your own doorstep. When a customer orders, courier riders come directly to your address for pickup.
           </Text>
           <View style={{ flexDirection: 'row', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
             <Badge text="0% Commission" tone="green" />
-            <Badge text="Instant Approval" tone="green" />
+            <Badge text="Doorstep Courier Pickup" tone="green" />
             <Badge text="Direct UPI / COD" tone="accent" />
             <Badge text="No Documents Needed" tone="brand" />
           </View>
         </View>
 
         <View style={ac.freeNote}>
-          <MC name="cash-check" size={18} color={C.green} />
+          <MC name="truck-fast" size={18} color={C.green} />
           <Text style={{ flex: 1, marginLeft: 10, color: '#059669', fontSize: 12, fontWeight: '700', lineHeight: 18 }}>
-            Customer payments go directly to your personal UPI ID or cash on delivery. Temsho never holds your funds.
+            Every seller ships from their own address. Courier partners (Delhivery/BlueDart/Ekart) will pick up parcels directly from your shop/home.
           </Text>
         </View>
 
-        <Text style={ac.step}>1 · YOUR SHOP DETAILS</Text>
+        <Text style={ac.step}>1 · YOUR SHOP & DISPATCH ADDRESS</Text>
         <View style={[ac.card, shadow, { padding: 18 }]}>
           <View style={ac.numBox}>
             <MC name="cellphone-check" size={19} color={C.green} />
             <View style={{ flex: 1, marginLeft: 10 }}>
               <Text style={{ color: C.ink, fontWeight: '800', fontSize: 13 }}>+91 {state.user?.phone}</Text>
-              <Text style={{ color: C.green, fontSize: 11, fontWeight: '700', marginTop: 2 }}>Verified Phone Number</Text>
+              <Text style={{ color: C.green, fontSize: 11, fontWeight: '700', marginTop: 2 }}>Verified Dispatch Phone</Text>
             </View>
           </View>
-          <Field label="Shop Name / Brand Name" placeholder="e.g. Sharma Handloom or Rahul Crafts" value={f.shop} onChangeText={(v) => setF({ ...f, shop: v })} />
-          <Field label="City / Region" placeholder="e.g. Lucknow, Uttar Pradesh" value={f.city} onChangeText={(v) => setF({ ...f, city: v })} />
+          <Field label="Shop / Business Name" placeholder="e.g. Sharma Handloom or Rahul Crafts" value={f.shop} onChangeText={(v) => setF({ ...f, shop: v })} />
+          <Field label="Pickup Street Address (Where courier will pick parcels)" placeholder="House / Shop No., Street, Area" multiline value={f.pickup} onChangeText={(v) => setF({ ...f, pickup: v })} style={{ height: 70, textAlignVertical: 'top' }} />
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <View style={{ flex: 1 }}><Field label="City" placeholder="Lucknow" value={f.city} onChangeText={(v) => setF({ ...f, city: v })} /></View>
+            <View style={{ flex: 1 }}><Field label="State" placeholder="Uttar Pradesh" value={f.state} onChangeText={(v) => setF({ ...f, state: v })} /></View>
+          </View>
+          <Field label="Dispatch PIN Code" placeholder="226010" keyboardType="number-pad" value={f.pin} onChangeText={(v) => setF({ ...f, pin: v.replace(/\D/g, '').slice(0, 6) })} />
         </View>
 
         <Text style={ac.step}>2 · HOW DO YOU RECEIVE PAYMENTS?</Text>
@@ -244,7 +250,18 @@ export function BecomeSeller({ go }) {
               type: 'BECOME_SELLER',
               shopName: f.shop,
               shopCity: f.city,
-              shop: { payName: f.payName, upi: f.upi, acceptUpi: f.acceptUpi, acceptCod: f.acceptCod, contact: state.user?.phone || '' },
+              shop: {
+                name: f.shop,
+                city: f.city,
+                state: f.state,
+                pin: f.pin,
+                pickup: f.pickup,
+                contact: f.contact,
+                payName: f.payName,
+                upi: f.upi,
+                acceptUpi: f.acceptUpi,
+                acceptCod: f.acceptCod,
+              },
             });
             go('seller');
           }}

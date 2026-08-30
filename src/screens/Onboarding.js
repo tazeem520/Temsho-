@@ -36,38 +36,37 @@ export default function Onboarding() {
     });
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ padding: 22, paddingTop: 64, paddingBottom: 60 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ padding: 16, paddingTop: 32, paddingBottom: 36 }}>
       {/* Brand Header */}
       <View style={st.logoRow}>
         <View style={st.logoMark}>
-          <MC name="storefront" size={28} color="#fff" />
+          <MC name="storefront" size={24} color="#fff" />
         </View>
-        <View style={{ marginLeft: 14 }}>
-          <Text style={{ fontSize: 26, fontWeight: '900', color: C.brandNavy, letterSpacing: -0.5 }}>Temsho</Text>
-          <Text style={{ color: C.ink2, fontSize: 13, fontWeight: '600' }}>India's Verified Human Marketplace</Text>
+        <View style={{ marginLeft: 10 }}>
+          <Text style={{ fontSize: 22, fontWeight: '900', color: C.brandNavy, letterSpacing: -0.5 }}>Temsho</Text>
+          <Text style={{ color: C.ink2, fontSize: 11.5, fontWeight: '600' }}>Verified Human Marketplace</Text>
         </View>
       </View>
 
       {/* Human-Only Pledge Banner */}
       <View style={[st.pledge, shadow]}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <MC name="account-check" size={24} color={C.green} />
-          <Text style={{ color: C.ink, fontWeight: '900', fontSize: 16, marginLeft: 8 }}>No Bots. Only Humans.</Text>
+          <MC name="account-check" size={19} color={C.green} />
+          <Text style={{ color: C.ink, fontWeight: '900', fontSize: 14, marginLeft: 6 }}>No Bots. Only Humans.</Text>
         </View>
-        <Text style={{ color: C.ink2, fontSize: 13, lineHeight: 19, marginTop: 8 }}>
-          Instant, secure login with your mobile number. OTP is delivered directly to your WhatsApp or SMS.
-          No paperwork, no Aadhaar or PAN required. Every seller and support agent is a real, verified human.
+        <Text style={{ color: C.ink2, fontSize: 11.5, lineHeight: 16, marginTop: 4 }}>
+          Fast mobile OTP login. No Aadhaar, PAN, or documents needed. Real humans on support.
         </Text>
       </View>
 
       {/* Step Indicators */}
       <View style={st.steps}>
-        {['Enter Mobile', 'Verify OTP'].map((s, i) => (
+        {['Mobile Number', 'Verify OTP'].map((s, i) => (
           <View key={s} style={{ flex: 1, alignItems: 'center' }}>
             <View style={[st.dot, i <= step && { backgroundColor: C.brand }]}>
-              <Text style={{ color: i <= step ? '#fff' : C.ink3, fontWeight: '800', fontSize: 12 }}>{i + 1}</Text>
+              <Text style={{ color: i <= step ? '#fff' : C.ink3, fontWeight: '800', fontSize: 11 }}>{i + 1}</Text>
             </View>
-            <Text style={{ fontSize: 11, color: i <= step ? C.brand : C.ink3, fontWeight: '700', marginTop: 5 }}>{s}</Text>
+            <Text style={{ fontSize: 10.5, color: i <= step ? C.brand : C.ink3, fontWeight: '700', marginTop: 3 }}>{s}</Text>
           </View>
         ))}
       </View>
@@ -75,39 +74,38 @@ export default function Onboarding() {
       {/* STEP 0: PHONE INPUT */}
       {step === 0 && (
         <View style={[st.card, shadow]}>
-          <Text style={st.h}>Enter your mobile number</Text>
-          <Text style={st.p}>We will send a 4-digit verification code to verify your human identity.</Text>
+          <Text style={st.h}>Login to Temsho</Text>
+          <Text style={st.p}>Enter your 10-digit mobile number to receive an instant verification code.</Text>
 
-          <Field label="Your Full Name" placeholder="e.g. Rahul Sharma" value={name} onChangeText={setName} />
+          <Field label="Your Name (Optional)" placeholder="e.g. Rahul Sharma" value={name} onChangeText={setName} />
           
-          <Text style={{ color: C.ink2, fontSize: 12, fontWeight: '700', marginBottom: 6 }}>Mobile Number</Text>
+          <Text style={{ color: C.ink2, fontSize: 11.5, fontWeight: '700', marginBottom: 5 }}>Mobile Number</Text>
           <View style={st.phoneRow}>
-            <View style={st.cc}><Text style={{ fontWeight: '800', color: C.ink }}>+91</Text></View>
+            <View style={st.cc}><Text style={{ fontWeight: '800', color: C.ink, fontSize: 13.5 }}>+91</Text></View>
             <TextInput
               value={phone}
               onChangeText={(t) => { setPhone(t.replace(/\D/g, '').slice(0, 10)); setErr(''); }}
               keyboardType="number-pad"
-              placeholder="10-digit number"
+              placeholder="10-digit mobile number"
               placeholderTextColor={C.ink3}
               style={st.phoneInput}
             />
           </View>
           {!!err && <Text style={st.err}>{err}</Text>}
 
-          <Text style={{ color: C.ink2, fontSize: 12, fontWeight: '700', marginTop: 14, marginBottom: 8 }}>
-            Where should we send your OTP?
+          <Text style={{ color: C.ink2, fontSize: 11.5, fontWeight: '700', marginTop: 10, marginBottom: 6 }}>
+            Delivery Channel:
           </Text>
-          <View style={{ flexDirection: 'row', gap: 10, marginBottom: 4 }}>
+          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 2 }}>
             <TouchableOpacity
               onPress={() => setVia('whatsapp')}
               activeOpacity={0.85}
               style={[st.viaBox, via === 'whatsapp' && { borderColor: '#25D366', backgroundColor: '#ECFDF5' }]}
             >
-              <MC name="whatsapp" size={24} color="#25D366" />
-              <Text style={{ fontWeight: '800', color: C.ink, fontSize: 13, marginTop: 6 }}>WhatsApp</Text>
-              <Text style={{ color: C.ink3, fontSize: 10.5, marginTop: 2 }}>Instant Delivery</Text>
+              <MC name="whatsapp" size={20} color="#25D366" />
+              <Text style={{ fontWeight: '800', color: C.ink, fontSize: 12, marginTop: 4 }}>WhatsApp</Text>
               {via === 'whatsapp' && (
-                <View style={st.recBadge}><Text style={{ color: '#fff', fontSize: 8.5, fontWeight: '900' }}>FAST</Text></View>
+                <View style={st.recBadge}><Text style={{ color: '#fff', fontSize: 8, fontWeight: '900' }}>FAST</Text></View>
               )}
             </TouchableOpacity>
 
@@ -116,17 +114,16 @@ export default function Onboarding() {
               activeOpacity={0.85}
               style={[st.viaBox, via === 'sms' && { borderColor: C.brand, backgroundColor: C.brandSoft }]}
             >
-              <MC name="message-text-outline" size={24} color={C.brand} />
-              <Text style={{ fontWeight: '800', color: C.ink, fontSize: 13, marginTop: 6 }}>SMS</Text>
-              <Text style={{ color: C.ink3, fontSize: 10.5, marginTop: 2 }}>Cellular Network</Text>
+              <MC name="message-text-outline" size={20} color={C.brand} />
+              <Text style={{ fontWeight: '800', color: C.ink, fontSize: 12, marginTop: 4 }}>SMS</Text>
             </TouchableOpacity>
           </View>
 
           <Btn
-            title={busy ? 'Sending OTP…' : via === 'whatsapp' ? 'Send OTP via WhatsApp' : 'Send OTP via SMS'}
+            title={busy ? 'Sending OTP…' : via === 'whatsapp' ? 'Send via WhatsApp' : 'Send via SMS'}
             icon={via === 'whatsapp' ? 'whatsapp' : 'message-text-outline'}
             tone={via === 'whatsapp' ? 'green' : 'brand'}
-            style={{ marginTop: 16 }}
+            style={{ marginTop: 14, paddingVertical: 11 }}
             disabled={busy}
             onPress={async () => {
               if (phone.length !== 10) return setErr('Please enter a valid 10-digit mobile number');
@@ -143,15 +140,11 @@ export default function Onboarding() {
           />
 
           <View style={st.noDoc}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-              <MC name="shield-check" size={15} color="#059669" />
-              <Text style={{ color: '#059669', fontSize: 11.5, fontWeight: '700', marginLeft: 6 }}>
-                Zero Paperwork · No Aadhaar / PAN required · 100% Secure
-              </Text>
-            </View>
+            <MC name="shield-check" size={14} color="#059669" />
+            <Text style={{ color: '#059669', fontSize: 11, fontWeight: '700', marginLeft: 6 }}>
+              No Aadhaar · No PAN · 100% Secure
+            </Text>
           </View>
-
-          <Text style={st.tnc}>By continuing, you agree to Temsho's Terms of Service and Privacy Policy.</Text>
         </View>
       )}
 
@@ -160,22 +153,22 @@ export default function Onboarding() {
         <View style={[st.card, shadow]}>
           <Text style={st.h}>Enter Verification Code</Text>
           <View style={[st.sentVia, via === 'whatsapp' && { backgroundColor: '#ECFDF5' }]}>
-            <MC name={via === 'whatsapp' ? 'whatsapp' : 'message-text-outline'} size={18} color={via === 'whatsapp' ? '#25D366' : C.brand} />
-            <Text style={{ flex: 1, marginLeft: 9, color: C.ink2, fontSize: 12.5, lineHeight: 18 }}>
-              A 4-digit verification code was sent to <Text style={{ fontWeight: '800', color: C.ink }}>+91 {phone}</Text> via {via === 'whatsapp' ? 'WhatsApp' : 'SMS'}.
+            <MC name={via === 'whatsapp' ? 'whatsapp' : 'message-text-outline'} size={16} color={via === 'whatsapp' ? '#25D366' : C.brand} />
+            <Text style={{ flex: 1, marginLeft: 8, color: C.ink2, fontSize: 11.5, lineHeight: 16 }}>
+              Code sent to <Text style={{ fontWeight: '800', color: C.ink }}>+91 {phone}</Text> via {via === 'whatsapp' ? 'WhatsApp' : 'SMS'}.
             </Text>
           </View>
 
           {hintCode && (
             <View style={st.demoHint}>
-              <MC name="key-variant" size={16} color="#D97706" />
-              <Text style={{ color: '#92400E', fontSize: 12, fontWeight: '800', marginLeft: 6 }}>
+              <MC name="key-variant" size={14} color="#D97706" />
+              <Text style={{ color: '#92400E', fontSize: 11.5, fontWeight: '800', marginLeft: 6 }}>
                 Verification Code: {hintCode}
               </Text>
             </View>
           )}
 
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 16 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 }}>
             {otp.map((v, i) => (
               <TextInput
                 key={i}
@@ -191,9 +184,9 @@ export default function Onboarding() {
           {!!err && <Text style={st.err}>{err}</Text>}
 
           <Btn
-            title={busy ? 'Verifying…' : 'Verify & Continue'}
+            title={busy ? 'Verifying…' : 'Verify & Enter'}
             tone="brand"
-            style={{ marginTop: 20 }}
+            style={{ marginTop: 16, paddingVertical: 11 }}
             disabled={otp.join('').length !== 4 || busy}
             onPress={async () => {
               setBusy(true); setErr('');
@@ -202,7 +195,7 @@ export default function Onboarding() {
               if (r.ok) {
                 finish();
               } else {
-                setErr(r.msg || 'Invalid OTP code. Please enter the correct code.');
+                setErr(r.msg || 'Invalid verification code. Please check and enter the correct code.');
               }
             }}
           />
@@ -214,19 +207,13 @@ export default function Onboarding() {
               setBusy(false);
               if (r.demoCode) setHintCode(r.demoCode);
             }}
-            style={{ marginTop: 14, alignItems: 'center' }}
+            style={{ marginTop: 12, alignItems: 'center' }}
           >
-            <Text style={{ color: C.brand, fontWeight: '700', fontSize: 13 }}>Resend Verification Code</Text>
+            <Text style={{ color: C.brand, fontWeight: '700', fontSize: 12 }}>Resend Verification Code</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => setVia(via === 'whatsapp' ? 'sms' : 'whatsapp')} style={{ marginTop: 10, alignItems: 'center' }}>
-            <Text style={{ color: C.ink2, fontWeight: '600', fontSize: 12.5 }}>
-              {via === 'whatsapp' ? 'Switch to SMS OTP' : 'Switch to WhatsApp OTP'}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={() => setStep(0)} style={{ marginTop: 12, alignItems: 'center' }}>
-            <Text style={{ color: C.ink3, fontWeight: '600', fontSize: 13 }}>Change Mobile Number</Text>
+          <TouchableOpacity onPress={() => setStep(0)} style={{ marginTop: 10, alignItems: 'center' }}>
+            <Text style={{ color: C.ink3, fontWeight: '600', fontSize: 12 }}>Change Mobile Number</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -235,48 +222,47 @@ export default function Onboarding() {
 }
 
 const st = StyleSheet.create({
-  logoRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
+  logoRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   logoMark: {
-    width: 52, height: 52, borderRadius: 16, backgroundColor: C.brand,
+    width: 44, height: 44, borderRadius: 12, backgroundColor: C.brand,
     alignItems: 'center', justifyContent: 'center',
   },
-  pledge: { backgroundColor: C.surface, borderRadius: R.lg, padding: 16, borderLeftWidth: 4, borderLeftColor: C.green },
-  steps: { flexDirection: 'row', marginTop: 24, marginBottom: 16, paddingHorizontal: 40 },
+  pledge: { backgroundColor: C.surface, borderRadius: R.md, padding: 12, borderLeftWidth: 3.5, borderLeftColor: C.green },
+  steps: { flexDirection: 'row', marginTop: 14, marginBottom: 12, paddingHorizontal: 20 },
   dot: {
-    width: 26, height: 26, borderRadius: 13, backgroundColor: '#E5E7EB',
+    width: 22, height: 22, borderRadius: 11, backgroundColor: '#E5E7EB',
     alignItems: 'center', justifyContent: 'center',
   },
-  card: { backgroundColor: C.surface, borderRadius: R.xl, padding: 20 },
-  h: { fontSize: 20, fontWeight: '900', color: C.ink },
-  p: { fontSize: 13, color: C.ink2, lineHeight: 19, marginTop: 6, marginBottom: 16 },
+  card: { backgroundColor: C.surface, borderRadius: R.lg, padding: 16 },
+  h: { fontSize: 17, fontWeight: '900', color: C.ink },
+  p: { fontSize: 12, color: C.ink2, lineHeight: 17, marginTop: 4, marginBottom: 12 },
   phoneRow: { flexDirection: 'row', alignItems: 'center' },
   cc: {
-    paddingHorizontal: 12, paddingVertical: 13, backgroundColor: '#F3F4F6',
-    borderRadius: R.md, marginRight: 8,
+    paddingHorizontal: 10, paddingVertical: 10, backgroundColor: '#F3F4F6',
+    borderRadius: R.sm, marginRight: 6,
   },
   phoneInput: {
     flex: 1, backgroundColor: C.surface, borderWidth: 1, borderColor: C.line,
-    borderRadius: R.md, paddingHorizontal: 14, paddingVertical: 13, fontSize: 15, color: C.ink,
+    borderRadius: R.sm, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: C.ink,
   },
   otpBox: {
-    width: 58, height: 62, borderRadius: R.md, borderWidth: 1.5, borderColor: C.line,
-    backgroundColor: C.surface, textAlign: 'center', fontSize: 24, fontWeight: '800', color: C.ink,
+    width: 52, height: 52, borderRadius: R.sm, borderWidth: 1.5, borderColor: C.line,
+    backgroundColor: C.surface, textAlign: 'center', fontSize: 20, fontWeight: '800', color: C.ink,
   },
   demoHint: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFBEB',
-    borderRadius: R.sm, paddingHorizontal: 12, paddingVertical: 8, marginTop: 12,
+    borderRadius: R.sm, paddingHorizontal: 10, paddingVertical: 6, marginTop: 10,
     borderWidth: 1, borderColor: '#FDE68A',
   },
   viaBox: {
-    flex: 1, borderWidth: 1.8, borderColor: C.line, borderRadius: R.md,
-    paddingVertical: 14, alignItems: 'center', backgroundColor: C.surface,
+    flex: 1, borderWidth: 1.5, borderColor: C.line, borderRadius: R.sm,
+    paddingVertical: 10, alignItems: 'center', backgroundColor: C.surface,
   },
   recBadge: {
-    position: 'absolute', top: -8, right: 8, backgroundColor: '#25D366',
-    paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6,
+    position: 'absolute', top: -6, right: 6, backgroundColor: '#25D366',
+    paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4,
   },
-  sentVia: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.brandSoft, borderRadius: R.md, padding: 12, marginTop: 6 },
-  noDoc: { backgroundColor: C.greenSoft, borderRadius: R.md, padding: 11, marginTop: 16 },
-  err: { color: C.red, fontSize: 12, marginTop: 8, fontWeight: '600' },
-  tnc: { color: C.ink3, fontSize: 11, textAlign: 'center', marginTop: 14, lineHeight: 16 },
+  sentVia: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.brandSoft, borderRadius: R.sm, padding: 10, marginTop: 4 },
+  noDoc: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: C.greenSoft, borderRadius: R.sm, padding: 8, marginTop: 12 },
+  err: { color: C.red, fontSize: 11.5, marginTop: 6, fontWeight: '600' },
 });
