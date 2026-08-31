@@ -70,6 +70,7 @@ export function Account({ go }) {
         {/* Main Orders & Activity Links */}
         <View style={[ac.card, shadow, { marginTop: 16 }]}>
           <Row e="package-variant" t="My Orders" s={`${state.orders.length} orders`} onPress={() => go('orders')} />
+          <Row e="qrcode-scan" t="Delivery Partner · Parcel QR & OTP" s="Scan parcel QR & submit customer OTP" onPress={() => go('delivery-partner')} />
           <Row e="bell-outline" t="Notifications" s={unread > 0 ? `${unread} new` : 'All read'} onPress={() => go('notifications')} />
           <Row e="heart-outline" t="Wishlist" s={`${wish.length} saved items`} onPress={() => go('wishlist')} />
           <Row e="map-marker-outline" t="Saved Addresses" s={`${state.addresses.length} saved`} onPress={() => go('addresses')} />
@@ -164,7 +165,43 @@ export function BecomeSeller({ go }) {
     payName: state.user?.name || '', upi: '',
     acceptUpi: true, acceptCod: true,
   });
+  const [saving, setSaving] = useState(false);
   const ok = f.shop && f.city && f.pin && f.pickup && (f.acceptCod || (f.acceptUpi && f.upi));
+
+  const launchShop = async () => {
+    if (!ok) return;
+    setSaving(true);
+    const shopData = {
+      name: f.shop,
+      city: f.city,
+      state: f.state,
+      pin: f.pin,
+      pickup: f.pickup,
+      contact: f.contact,
+      payName: f.payName,
+      upi: f.upi,
+      acceptUpi: f.acceptUpi,
+      acceptCod: f.acceptCod,
+    };
+
+    if (cloud.cloudOn()) {
+      try {
+        const uRes = await cloud.upsertUser({ ...state.user, isSeller: true });
+        if (uRes?.id) {
+          await cloud.upsertShop(shopData, uRes.id);
+        }
+      } catch (e) {}
+    }
+
+    dispatch({
+      type: 'BECOME_SELLER',
+      shopName: f.shop,
+      shopCity: f.city,
+      shop: shopData,
+    });
+    setSaving(false);
+    go('seller');
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
@@ -240,31 +277,12 @@ export function BecomeSeller({ go }) {
         </View>
 
         <Btn
-          title="Launch My Shop"
+          title={saving ? "Setting up Shop…" : "Launch My Shop"}
           icon="storefront-plus-outline"
           tone="green"
-          disabled={!ok}
+          disabled={!ok || saving}
           style={{ marginTop: 20 }}
-          onPress={() => {
-            dispatch({
-              type: 'BECOME_SELLER',
-              shopName: f.shop,
-              shopCity: f.city,
-              shop: {
-                name: f.shop,
-                city: f.city,
-                state: f.state,
-                pin: f.pin,
-                pickup: f.pickup,
-                contact: f.contact,
-                payName: f.payName,
-                upi: f.upi,
-                acceptUpi: f.acceptUpi,
-                acceptCod: f.acceptCod,
-              },
-            });
-            go('seller');
-          }}
+          onPress={launchShop}
         />
       </ScrollView>
     </View>
@@ -275,8 +293,9 @@ export function BecomeSeller({ go }) {
 export function Seller({ go }) {
   const { state, dispatch } = useApp();
   const u = state.user;
-  const mine = state.products.filter((p) => p.seller === 'me');
+  const mine = state.products.filter((p) => p.seller === 'me' || p.sellerName === u.shopName);
   const [add, setAdd] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [f, setF] = useState({ title: '', price: '', mrp: '', cat: 'fashion', desc: '', img: null });
 
   const pickPhoto = async () => {
@@ -288,25 +307,39 @@ export function Seller({ go }) {
 
   const save = async () => {
     const cat = CATEGORIES.find((c) => c.id === f.cat);
+    setSaving(true);
+    let cloudProd = null;
     if (cloud.cloudOn()) {
-      cloud.pushProduct(
-        { ...f, price: Number(f.price), mrp: Number(f.mrp || f.price) },
-        state.user?.cloudId, state.shop?.cloudId
-      ).catch(() => {});
+      try {
+        cloudProd = await cloud.pushProduct(
+          { ...f, price: Number(f.price), mrp: Number(f.mrp || f.price) },
+          state.user?.cloudId,
+          state.shop?.cloudId
+        );
+      } catch (e) {}
     }
-    dispatch({
-      type: 'ADD_PRODUCT',
-      product: {
-        id: 'my' + Date.now(),
-        title: f.title, cat: f.cat,
-        price: Number(f.price), mrp: Number(f.mrp || f.price),
-        rating: 4.8, ratingCount: 0, seller: 'me',
-        sellerName: u.shopName || 'My Shop', sellerCity: u.shopCity || 'India',
-        img: f.img, tint: cat?.tint || '#F3F4F6',
-        desc: f.desc || 'Product listed by verified seller.',
-        tags: ['New Arrival', 'Cash on Delivery'],
-      },
-    });
+
+    const localProd = cloudProd || {
+      id: 'my' + Date.now(),
+      title: f.title, cat: f.cat,
+      price: Number(f.price), mrp: Number(f.mrp || f.price),
+      rating: 0, ratingCount: 0, seller: 'me',
+      sellerName: u.shopName || 'My Shop', sellerCity: u.shopCity || 'India',
+      img: f.img, tint: cat?.tint || '#F3F4F6',
+      desc: f.desc || 'Product listed by verified seller.',
+      tags: ['New Arrival', 'Cash on Delivery'],
+    };
+
+    dispatch({ type: 'ADD_PRODUCT', product: localProd });
+
+    // Sync from cloud database
+    if (cloud.cloudOn()) {
+      cloud.pullProducts().then((list) => {
+        if (list && list.length > 0) dispatch({ type: 'CLOUD_PRODUCTS', list });
+      }).catch(() => {});
+    }
+
+    setSaving(false);
     setF({ title: '', price: '', mrp: '', cat: 'fashion', desc: '', img: null });
     setAdd(false);
   };
@@ -411,53 +444,63 @@ export function Seller({ go }) {
 }
 
 /* ---------------- REAL HUMAN SUPPORT ---------------- */
-const AGENT_REPLIES = [
-  'Certainly, I am looking into your order details right away.',
-  'I have checked your order status — it is scheduled for dispatch tomorrow.',
-  'I can directly connect you with the seller if you need further adjustments.',
-  'I have initiated a return request for you. The refund will be credited once picked up.',
-  'Is there anything else I can assist you with today?',
-];
-
 export function Support({ go }) {
   const { state, dispatch } = useApp();
   const [t, setT] = useState('');
+  
   const send = () => {
     if (!t.trim()) return;
-    dispatch({ type: 'CHAT', msg: { id: 'm' + Date.now(), who: 'me', text: t.trim(), at: Date.now() } });
+    const userMsg = { id: 'm' + Date.now(), who: 'me', text: t.trim(), at: Date.now() };
+    dispatch({ type: 'CHAT', msg: userMsg });
     setT('');
-    const reply = AGENT_REPLIES[Math.floor(Math.random() * AGENT_REPLIES.length)];
-    setTimeout(() => dispatch({ type: 'CHAT', msg: { id: 'a' + Date.now(), who: 'agent', agent: 'Priya S.', text: reply, at: Date.now() } }), 1200);
   };
+
+  const openWhatsApp = () => {
+    const url = `https://wa.me/919044468663?text=${encodeURIComponent('Hello Temsho Support! I need assistance with my account/order.')}`;
+    Linking.openURL(url).catch(() => {});
+  };
+
+  const callSupport = () => {
+    Linking.openURL('tel:9044468663').catch(() => {});
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <Header title="Human Support" go={go} />
+      <Header title="Real Human Support" go={go} />
       <View style={ac.agentBar}>
-        <Avatar name="Priya S" hue={C.brand} size={44} />
+        <Avatar name="Temsho Support" hue={C.brand} size={44} />
         <View style={{ flex: 1, marginLeft: 12 }}>
-          <Text style={{ fontWeight: '900', color: C.ink, fontSize: 14 }}>Priya S. · Support Executive</Text>
+          <Text style={{ fontWeight: '900', color: C.ink, fontSize: 14 }}>Temsho Dedicated Helpdesk</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 3 }}>
             <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: C.green }} />
-            <Text style={{ color: C.green, fontSize: 11.5, fontWeight: '700', marginLeft: 5 }}>Online · Verified Human Executive</Text>
+            <Text style={{ color: C.green, fontSize: 11.5, fontWeight: '700', marginLeft: 5 }}>Online · 100% Real Humans</Text>
           </View>
         </View>
-        <TouchableOpacity
-          onPress={() => {
-            const url = `https://wa.me/919044468663?text=${encodeURIComponent('Hello Temsho Support! I need assistance with my account.')}`;
-            Linking.openURL(url).catch(() => {});
-          }}
-          style={ac.callBtn}
-        >
+        <TouchableOpacity onPress={openWhatsApp} style={ac.callBtn}>
           <MC name="whatsapp" size={20} color={C.green} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={callSupport} style={[ac.callBtn, { marginLeft: 8 }]}>
+          <MC name="phone" size={18} color={C.brand} />
         </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 20 }}>
         <View style={ac.notice}>
           <Text style={{ color: C.ink2, fontSize: 11.5, textAlign: 'center', lineHeight: 17 }}>
-            Every support interaction on Temsho is handled by real humans.{'\n'}Available 24x7 in English and Indian regional languages.
+            No AI chatbots or simulated replies.{'\n'}Direct connection to genuine human executive via WhatsApp & Call.
           </Text>
         </View>
+
+        {/* WhatsApp Instant Connect Card */}
+        <TouchableOpacity onPress={openWhatsApp} activeOpacity={0.85} style={[ac.shareBanner, shadow, { marginBottom: 14, backgroundColor: '#ECFDF5' }]}>
+          <MC name="whatsapp" size={26} color="#25D366" />
+          <View style={{ flex: 1, marginLeft: 12 }}>
+            <Text style={{ color: C.ink, fontWeight: '900', fontSize: 14 }}>Chat on WhatsApp (+91 9044468663)</Text>
+            <Text style={{ color: C.ink3, fontSize: 11, marginTop: 2 }}>Instant response from real human support staff</Text>
+          </View>
+          <MC name="chevron-right" size={20} color={C.green} />
+        </TouchableOpacity>
+
         {state.supportChat.map((m) => (
           <View key={m.id} style={{ alignItems: m.who === 'me' ? 'flex-end' : 'flex-start', marginBottom: 12 }}>
             {m.who === 'agent' && <Text style={{ color: C.ink3, fontSize: 10.5, marginBottom: 4, marginLeft: 6 }}>{m.agent}</Text>}
@@ -473,7 +516,7 @@ export function Support({ go }) {
           value={t}
           onChangeText={setT}
           onSubmitEditing={send}
-          placeholder="Type your message here…"
+          placeholder="Type your message to support..."
           placeholderTextColor={C.ink3}
           style={{ flex: 1, fontSize: 14, color: C.ink, paddingVertical: 10, paddingHorizontal: 14, outlineStyle: 'none' }}
         />

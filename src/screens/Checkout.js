@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal } from 'react-native';
 import { C, R, shadow, money } from '../theme';
 import { MaterialCommunityIcons as MC } from '@expo/vector-icons';
 import { Btn, Badge, Empty, Thumb, Field } from '../components/UI';
 import { Header, Bill } from './Product';
-import { useApp, COUPONS } from '../store';
+import { useApp } from '../store';
 import { SELLERS } from '../data/catalog';
 import { UpiQR, PayNowBtn } from '../components/Upi';
 import { DELIVERY_MODES, checkPincodeServiceability, getWhatsAppConnectUrl } from '../lib/shiprocket';
@@ -22,7 +22,7 @@ const Radio = ({ on }) => (
 );
 
 export function Checkout({ go }) {
-  const { state, cartLines, subtotal, saved, delivery, total, dispatch, coupon, couponOff } = useApp();
+  const { state, cartLines, subtotal, saved, delivery, total, dispatch, coupon, couponOff, activeCoupons } = useApp();
   const [addr, setAddr] = useState(state.addresses[0]?.id);
   const [pay, setPay] = useState('cod');
   const [delMode, setDelMode] = useState(state.deliveryMode || 'standard');
@@ -66,6 +66,7 @@ export function Checkout({ go }) {
     });
 
     const orderId = 'TM' + Math.floor(100000 + Math.random() * 900000);
+    const deliveryOtp = String(Math.floor(1000 + Math.random() * 9000));
     const order = {
       id: orderId,
       at: Date.now(),
@@ -85,6 +86,8 @@ export function Checkout({ go }) {
       deliveryMode: delMode,
       eta: etaFormatted,
       pincode: a?.pin || '226010',
+      deliveryOtp,
+      qrData: `TEMSHO://DELIVERY/${orderId}?otp=${deliveryOtp}`,
     };
 
     dispatch({ type: 'PLACE_ORDER', order });
@@ -93,7 +96,7 @@ export function Checkout({ go }) {
       cloud.pushOrder(order, state.user?.cloudId || null).catch(() => {});
     }
 
-    go('success', { id: order.id, eta: order.eta });
+    go('success', { id: order.id, eta: order.eta, otp: order.deliveryOtp });
   };
 
   return (
@@ -209,7 +212,7 @@ export function Checkout({ go }) {
           <View style={{ flexDirection: 'row', gap: 8 }}>
             <View style={{ flex: 1 }}>
               <Field
-                placeholder="Enter Coupon Code"
+                placeholder="Enter Promo Coupon Code"
                 autoCapitalize="characters"
                 value={code}
                 onChangeText={(v) => setCode(v.toUpperCase())}
@@ -226,7 +229,7 @@ export function Checkout({ go }) {
             <View style={[ck.couponOn, !coupon && { backgroundColor: C.redSoft }]}>
               <MC name={coupon ? 'check-circle' : 'close-circle'} size={15} color={coupon ? C.green : C.red} />
               <Text style={{ flex: 1, marginLeft: 7, color: coupon ? '#059669' : C.red, fontSize: 12.5, fontWeight: '700' }}>
-                {coupon ? `${coupon.code} applied — Saved ${money(couponOff)}` : `${state.coupon} is not valid for this order`}
+                {coupon ? `${coupon.code} applied — Saved ${money(couponOff)}` : `"${state.coupon}" is not valid or does not meet minimum cart requirements`}
               </Text>
               <TouchableOpacity onPress={() => { dispatch({ type: 'COUPON', code: null }); setCode(''); }}>
                 <Text style={{ color: C.ink2, fontWeight: '800', fontSize: 12 }}>Remove</Text>
@@ -234,21 +237,25 @@ export function Checkout({ go }) {
             </View>
           )}
 
-          <Text style={{ color: C.ink2, fontSize: 12, fontWeight: '800', marginTop: 14, marginBottom: 8 }}>AVAILABLE COUPONS</Text>
-          {COUPONS.map((c) => {
-            const usable = subtotal >= c.min;
-            return (
-              <TouchableOpacity
-                key={c.code}
-                disabled={!usable}
-                onPress={() => { setCode(c.code); dispatch({ type: 'COUPON', code: c.code }); }}
-                style={[ck.cpn, !usable && { opacity: 0.45 }, state.coupon === c.code && { borderColor: C.green, backgroundColor: C.greenSoft }]}
-              >
-                <View style={ck.cpnTag}><Text style={{ color: C.brand, fontWeight: '900', fontSize: 11 }}>{c.code}</Text></View>
-                <Text style={{ flex: 1, marginLeft: 10, color: C.ink2, fontSize: 12, lineHeight: 17 }}>{c.desc}</Text>
-              </TouchableOpacity>
-            );
-          })}
+          {activeCoupons && activeCoupons.length > 0 && (
+            <>
+              <Text style={{ color: C.ink2, fontSize: 12, fontWeight: '800', marginTop: 14, marginBottom: 8 }}>ACTIVE PROMO CODES</Text>
+              {activeCoupons.map((c) => {
+                const usable = subtotal >= (c.min || 0);
+                return (
+                  <TouchableOpacity
+                    key={c.id || c.code}
+                    disabled={!usable}
+                    onPress={() => { setCode(c.code); dispatch({ type: 'COUPON', code: c.code }); }}
+                    style={[ck.cpn, !usable && { opacity: 0.45 }, state.coupon === c.code && { borderColor: C.green, backgroundColor: C.greenSoft }]}
+                  >
+                    <View style={ck.cpnTag}><Text style={{ color: C.brand, fontWeight: '900', fontSize: 11 }}>{c.code}</Text></View>
+                    <Text style={{ flex: 1, marginLeft: 10, color: C.ink2, fontSize: 12, lineHeight: 17 }}>{c.desc}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </>
+          )}
         </View>
 
         {/* 5. PAYMENT METHOD */}
@@ -344,6 +351,21 @@ export function Success({ go, params }) {
         Order ID: <Text style={{ fontWeight: '800', color: C.ink }}>{params?.id}</Text>{'\n'}
         Estimated Delivery: <Text style={{ fontWeight: '800', color: C.green }}>{params?.eta}</Text>
       </Text>
+
+      {/* Doorstep Delivery OTP Card */}
+      <View style={ck.otpHighlight}>
+        <MC name="shield-key" size={24} color={C.brand} />
+        <View style={{ flex: 1, marginLeft: 10 }}>
+          <Text style={{ color: C.brandNavy, fontSize: 11, fontWeight: '900', textTransform: 'uppercase' }}>Doorstep Delivery OTP</Text>
+          <Text style={{ color: C.brand, fontSize: 22, fontWeight: '900', letterSpacing: 3, marginTop: 2 }}>
+            {params?.otp || '5921'}
+          </Text>
+          <Text style={{ color: C.ink3, fontSize: 10.5, marginTop: 2 }}>
+            Share this 4-digit code with delivery boy upon receiving package.
+          </Text>
+        </View>
+      </View>
+
       <View style={ck.humanCard}>
         <MC name="account-tie-outline" size={22} color={C.brand} />
         <Text style={{ flex: 1, marginLeft: 10, color: C.ink2, fontSize: 12, lineHeight: 18 }}>
@@ -360,6 +382,7 @@ export function Orders({ go }) {
   const { state, dispatch } = useApp();
   const [tab, setTab] = useState('all');
   const [retFor, setRetFor] = useState(null);
+  const [qrModal, setQrModal] = useState(null);
 
   const REASONS = ['Item damaged during transit', 'Wrong product delivered', 'Size does not fit', 'Quality did not match description', 'No longer required'];
   const steps = ['Confirmed', 'Packed', 'Shipped', 'Out for Delivery', 'Delivered'];
@@ -384,6 +407,58 @@ export function Orders({ go }) {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <Header title="My Orders" go={go} />
+
+      {/* Parcel QR Code Modal */}
+      {qrModal && (
+        <Modal animationType="fade" transparent visible={!!qrModal}>
+          <View style={ck.qrModalOverlay}>
+            <View style={[ck.qrModalCard, shadow]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%', marginBottom: 12 }}>
+                <Text style={{ fontSize: 16, fontWeight: '900', color: C.ink, flex: 1 }}>
+                  Parcel Shipping QR
+                </Text>
+                <TouchableOpacity onPress={() => setQrModal(null)} style={{ padding: 4 }}>
+                  <MC name="close" size={22} color={C.ink3} />
+                </TouchableOpacity>
+              </View>
+
+              <Text style={{ color: C.ink3, fontSize: 12, textAlign: 'center', marginBottom: 14 }}>
+                Show this QR Code to delivery boy to scan at doorstep
+              </Text>
+
+              <View style={ck.qrCodeContainer}>
+                <UpiQR
+                  upi={`TEMSHO-PARCEL-ID-${qrModal.id}`}
+                  name={qrModal.address?.name || 'Customer'}
+                  amount={qrModal.total}
+                  note={`Order #${qrModal.id}`}
+                  size={160}
+                />
+              </View>
+
+              <View style={ck.qrOtpBox}>
+                <Text style={{ color: C.ink3, fontSize: 11, fontWeight: '800' }}>DOORSTEP DELIVERY OTP</Text>
+                <Text style={{ color: C.brand, fontSize: 24, fontWeight: '900', letterSpacing: 4, marginTop: 2 }}>
+                  {qrModal.deliveryOtp || '4821'}
+                </Text>
+              </View>
+
+              <Btn
+                title="Open Delivery Partner Scanner"
+                icon="qrcode-scan"
+                tone="brand"
+                style={{ alignSelf: 'stretch', marginTop: 14 }}
+                onPress={() => {
+                  const oid = qrModal.id;
+                  setQrModal(null);
+                  go('delivery-partner', { orderId: oid });
+                }}
+              />
+            </View>
+          </View>
+        </Modal>
+      )}
+
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ maxHeight: 50, flexGrow: 0, backgroundColor: C.surface }} contentContainerStyle={{ paddingHorizontal: 12, alignItems: 'center' }}>
         {[['all', 'All Orders'], ['active', 'In Transit'], ['done', 'Delivered'], ['other', 'Cancelled / Returns']].map(([k, l]) => (
           <TouchableOpacity key={k} onPress={() => setTab(k)} style={[ck.tab, tab === k && { borderBottomColor: C.brand }]}>
@@ -399,7 +474,9 @@ export function Orders({ go }) {
         {list.map((o) => {
           const si = steps.indexOf(o.status);
           const bad = ['Cancelled', 'Return Requested'].includes(o.status);
+          const isDone = o.status === 'Delivered';
           const firstItem = o.items[0];
+          const otp = o.deliveryOtp || '5821';
 
           return (
             <View key={o.id} style={[ck.box, shadow, { marginBottom: 14 }]}>
@@ -422,13 +499,42 @@ export function Orders({ go }) {
 
               {/* Progress Steps */}
               {!bad && (
-                <View style={{ flexDirection: 'row', marginTop: 6, marginBottom: 4 }}>
+                <View style={{ flexDirection: 'row', marginTop: 6, marginBottom: 8 }}>
                   {steps.map((st2, i) => (
                     <View key={st2} style={{ flex: 1, alignItems: 'center', paddingHorizontal: 1 }}>
                       <View style={{ height: 4, alignSelf: 'stretch', backgroundColor: i <= si ? C.green : C.line, borderRadius: 2 }} />
                       <Text numberOfLines={1} style={{ fontSize: 8.5, color: i <= si ? C.green : C.ink3, fontWeight: '700', marginTop: 5 }}>{st2}</Text>
                     </View>
                   ))}
+                </View>
+              )}
+
+              {/* DOORSTEP DELIVERY OTP BANNER */}
+              {!bad && !isDone && (
+                <View style={ck.otpBanner}>
+                  <MC name="shield-key" size={20} color={C.brand} />
+                  <View style={{ flex: 1, marginLeft: 8 }}>
+                    <Text style={{ color: C.ink, fontSize: 11, fontWeight: '800' }}>
+                      Doorstep Delivery OTP: <Text style={{ color: C.brand, fontSize: 14, fontWeight: '900', letterSpacing: 1.5 }}>{otp}</Text>
+                    </Text>
+                    <Text style={{ color: C.ink3, fontSize: 10, marginTop: 1 }}>
+                      Share with delivery boy upon receiving package.
+                    </Text>
+                  </View>
+                  <TouchableOpacity onPress={() => setQrModal(o)} style={ck.qrSmallBtn}>
+                    <MC name="qrcode" size={16} color={C.brand} />
+                    <Text style={{ color: C.brand, fontSize: 10.5, fontWeight: '800', marginLeft: 3 }}>QR</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {/* Delivery Agent Confirmation info */}
+              {isDone && o.deliveredBy && (
+                <View style={ck.deliveredByBox}>
+                  <MC name="check-decagram" size={16} color={C.green} />
+                  <Text style={{ color: '#059669', fontSize: 11.5, fontWeight: '700', marginLeft: 6 }}>
+                    Verified Delivery by {o.deliveredBy}
+                  </Text>
                 </View>
               )}
 
@@ -468,13 +574,13 @@ export function Orders({ go }) {
                 {!bad && o.status !== 'Delivered' && (
                   <>
                     <Btn
-                      title="Next Status"
-                      icon="fast-forward"
-                      tone="ghost"
-                      style={{ flex: 1, minWidth: 110 }}
-                      onPress={() => dispatch({ type: 'ADVANCE_ORDER', id: o.id })}
+                      title="Delivery Boy Scan & OTP"
+                      icon="qrcode-scan"
+                      tone="brand"
+                      style={{ flex: 1, minWidth: 160 }}
+                      onPress={() => go('delivery-partner', { orderId: o.id })}
                     />
-                    <Btn title="Cancel Order" tone="outline" style={{ flex: 0.8, minWidth: 90 }} onPress={() => dispatch({ type: 'CANCEL_ORDER', id: o.id })} />
+                    <Btn title="Cancel" tone="outline" style={{ flex: 0.6, minWidth: 80 }} onPress={() => dispatch({ type: 'CANCEL_ORDER', id: o.id })} />
                   </>
                 )}
                 {o.status === 'Delivered' && (
@@ -517,6 +623,14 @@ export function Orders({ go }) {
   );
 }
 
+const sx = StyleSheet.create({
+  bottomBar: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    backgroundColor: C.surface, borderTopWidth: 1, borderTopColor: C.line,
+    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12,
+  },
+});
+
 const ck = StyleSheet.create({
   sec: { fontSize: 13, fontWeight: '900', color: C.ink3, letterSpacing: 0.6, marginBottom: 10, textTransform: 'uppercase' },
   opt: {
@@ -547,4 +661,12 @@ const ck = StyleSheet.create({
   retOpt: { backgroundColor: C.surface, borderRadius: R.sm, padding: 10, marginBottom: 6, borderWidth: 1, borderColor: C.line },
   humanCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.surface, borderRadius: R.lg, padding: 14, marginTop: 22 },
   awbBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.brandSoft, borderRadius: R.sm, padding: 9, marginTop: 10 },
+  otpHighlight: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.brandSoft, borderRadius: R.lg, padding: 14, marginTop: 16, width: '100%', borderWidth: 1.5, borderColor: '#C7D2FE' },
+  otpBanner: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.brandSoft, borderRadius: R.md, padding: 10, marginVertical: 8, borderWidth: 1, borderColor: '#C7D2FE' },
+  qrSmallBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', paddingHorizontal: 8, paddingVertical: 6, borderRadius: R.sm, borderWidth: 1, borderColor: C.brand },
+  deliveredByBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.greenSoft, borderRadius: R.sm, padding: 8, marginVertical: 6 },
+  qrModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', padding: 20 },
+  qrModalCard: { backgroundColor: C.surface, borderRadius: R.xl, padding: 20, alignItems: 'center', width: '100%', maxWidth: 360 },
+  qrCodeContainer: { backgroundColor: '#fff', padding: 12, borderRadius: R.md, borderWidth: 1, borderColor: C.line, marginVertical: 8 },
+  qrOtpBox: { backgroundColor: C.brandSoft, paddingVertical: 10, paddingHorizontal: 18, borderRadius: R.md, alignItems: 'center', marginTop: 10, width: '100%' },
 });

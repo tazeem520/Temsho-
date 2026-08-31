@@ -49,17 +49,34 @@ export async function pullProducts() {
   }
 }
 
-export async function pushProduct(p, userId, shopId) {
+export async function pushProduct(p, user = null, shop = null) {
   if (!isConfigured) return null;
   try {
     let imageUrl = null;
-    if (p.img?.uri) imageUrl = await uploadPhoto(p.img.uri);
+    if (p.img?.uri) {
+      try {
+        imageUrl = await uploadPhoto(p.img.uri);
+      } catch (imgErr) {
+        imageUrl = p.img.uri;
+      }
+    } else if (typeof p.img === 'string') {
+      imageUrl = p.img;
+    }
+
+    // Extract valid UUID or null to prevent postgres uuid mismatch errors
+    let sellerId = null;
+    if (typeof user === 'string' && user.includes('-')) sellerId = user;
+    else if (user?.cloudId && typeof user.cloudId === 'string' && user.cloudId.includes('-')) sellerId = user.cloudId;
+
+    let shopId = null;
+    if (typeof shop === 'string' && shop.includes('-')) shopId = shop;
+    else if (shop?.cloudId && typeof shop.cloudId === 'string' && shop.cloudId.includes('-')) shopId = shop.cloudId;
 
     const { data, error } = await supabase
       .from('products')
       .insert({
-        shop_id: shopId || null,
-        seller_id: userId || null,
+        shop_id: shopId,
+        seller_id: sellerId,
         title: p.title,
         description: p.desc || '',
         category: p.cat || 'fashion',
@@ -72,7 +89,7 @@ export async function pushProduct(p, userId, shopId) {
       .single();
 
     if (error) {
-      console.log('pushProduct:', error.message);
+      console.log('pushProduct error:', error.message);
       return null;
     }
     return mapProduct(data);
@@ -110,15 +127,15 @@ export async function uploadPhoto(uri) {
       });
 
     if (error) {
-      console.log('uploadPhoto error:', error.message);
-      return null;
+      console.log('uploadPhoto error (falling back to direct URI):', error.message);
+      return uri;
     }
 
     const { data } = supabase.storage.from('product-photos').getPublicUrl(fileName);
-    return data?.publicUrl || null;
+    return data?.publicUrl || uri;
   } catch (e) {
-    console.log('uploadPhoto exception:', e.message);
-    return null;
+    console.log('uploadPhoto exception (falling back):', e.message);
+    return uri;
   }
 }
 

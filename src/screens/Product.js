@@ -8,45 +8,51 @@ import { useApp } from '../store';
 import { checkPincodeServiceability } from '../lib/shiprocket';
 import * as cloud from '../lib/cloud';
 
-const REVIEWS_INITIAL = [
-  { n: 'Sunita Kushwaha', c: 'Kanpur, UP', r: 5, t: 'The product quality and finishing is excellent! Looks even better than the photos. Received delivery in 2 days.', v: true, date: '2 days ago' },
-  { n: 'Mohd. Imran', c: 'Hyderabad, TS', r: 5, t: 'Great value for money. 100% genuine handmade product. Safe packaging and prompt shipping.', v: true, date: '1 week ago' },
-  { n: 'Deepak Rathore', c: 'Indore, MP', r: 4, t: 'The seller personally called to confirm the size and delivery schedule. Genuine human support.', v: true, date: '2 weeks ago' },
-];
-
-const QA_LIST = [
-  { q: 'Is Cash on Delivery (COD) available for this item?', a: 'Yes, Cash on Delivery is supported across all serviceable pincodes in India.' },
-  { q: 'How do returns work if I want to return the product?', a: 'You can request a 1-click return within 7 days of delivery. Doorstep pickup is free.' },
-  { q: 'Is this a genuine item from a verified seller?', a: 'Yes, Temsho prohibits automated bot listings. Every product is dispatched directly by verified human sellers.' },
-];
-
 export function Product({ go, params }) {
   const { byId, dispatch, state, cartCount } = useApp();
   const p = byId(params.id);
   const [size, setSize] = useState('M');
   const [pinInput, setPinInput] = useState('226010');
   const [pinChecked, setPinChecked] = useState(true);
-  const [reviews, setReviews] = useState(REVIEWS_INITIAL);
+  const [reviews, setReviews] = useState([]);
   const [writingReview, setWritingReview] = useState(false);
   const [myRating, setMyRating] = useState(5);
   const [myReviewText, setMyReviewText] = useState('');
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
+
+  // Load real reviews from Supabase
+  React.useEffect(() => {
+    if (p?.id && cloud.cloudOn()) {
+      cloud.pullReviews(p.id).then((cloudRevs) => {
+        if (cloudRevs && cloudRevs.length > 0) {
+          setReviews(cloudRevs.map((r) => ({
+            n: r.users?.name || 'Verified Customer',
+            c: r.users?.city || 'India',
+            r: Number(r.rating) || 5,
+            t: r.text,
+            v: true,
+            date: 'Verified Purchase',
+          })));
+        }
+      }).catch(() => {});
+    }
+  }, [p?.id]);
 
   if (!p) return <Empty icon="package-variant-closed-remove" title="Product Not Found" sub="This listing may have been removed or updated." />;
 
   const s = SELLERS[p.seller] || {
     name: p.sellerName || 'Verified Independent Seller',
     city: p.sellerCity || 'India',
-    rating: 4.8,
+    rating: 0,
     hue: C.brand,
-    orders: 1450,
-    since: 2024,
+    orders: 0,
+    since: 2026,
   };
 
-  const mrp = p.mrp || p.price;
+  const mrp = Number(p.mrp) || Number(p.price) || 0;
   const off = mrp > p.price ? Math.round(((mrp - p.price) / mrp) * 100) : 0;
   const wished = state.wishlist.includes(p.id);
-  const related = state.products.filter((x) => x.cat === p.cat && x.id !== p.id).slice(0, 6);
+  const related = (state.products || []).filter((x) => x.cat === p.cat && x.id !== p.id).slice(0, 6);
   const pinResult = checkPincodeServiceability(pinInput);
 
   const submitReview = () => {
@@ -267,42 +273,86 @@ export function Product({ go, params }) {
             </View>
           )}
 
-          <RatingsBreakdown rating={p.rating || 4.8} totalCount={reviews.length} />
+          {/* Ratings & Customer Reviews Breakdown */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 24 }}>
+            <Text style={sx.h2}>Ratings & Reviews</Text>
+            <TouchableOpacity onPress={() => setWritingReview(!writingReview)} style={sx.writeRevBtn}>
+              <MC name="pencil-outline" size={14} color={C.brand} />
+              <Text style={{ color: C.brand, fontWeight: '800', fontSize: 12, marginLeft: 4 }}>Write a Review</Text>
+            </TouchableOpacity>
+          </View>
 
-          {/* Customer Reviews List */}
-          {reviews.map((r, i) => (
-            <View key={i} style={sx.review}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Avatar name={r.n} hue={C.brand} size={28} />
-                <View style={{ marginLeft: 8 }}>
-                  <Text style={{ fontWeight: '800', color: C.ink, fontSize: 13 }}>{r.n}</Text>
-                  <Text style={{ color: C.ink3, fontSize: 10.5 }}>{r.c} · {r.date}</Text>
-                </View>
-                <View style={{ flex: 1 }} />
-                <View style={{ flexDirection: 'row' }}>
-                  {[...Array(5)].map((_, k) => (
-                    <MC key={k} name="star" size={12} color={k < r.r ? C.accent : C.line} />
-                  ))}
-                </View>
+          {reviewSubmitted && (
+            <View style={sx.revThanks}>
+              <MC name="check-circle" size={16} color={C.green} />
+              <Text style={{ color: '#059669', fontWeight: '800', fontSize: 12, marginLeft: 6 }}>
+                Thank you! Your verified review has been published.
+              </Text>
+            </View>
+          )}
+
+          {writingReview && (
+            <View style={[sx.writeCard, shadow]}>
+              <Text style={{ fontWeight: '800', color: C.ink, fontSize: 13.5, marginBottom: 8 }}>Your Rating</Text>
+              <View style={{ flexDirection: 'row', gap: 10, marginBottom: 12 }}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <TouchableOpacity key={star} onPress={() => setMyRating(star)}>
+                    <MC name="star" size={26} color={star <= myRating ? C.accent : C.line} />
+                  </TouchableOpacity>
+                ))}
               </View>
-              <Text style={{ color: C.ink2, fontSize: 12.5, lineHeight: 18, marginTop: 6 }}>{r.t}</Text>
-              {r.v && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
-                  <MC name="check-decagram" size={13} color={C.green} />
-                  <Text style={{ color: C.green, fontSize: 11, fontWeight: '800', marginLeft: 4 }}>Verified Human Buyer</Text>
-                </View>
-              )}
+              <TextInput
+                placeholder="Share your genuine experience with this product..."
+                placeholderTextColor={C.ink3}
+                multiline
+                value={myReviewText}
+                onChangeText={setMyReviewText}
+                style={sx.revInput}
+              />
+              <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+                <Btn title="Cancel" tone="ghost" style={{ flex: 1 }} onPress={() => setWritingReview(false)} />
+                <Btn title="Submit Review" tone="green" style={{ flex: 1 }} disabled={!myReviewText.trim()} onPress={submitReview} />
+              </View>
             </View>
-          ))}
+          )}
 
-          {/* Questions & Answers */}
-          <Text style={[sx.h2, { marginTop: 22 }]}>Questions & Answers</Text>
-          {QA_LIST.map((qa, i) => (
-            <View key={i} style={sx.qaBox}>
-              <Text style={{ fontWeight: '800', color: C.ink, fontSize: 12.5 }}>Q: {qa.q}</Text>
-              <Text style={{ color: C.ink2, fontSize: 12, marginTop: 4, lineHeight: 17 }}>A: {qa.a}</Text>
+          {reviews.length > 0 ? (
+            <>
+              <RatingsBreakdown rating={p.rating || (reviews.reduce((acc, r) => acc + (r.r || 5), 0) / reviews.length)} totalCount={reviews.length} />
+              {reviews.map((r, i) => (
+                <View key={i} style={sx.review}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Avatar name={r.n} hue={C.brand} size={28} />
+                    <View style={{ marginLeft: 8 }}>
+                      <Text style={{ fontWeight: '800', color: C.ink, fontSize: 13 }}>{r.n}</Text>
+                      <Text style={{ color: C.ink3, fontSize: 10.5 }}>{r.c} · {r.date}</Text>
+                    </View>
+                    <View style={{ flex: 1 }} />
+                    <View style={{ flexDirection: 'row' }}>
+                      {[...Array(5)].map((_, k) => (
+                        <MC key={k} name="star" size={12} color={k < r.r ? C.accent : C.line} />
+                      ))}
+                    </View>
+                  </View>
+                  <Text style={{ color: C.ink2, fontSize: 12.5, lineHeight: 18, marginTop: 6 }}>{r.t}</Text>
+                  {r.v && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
+                      <MC name="check-decagram" size={13} color={C.green} />
+                      <Text style={{ color: C.green, fontSize: 11, fontWeight: '800', marginLeft: 4 }}>Verified Human Buyer</Text>
+                    </View>
+                  )}
+                </View>
+              ))}
+            </>
+          ) : (
+            <View style={{ backgroundColor: C.bg, borderRadius: R.md, padding: 16, marginTop: 12, alignItems: 'center' }}>
+              <MC name="star-outline" size={24} color={C.ink3} />
+              <Text style={{ fontWeight: '700', color: C.ink, fontSize: 13, marginTop: 6 }}>No Reviews Yet</Text>
+              <Text style={{ color: C.ink3, fontSize: 11.5, textAlign: 'center', marginTop: 2 }}>
+                Be the first verified customer to share a rating and review for this product!
+              </Text>
             </View>
-          ))}
+          )}
 
           {/* Similar Products */}
           {related.length > 0 && (

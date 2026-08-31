@@ -1,18 +1,18 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, FlatList, Dimensions } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, FlatList, Dimensions, Image } from 'react-native';
 import { C, R, shadow, money } from '../theme';
 import { MaterialCommunityIcons as MC } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ProductCard, Section, Badge, TemshoAssuredBadge, HumanTag, Empty, Btn, Avatar, Thumb, CountdownTimer } from '../components/UI';
-import { CATEGORIES, BANNERS, SELLERS } from '../data/catalog';
-import { useApp, COUPONS } from '../store';
+import { CATEGORIES, SELLERS } from '../data/catalog';
+import { useApp } from '../store';
 
 const W = Dimensions.get('window').width;
 const SCREEN_W = Math.min(W, 430);
 const CARD_W = (Math.min(W, 520) - 16 * 2 - 12) / 2;
 
 export function Home({ go }) {
-  const { state, unread, cartCount } = useApp();
+  const { state, unread, cartCount, activeBanners } = useApp();
   const [bi, setBi] = useState(0);
   const [budgetTab, setBudgetTab] = useState(499);
   const u = state.user;
@@ -35,6 +35,8 @@ export function Home({ go }) {
   ];
   const col = [];
   for (let i = 0; i < gridCats.length; i += 2) col.push(gridCats.slice(i, i + 2));
+
+  const bannerList = activeBanners && activeBanners.length > 0 ? activeBanners : [];
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
@@ -115,32 +117,49 @@ export function Home({ go }) {
           </ScrollView>
         </View>
 
-        {/* Auto Carousel Banners */}
-        <View style={{ backgroundColor: C.surface, marginTop: 8, paddingVertical: 10 }}>
-          <ScrollView
-            horizontal pagingEnabled showsHorizontalScrollIndicator={false}
-            onScroll={(e) => setBi(Math.round(e.nativeEvent.contentOffset.x / (e.nativeEvent.layoutMeasurement.width || 1)))}
-            scrollEventThrottle={16}
-          >
-            {BANNERS.map((b) => (
-              <View key={b.id} style={{ width: SCREEN_W, paddingHorizontal: 12 }}>
-                <LinearGradient colors={[b.from, b.to]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.banner}>
-                  <View style={{ flex: 1 }}>
-                    <View style={st.bannerTag}><Text style={{ color: '#fff', fontSize: 9.5, fontWeight: '900' }}>{b.tag}</Text></View>
-                    <Text style={{ color: '#fff', fontSize: 18, fontWeight: '900', marginTop: 4 }}>{b.title}</Text>
-                    <Text style={{ color: '#ffffffdd', fontSize: 12, marginTop: 4, lineHeight: 17 }}>{b.sub}</Text>
-                  </View>
-                  <MC name={b.icon} size={48} color="#ffffff30" />
-                </LinearGradient>
-              </View>
-            ))}
-          </ScrollView>
-          <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 8 }}>
-            {BANNERS.map((b, i) => (
-              <View key={b.id} style={[st.pageDot, i === bi && { width: 18, backgroundColor: C.brand }]} />
-            ))}
+        {/* Auto Carousel Banners (Owner Dynamic Banners) */}
+        {bannerList.length > 0 && (
+          <View style={{ backgroundColor: C.surface, marginTop: 8, paddingVertical: 10 }}>
+            <ScrollView
+              horizontal pagingEnabled showsHorizontalScrollIndicator={false}
+              onScroll={(e) => setBi(Math.round(e.nativeEvent.contentOffset.x / (e.nativeEvent.layoutMeasurement.width || 1)))}
+              scrollEventThrottle={16}
+            >
+              {bannerList.map((b) => (
+                <View key={b.id} style={{ width: SCREEN_W, paddingHorizontal: 12 }}>
+                  <TouchableOpacity
+                    activeOpacity={0.9}
+                    onPress={() => {
+                      if (b.linkTo) go(b.linkTo);
+                      else if (b.toScreen) go(b.toScreen);
+                      else go('offers');
+                    }}
+                  >
+                    {b.img ? (
+                      <View style={[st.banner, { padding: 0, overflow: 'hidden' }]}>
+                        <Image source={typeof b.img === 'string' ? { uri: b.img } : b.img} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                      </View>
+                    ) : (
+                      <LinearGradient colors={[b.from || '#1E2562', b.to || '#2874F0']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.banner}>
+                        <View style={{ flex: 1 }}>
+                          <View style={st.bannerTag}><Text style={{ color: '#fff', fontSize: 9.5, fontWeight: '900' }}>{b.tag || 'FEATURED'}</Text></View>
+                          <Text style={{ color: '#fff', fontSize: 18, fontWeight: '900', marginTop: 4 }}>{b.title}</Text>
+                          <Text style={{ color: '#ffffffdd', fontSize: 12, marginTop: 4, lineHeight: 17 }}>{b.sub}</Text>
+                        </View>
+                        <MC name={b.icon || 'bullhorn'} size={48} color="#ffffff30" />
+                      </LinearGradient>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </ScrollView>
+            <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 8 }}>
+              {bannerList.map((b, i) => (
+                <View key={b.id} style={[st.pageDot, i === bi && { width: 18, backgroundColor: C.brand }]} />
+              ))}
+            </View>
           </View>
-        </View>
+        )}
 
         {/* Trust Badges Bar */}
         <View style={st.trustStrip}>
@@ -250,7 +269,7 @@ export function Home({ go }) {
 
 /* ---------------- OFFERS & COUPONS ---------------- */
 export function Offers({ go }) {
-  const { state, dispatch } = useApp();
+  const { state, dispatch, activeCoupons } = useApp();
   const byOff = [...state.products].sort((a, b) => {
     const mrpA = a.mrp || a.price;
     const mrpB = b.mrp || b.price;
@@ -267,20 +286,30 @@ export function Offers({ go }) {
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
         <Text style={st.oTitle}>Available Coupons</Text>
-        {COUPONS.map((c) => (
-          <View key={c.code} style={[st.coupon, shadow]}>
-            <View style={st.couponLeft}>
-              <MC name="ticket-percent-outline" size={24} color={C.brand} />
+        {activeCoupons && activeCoupons.length > 0 ? (
+          activeCoupons.map((c) => (
+            <View key={c.id || c.code} style={[st.coupon, shadow]}>
+              <View style={st.couponLeft}>
+                <MC name="ticket-percent-outline" size={24} color={C.brand} />
+              </View>
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={{ fontWeight: '900', color: C.ink, fontSize: 15, letterSpacing: 1 }}>{c.code}</Text>
+                <Text style={{ color: C.ink2, fontSize: 12, marginTop: 3, lineHeight: 17 }}>{c.desc}</Text>
+              </View>
+              <TouchableOpacity onPress={() => { dispatch({ type: 'COUPON', code: c.code }); go('cart'); }} style={st.applyBtn}>
+                <Text style={{ color: '#fff', fontWeight: '900', fontSize: 12.5 }}>APPLY</Text>
+              </TouchableOpacity>
             </View>
-            <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={{ fontWeight: '900', color: C.ink, fontSize: 15, letterSpacing: 1 }}>{c.code}</Text>
-              <Text style={{ color: C.ink2, fontSize: 12, marginTop: 3, lineHeight: 17 }}>{c.desc}</Text>
-            </View>
-            <TouchableOpacity onPress={() => { dispatch({ type: 'COUPON', code: c.code }); go('cart'); }} style={st.applyBtn}>
-              <Text style={{ color: '#fff', fontWeight: '900', fontSize: 12.5 }}>APPLY</Text>
-            </TouchableOpacity>
+          ))
+        ) : (
+          <View style={{ backgroundColor: C.surface, borderRadius: R.md, padding: 16, alignItems: 'center', marginBottom: 16 }}>
+            <MC name="tag-outline" size={32} color={C.ink3} />
+            <Text style={{ fontSize: 13.5, fontWeight: '700', color: C.ink, marginTop: 8 }}>No Public Coupons Available</Text>
+            <Text style={{ fontSize: 12, color: C.ink3, textAlign: 'center', marginTop: 4 }}>
+              Special promo codes issued by the store owner can be directly entered at checkout!
+            </Text>
           </View>
-        ))}
+        )}
 
         {top.length > 0 && (
           <>

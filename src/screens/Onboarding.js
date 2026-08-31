@@ -12,20 +12,37 @@ export default function Onboarding() {
   const [phone, setPhone] = useState('');
   const [name, setName] = useState('');
   const [otp, setOtp] = useState(['', '', '', '']);
+  const [singleOtp, setSingleOtp] = useState('');
   const [err, setErr] = useState('');
   const [via, setVia] = useState('whatsapp'); // whatsapp | sms
   const [busy, setBusy] = useState(false);
-  const [hintCode, setHintCode] = useState(null);
 
   const activeProvider = state.admin?.otpProvider || 'supabase';
-  const info = otpInfo(activeProvider);
   const refs = [useRef(), useRef(), useRef(), useRef()];
 
+  const applyCode = (raw) => {
+    const cleaned = String(raw || '').replace(/\D/g, '').slice(0, 4);
+    setSingleOtp(cleaned);
+    const arr = ['', '', '', ''];
+    for (let i = 0; i < cleaned.length; i++) {
+      arr[i] = cleaned[i];
+    }
+    setOtp(arr);
+    if (cleaned.length === 4) {
+      setErr('');
+    }
+  };
+
   const setOtpAt = (i, v) => {
-    const d = v.replace(/\D/g, '').slice(-1);
+    const d = v.replace(/\D/g, '');
+    if (d.length > 1) {
+      applyCode(d);
+      return;
+    }
     const next = [...otp];
-    next[i] = d;
+    next[i] = d.slice(-1);
     setOtp(next);
+    setSingleOtp(next.join(''));
     if (d && i < 3) refs[i + 1].current?.focus();
   };
 
@@ -34,6 +51,20 @@ export default function Onboarding() {
       type: 'LOGIN',
       user: { name: name.trim() || 'Valued User', phone, humanVerified: true, isSeller: false },
     });
+
+  const doVerify = async () => {
+    const code = singleOtp || otp.join('');
+    if (code.length !== 4) return setErr('Please enter the 4-digit verification code');
+    setBusy(true);
+    setErr('');
+    const r = await verifyOtp(phone, code, activeProvider);
+    setBusy(false);
+    if (r.ok) {
+      finish();
+    } else {
+      setErr(r.msg || 'Invalid verification code. Please check your SMS/WhatsApp and try again.');
+    }
+  };
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ padding: 16, paddingTop: 32, paddingBottom: 36 }}>
@@ -75,7 +106,7 @@ export default function Onboarding() {
       {step === 0 && (
         <View style={[st.card, shadow]}>
           <Text style={st.h}>Login to Temsho</Text>
-          <Text style={st.p}>Enter your 10-digit mobile number to receive an instant verification code.</Text>
+          <Text style={st.p}>Enter your 10-digit mobile number to receive an OTP verification code on your phone.</Text>
 
           <Field label="Your Name (Optional)" placeholder="e.g. Rahul Sharma" value={name} onChangeText={setName} />
           
@@ -94,7 +125,7 @@ export default function Onboarding() {
           {!!err && <Text style={st.err}>{err}</Text>}
 
           <Text style={{ color: C.ink2, fontSize: 11.5, fontWeight: '700', marginTop: 10, marginBottom: 6 }}>
-            Delivery Channel:
+            Send Verification Code via:
           </Text>
           <View style={{ flexDirection: 'row', gap: 8, marginBottom: 2 }}>
             <TouchableOpacity
@@ -120,7 +151,7 @@ export default function Onboarding() {
           </View>
 
           <Btn
-            title={busy ? 'Sending OTP…' : via === 'whatsapp' ? 'Send via WhatsApp' : 'Send via SMS'}
+            title={busy ? 'Sending OTP to phone…' : via === 'whatsapp' ? 'Send OTP via WhatsApp' : 'Send OTP via SMS'}
             icon={via === 'whatsapp' ? 'whatsapp' : 'message-text-outline'}
             tone={via === 'whatsapp' ? 'green' : 'brand'}
             style={{ marginTop: 14, paddingVertical: 11 }}
@@ -131,7 +162,6 @@ export default function Onboarding() {
               const r = await sendOtp(phone, via, activeProvider);
               setBusy(false);
               if (r.ok) {
-                if (r.demoCode) setHintCode(r.demoCode);
                 setStep(1);
               } else {
                 setErr(r.msg || 'Unable to send OTP. Please try again.');
@@ -153,30 +183,26 @@ export default function Onboarding() {
         <View style={[st.card, shadow]}>
           <Text style={st.h}>Enter Verification Code</Text>
           <View style={[st.sentVia, via === 'whatsapp' && { backgroundColor: '#ECFDF5' }]}>
-            <MC name={via === 'whatsapp' ? 'whatsapp' : 'message-text-outline'} size={16} color={via === 'whatsapp' ? '#25D366' : C.brand} />
-            <Text style={{ flex: 1, marginLeft: 8, color: C.ink2, fontSize: 11.5, lineHeight: 16 }}>
-              Code sent to <Text style={{ fontWeight: '800', color: C.ink }}>+91 {phone}</Text> via {via === 'whatsapp' ? 'WhatsApp' : 'SMS'}.
+            <MC name={via === 'whatsapp' ? 'whatsapp' : 'message-text-outline'} size={18} color={via === 'whatsapp' ? '#25D366' : C.brand} />
+            <Text style={{ flex: 1, marginLeft: 8, color: C.ink2, fontSize: 12, lineHeight: 17 }}>
+              A 4-digit code has been sent to <Text style={{ fontWeight: '800', color: C.ink }}>+91 {phone}</Text> via {via === 'whatsapp' ? 'WhatsApp' : 'SMS'}. Please check your phone messages.
             </Text>
           </View>
 
-          {hintCode && (
-            <View style={st.demoHint}>
-              <MC name="key-variant" size={14} color="#D97706" />
-              <Text style={{ color: '#92400E', fontSize: 11.5, fontWeight: '800', marginLeft: 6 }}>
-                Verification Code: {hintCode}
-              </Text>
-            </View>
-          )}
-
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 18 }}>
             {otp.map((v, i) => (
               <TextInput
                 key={i}
                 ref={refs[i]}
                 value={v}
                 onChangeText={(t) => setOtpAt(i, t)}
+                onKeyPress={({ nativeEvent }) => {
+                  if (nativeEvent.key === 'Backspace' && !otp[i] && i > 0) {
+                    refs[i - 1].current?.focus();
+                  }
+                }}
                 keyboardType="number-pad"
-                maxLength={1}
+                maxLength={4}
                 style={[st.otpBox, v && { borderColor: C.brand, backgroundColor: C.brandSoft }]}
               />
             ))}
@@ -186,33 +212,27 @@ export default function Onboarding() {
           <Btn
             title={busy ? 'Verifying…' : 'Verify & Enter'}
             tone="brand"
-            style={{ marginTop: 16, paddingVertical: 11 }}
-            disabled={otp.join('').length !== 4 || busy}
-            onPress={async () => {
-              setBusy(true); setErr('');
-              const r = await verifyOtp(phone, otp.join(''), activeProvider);
-              setBusy(false);
-              if (r.ok) {
-                finish();
-              } else {
-                setErr(r.msg || 'Invalid verification code. Please check and enter the correct code.');
-              }
-            }}
+            style={{ marginTop: 18, paddingVertical: 11 }}
+            disabled={(singleOtp.length !== 4 && otp.join('').length !== 4) || busy}
+            onPress={doVerify}
           />
 
           <TouchableOpacity
             onPress={async () => {
               setBusy(true);
+              setErr('');
               const r = await sendOtp(phone, via, activeProvider);
               setBusy(false);
-              if (r.demoCode) setHintCode(r.demoCode);
+              if (r.ok) {
+                setErr('New verification code sent to your phone.');
+              }
             }}
-            style={{ marginTop: 12, alignItems: 'center' }}
+            style={{ marginTop: 14, alignItems: 'center' }}
           >
-            <Text style={{ color: C.brand, fontWeight: '700', fontSize: 12 }}>Resend Verification Code</Text>
+            <Text style={{ color: C.brand, fontWeight: '700', fontSize: 12.5 }}>Resend Code to Phone</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => setStep(0)} style={{ marginTop: 10, alignItems: 'center' }}>
+          <TouchableOpacity onPress={() => { setStep(0); setErr(''); }} style={{ marginTop: 12, alignItems: 'center' }}>
             <Text style={{ color: C.ink3, fontWeight: '600', fontSize: 12 }}>Change Mobile Number</Text>
           </TouchableOpacity>
         </View>
@@ -251,9 +271,10 @@ const st = StyleSheet.create({
   },
   demoHint: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFBEB',
-    borderRadius: R.sm, paddingHorizontal: 10, paddingVertical: 6, marginTop: 10,
-    borderWidth: 1, borderColor: '#FDE68A',
+    borderRadius: R.md, paddingHorizontal: 12, paddingVertical: 9, marginTop: 10,
+    borderWidth: 1.5, borderColor: '#FDE68A',
   },
+  fillBtn: { backgroundColor: '#D97706', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 },
   viaBox: {
     flex: 1, borderWidth: 1.5, borderColor: C.line, borderRadius: R.sm,
     paddingVertical: 10, alignItems: 'center', backgroundColor: C.surface,

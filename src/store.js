@@ -1,20 +1,13 @@
 import React, { createContext, useContext, useMemo, useReducer, useEffect, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { PRODUCTS } from './data/catalog';
+import { PRODUCTS, BANNERS } from './data/catalog';
 import { DEFAULT_ADMIN, isOwner } from './config';
 import * as cloud from './lib/cloud';
 import * as shiprocket from './lib/shiprocket';
 
 const Ctx = createContext(null);
 export const useApp = () => useContext(Ctx);
-const KEY = '@temsho/v2_clean';
-
-export const COUPONS = [
-  { code: 'TEM100', off: 100, min: 799, desc: '₹100 discount on orders above ₹799' },
-  { code: 'NAYA50', off: 50, min: 299, desc: 'Flat ₹50 discount for new customers' },
-  { code: 'BIG15', pct: 15, max: 400, min: 1499, desc: '15% discount (up to ₹400) on orders ₹1499+' },
-  { code: 'FREESHIP', ship: true, min: 0, desc: '100% Free Delivery on this order' },
-];
+const KEY = '@temsho/v4_dynamic_banners';
 
 const refCode = (phone) => 'TEM' + (phone ? phone.slice(-4) : '2026') + 'X';
 
@@ -25,6 +18,8 @@ const init = {
   ready: false,
   user: null,
   admin: { ...DEFAULT_ADMIN },
+  adminCoupons: [], // Owner-generated dynamic coupons (initially empty)
+  adminBanners: BANNERS, // Owner-generated dynamic banners/posters
   banned: [],
   settings: {
     lang: 'English',
@@ -51,7 +46,7 @@ const init = {
     { id: 'a1', name: 'Home', line: '221, Gomti Nagar, Vibhuti Khand', city: 'Lucknow', state: 'Uttar Pradesh', pin: '226010', phone: '9044468663' },
   ],
   notifications: [
-    { id: 'n1', icon: 'party-popper', title: 'Welcome to Temsho!', body: 'Use coupon NAYA50 at checkout to save ₹50 on your first purchase.', at: Date.now() - 3600000, read: false },
+    { id: 'n1', icon: 'party-popper', title: 'Welcome to Temsho!', body: 'Shop directly from verified human sellers with 100% transparency.', at: Date.now() - 3600000, read: false },
     { id: 'n2', icon: 'shield-check-outline', title: '100% Human Marketplace', body: 'No bots or automated shops on Temsho. Every seller is a real verified human.', at: Date.now() - 86400000, read: false },
     { id: 'n3', icon: 'truck-fast-outline', title: 'Free Delivery Active', body: 'Enjoy free delivery across India on all orders above ₹499.', at: Date.now() - 172800000, read: false },
   ],
@@ -71,7 +66,7 @@ function reducer(s, a) {
     case 'HYDRATE':
       return { ...s, ...a.data, products: mergeProducts(a.data.products), ready: true };
     case 'CLOUD_PRODUCTS':
-      return { ...s, products: [...a.list], cloudOn: true };
+      return { ...s, products: mergeCloudAndLocal(s.products, a.list), cloudOn: true };
     case 'CLOUD_SETTINGS':
       return { ...s, admin: { ...s.admin, ...a.data } };
     case 'READY':
@@ -80,6 +75,34 @@ function reducer(s, a) {
       return { ...s, admin: { ...s.admin, ...a.patch } };
     case 'ADMIN_RESET':
       return { ...s, admin: { ...DEFAULT_ADMIN } };
+    case 'ADMIN_ADD_COUPON':
+      return notif(
+        { ...s, adminCoupons: [a.coupon, ...(s.adminCoupons || [])] },
+        'ticket-percent', 'Coupon Created', `Coupon "${a.coupon.code}" is now live across the app.`
+      );
+    case 'ADMIN_DELETE_COUPON':
+      return { ...s, adminCoupons: (s.adminCoupons || []).filter((c) => c.id !== a.id) };
+    case 'ADMIN_CLEAR_COUPONS':
+      return { ...s, adminCoupons: [], coupon: null };
+    case 'ADMIN_TOGGLE_COUPON':
+      return {
+        ...s,
+        adminCoupons: (s.adminCoupons || []).map((c) => (c.id === a.id ? { ...c, active: !c.active } : c)),
+      };
+    case 'ADMIN_ADD_BANNER':
+      return notif(
+        { ...s, adminBanners: [a.banner, ...(s.adminBanners || [])] },
+        'image-multiple-outline', 'Poster / Banner Published', `Banner "${a.banner.title}" is now live on the app home screen.`
+      );
+    case 'ADMIN_DELETE_BANNER':
+      return { ...s, adminBanners: (s.adminBanners || []).filter((b) => b.id !== a.id) };
+    case 'ADMIN_TOGGLE_BANNER':
+      return {
+        ...s,
+        adminBanners: (s.adminBanners || []).map((b) => (b.id === a.id ? { ...b, active: !b.active } : b)),
+      };
+    case 'ADMIN_RESET_BANNERS':
+      return { ...s, adminBanners: [...BANNERS] };
     case 'ADMIN_REMOVE_PRODUCT':
       return { ...s, products: s.products.filter((p) => p.id !== a.id) };
     case 'ADMIN_BAN':
@@ -131,11 +154,34 @@ function reducer(s, a) {
       return { ...s, coupon: a.code };
     case 'SET_DELIVERY_MODE':
       return { ...s, deliveryMode: a.mode };
-    case 'PLACE_ORDER':
+    case 'PLACE_ORDER': {
+      const deliveryOtp = a.order.deliveryOtp || String(Math.floor(1000 + Math.random() * 9000));
+      const orderWithOtp = { ...a.order, deliveryOtp, qrData: `TEMSHO://DELIVERY/${a.order.id}?otp=${deliveryOtp}` };
       return notif(
-        { ...s, cart: [], coupon: null, orders: [a.order, ...s.orders] },
-        'check-circle-outline', 'Order Placed Successfully', `Order #${a.order.id} is confirmed. Estimated delivery by ${a.order.eta}.`
+        { ...s, cart: [], coupon: null, orders: [orderWithOtp, ...s.orders] },
+        'check-circle-outline', 'Order Placed Successfully', `Order #${a.order.id} is confirmed. Estimated delivery by ${a.order.eta}. Doorstep OTP: ${deliveryOtp}.`
       );
+    }
+    case 'VERIFY_DELIVERY_OTP': {
+      const orders = s.orders.map((o) => {
+        if (o.id !== a.id) return o;
+        return {
+          ...o,
+          status: 'Delivered',
+          deliveredAt: Date.now(),
+          deliveredBy: a.agentName || 'Delivery Partner (Verified QR + OTP)',
+          deliveryOtpVerified: true,
+          cashCollected: o.pay === 'cod' ? o.total : 0,
+        };
+      });
+      return notif(
+        { ...s, orders },
+        'truck-check',
+        'Order Delivered Successfully',
+        `Order #${a.id} has been securely delivered at doorstep via OTP verification.`,
+        '#059669'
+      );
+    }
     case 'ADVANCE_ORDER': {
       const steps = ['Confirmed', 'Packed', 'Shipped', 'Out for Delivery', 'Delivered'];
       let msg = null;
@@ -183,6 +229,21 @@ function reducer(s, a) {
 function mergeProducts(saved) {
   if (!saved || !Array.isArray(saved)) return [];
   return saved;
+}
+
+function mergeCloudAndLocal(localProds = [], cloudProds = []) {
+  const map = new Map();
+  // Cloud products take precedence and are canonical
+  (cloudProds || []).forEach((p) => {
+    if (p && p.id) map.set(p.id, p);
+  });
+  // Also keep any local-only draft products that haven't synced yet
+  (localProds || []).forEach((p) => {
+    if (p && p.id && !map.has(p.id)) {
+      map.set(p.id, p);
+    }
+  });
+  return Array.from(map.values());
 }
 
 export function AppProvider({ children }) {
@@ -235,39 +296,47 @@ export function AppProvider({ children }) {
   }, [state]);
 
   const value = useMemo(() => {
-    const byId = (id) => state.products.find((p) => p.id === id);
-    const cartLines = state.cart.map((c) => ({ ...c, product: byId(c.id) })).filter((l) => l.product);
-    const subtotal = cartLines.reduce((t, l) => t + l.product.price * l.qty, 0);
-    const saved = cartLines.reduce((t, l) => t + (l.product.mrp - l.product.price) * l.qty, 0);
+    const byId = (id) => (state.products || []).find((p) => p && p.id === id);
+    const cartLines = (state.cart || []).map((c) => ({ ...c, product: byId(c.id) })).filter((l) => l.product);
+    const subtotal = cartLines.reduce((t, l) => t + (Number(l.product?.price) || 0) * (Number(l.qty) || 1), 0);
+    const saved = cartLines.reduce((t, l) => t + ((Number(l.product?.mrp) || Number(l.product?.price) || 0) - (Number(l.product?.price) || 0)) * (Number(l.qty) || 1), 0);
 
-    const cp = COUPONS.find((c) => c.code === state.coupon && subtotal >= c.min);
+    const activeCoupons = (state.adminCoupons || []).filter((c) => c && c.active !== false);
+    const cp = activeCoupons.find(
+      (c) => String(c?.code || '').toUpperCase() === String(state.coupon || '').toUpperCase() && subtotal >= (c?.min || 0)
+    );
+
     let couponOff = 0;
-    if (cp?.off) couponOff = cp.off;
-    if (cp?.pct) couponOff = Math.min(Math.round((subtotal * cp.pct) / 100), cp.max);
+    if (cp?.off) couponOff = Number(cp.off) || 0;
+    if (cp?.pct) couponOff = Math.min(Math.round((subtotal * (Number(cp.pct) || 0)) / 100), Number(cp.max || 999999));
+
+    const activeBanners = (state.adminBanners || BANNERS).filter((b) => b && b.active !== false);
 
     const A = state.admin || DEFAULT_ADMIN;
 
     // Delivery fee calculation based on selected delivery mode
-    let baseDelivery = A.deliveryFee;
-    if (state.deliveryMode === 'local') baseDelivery = A.localDeliveryFee || 29;
+    let baseDelivery = Number(A.deliveryFee) || 49;
+    if (state.deliveryMode === 'local') baseDelivery = Number(A.localDeliveryFee) || 29;
     else if (state.deliveryMode === 'indiapost') baseDelivery = 39;
 
-    let delivery = subtotal === 0 || subtotal >= A.freeDeliveryAbove ? 0 : baseDelivery;
-    if (cp?.ship) delivery = 0;
+    let delivery = subtotal === 0 || subtotal >= (Number(A.freeDeliveryAbove) || 499) ? 0 : baseDelivery;
+    if (cp?.type === 'freeship' || cp?.ship) delivery = 0;
 
     const total = Math.max(0, subtotal - couponOff + delivery);
 
     return {
       state, dispatch, byId, cartLines,
-      cartCount: state.cart.reduce((t, c) => t + c.qty, 0),
+      cartCount: (state.cart || []).reduce((t, c) => t + (Number(c.qty) || 1), 0),
       subtotal, saved, delivery, total,
       coupon: cp || null, couponOff,
+      activeCoupons,
+      activeBanners,
       admin: A,
       isOwner: !!state.user?.isOwner,
       cloudOn: cloud.cloudOn(),
       cloud,
       shiprocket,
-      unread: state.notifications.filter((n) => !n.read).length,
+      unread: (state.notifications || []).filter((n) => !n.read).length,
     };
   }, [state]);
 

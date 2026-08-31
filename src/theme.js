@@ -55,5 +55,14 @@ export const shadow = {
   elevation: 3,
 };
 
-export const money = (n) =>
-  '₹' + Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 });
+export const money = (n) => {
+  const num = Math.round(Number(n) || 0);
+  const str = Math.abs(num).toString();
+  let lastThree = str.substring(str.length - 3);
+  const otherNumbers = str.substring(0, str.length - 3);
+  if (otherNumbers !== '') {
+    lastThree = ',' + lastThree;
+  }
+  const formatted = otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + lastThree;
+  return (num < 0 ? '-₹' : '₹') + formatted;
+};
