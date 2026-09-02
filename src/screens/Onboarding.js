@@ -269,12 +269,6 @@ const st = StyleSheet.create({
     width: 52, height: 52, borderRadius: R.sm, borderWidth: 1.5, borderColor: C.line,
     backgroundColor: C.surface, textAlign: 'center', fontSize: 20, fontWeight: '800', color: C.ink,
   },
-  demoHint: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFBEB',
-    borderRadius: R.md, paddingHorizontal: 12, paddingVertical: 9, marginTop: 10,
-    borderWidth: 1.5, borderColor: '#FDE68A',
-  },
-  fillBtn: { backgroundColor: '#D97706', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 },
   viaBox: {
     flex: 1, borderWidth: 1.5, borderColor: C.line, borderRadius: R.sm,
     paddingVertical: 10, alignItems: 'center', backgroundColor: C.surface,

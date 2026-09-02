@@ -2,18 +2,18 @@
   "expo": {
     "name": "Temsho",
     "slug": "temsho",
-    "version": "1.0.2",
+    "version": "1.0.5",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.temsho.app",
-      "buildNumber": "3"
+      "buildNumber": "6"
     },
     "android": {
       "package": "com.temsho.app",
-      "versionCode": 3,
+      "versionCode": 6,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#2B2D6E"
@@ -21,7 +21,10 @@
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_MEDIA_IMAGES",
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.VIBRATE",
+        "android.permission.RECEIVE_BOOT_COMPLETED"
       ]
     },
     "web": {
@@ -41,8 +44,15 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Temsho ko apne product ki photo chunne ke liye gallery chahiye.",
-          "cameraPermission": "Temsho ko apne product ki photo khinchne ke liye camera chahiye."
+          "photosPermission": "Temsho requires photo library access to upload product photos.",
+          "cameraPermission": "Temsho requires camera access to capture product photos and scan QR codes."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#2B2D6E"
         }
       ]
     ],

@@ -81,19 +81,12 @@ export async function sendOtp(phone, via = 'whatsapp', overrideProvider = null) 
     // 1. Fast2SMS India gateway
     if (FAST2SMS.apiKey && !FAST2SMS.apiKey.startsWith('YAHAN')) {
       try {
-        const r = await fetch('https://www.fast2sms.com/dev/bulkV2', {
-          method: 'POST',
-          headers: {
-            authorization: FAST2SMS.apiKey,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            route: 'otp',
-            variables_values: generatedCode,
-            numbers: p,
-          }),
-        });
-        if (r.ok) return { ok: true, msg: 'SMS verification code sent to your phone' };
+        const url = `https://www.fast2sms.com/dev/bulkV2?authorization=${FAST2SMS.apiKey}&route=otp&variables_values=${generatedCode}&flash=0&numbers=${p}`;
+        const r = await fetch(url);
+        const data = await r.json();
+        if (data.return) {
+          return { ok: true, msg: 'SMS verification code sent to your phone' };
+        }
       } catch (err) {}
     }
 

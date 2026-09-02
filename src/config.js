@@ -19,7 +19,7 @@ export const isOwnerEmail = (email) =>
 
 /* ---------- 📲 OTP PROVIDERS ---------- */
 // 'demo' | 'supabase' | 'twilio_whatsapp' | 'twilio_sms' | 'aisensy' | 'msg91' | 'fast2sms'
-export const OTP_PROVIDER = 'supabase';
+export const OTP_PROVIDER = 'fast2sms';
 
 export const TWILIO = {
   sid: 'YAHAN_TWILIO_SID',
@@ -39,7 +39,7 @@ export const MSG91 = {
 };
 
 export const FAST2SMS = {
-  apiKey: 'YAHAN_FAST2SMS_API_KEY',
+  apiKey: 'TDvi8k4IKxQXsB9tfLhJ5rPu3mpFRgqHOaNwMV7lezncdU60SjR0pXSljMOQDWAgGNK4FqzoBLIZ56kU',
 };
 
 /* ---------- 🚚 SHIPROCKET & LOGISTICS ---------- */

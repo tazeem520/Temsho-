@@ -70,7 +70,6 @@ export function Account({ go }) {
         {/* Main Orders & Activity Links */}
         <View style={[ac.card, shadow, { marginTop: 16 }]}>
           <Row e="package-variant" t="My Orders" s={`${state.orders.length} orders`} onPress={() => go('orders')} />
-          <Row e="qrcode-scan" t="Delivery Partner · Parcel QR & OTP" s="Scan parcel QR & submit customer OTP" onPress={() => go('delivery-partner')} />
           <Row e="bell-outline" t="Notifications" s={unread > 0 ? `${unread} new` : 'All read'} onPress={() => go('notifications')} />
           <Row e="heart-outline" t="Wishlist" s={`${wish.length} saved items`} onPress={() => go('wishlist')} />
           <Row e="map-marker-outline" t="Saved Addresses" s={`${state.addresses.length} saved`} onPress={() => go('addresses')} />
@@ -96,7 +95,7 @@ export function Account({ go }) {
               {u?.isSeller ? 'Open Seller Dashboard' : 'Start Selling on Temsho'}
             </Text>
             <Text style={{ color: '#ffffffcc', fontSize: 12, marginTop: 3 }}>
-              {u?.isSeller ? `${u.shopName || 'My Shop'} · ${u.shopCity || 'India'}` : '0% commission · Instant setup · Direct payments'}
+              {u?.isSeller ? `${u.shopName || state.shop?.name || 'My Shop'} · ${u.shopCity || state.shop?.city || 'India'}` : '0% commission · Instant setup · Direct payments'}
             </Text>
           </View>
           <MC name="chevron-right" size={22} color="#fff" />
@@ -112,7 +111,7 @@ export function Account({ go }) {
         </View>
 
         <Text style={{ textAlign: 'center', color: C.ink3, fontSize: 11, marginTop: 24, lineHeight: 17 }}>
-          Temsho v1.0.0{'\n'}Crafted in India · Built by humans, for humans
+          Temsho v1.0.5{'\n'}Crafted in India · Built by humans, for humans
         </Text>
       </ScrollView>
     </View>
@@ -293,26 +292,75 @@ export function BecomeSeller({ go }) {
 export function Seller({ go }) {
   const { state, dispatch } = useApp();
   const u = state.user;
-  const mine = state.products.filter((p) => p.seller === 'me' || p.sellerName === u.shopName);
+  const mine = state.products.filter((p) => p.seller === 'me' || p.sellerName === u.shopName || p.sellerName === state.shop?.name);
   const [add, setAdd] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [f, setF] = useState({ title: '', price: '', mrp: '', cat: 'fashion', desc: '', img: null });
+  const [f, setF] = useState({ title: '', price: '', mrp: '', cat: 'fashion', desc: '', images: [], video: null });
 
-  const pickPhoto = async () => {
+  const pickPhotos = async () => {
     try {
-      const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7, allowsEditing: true, aspect: [1, 1] });
-      if (!r.canceled && r.assets?.[0]?.uri) setF((x) => ({ ...x, img: { uri: r.assets[0].uri } }));
+      const r = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 0.75,
+        allowsMultipleSelection: true,
+        selectionLimit: 0,
+      });
+      if (!r.canceled && r.assets && r.assets.length > 0) {
+        const newImgs = r.assets.map((a) => ({ uri: a.uri }));
+        setF((x) => ({ ...x, images: [...(x.images || []), ...newImgs] }));
+      }
+    } catch (e) {
+      try {
+        const r2 = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.75 });
+        if (!r2.canceled && r2.assets?.[0]?.uri) {
+          setF((x) => ({ ...x, images: [...(x.images || []), { uri: r2.assets[0].uri }] }));
+        }
+      } catch (err) {}
+    }
+  };
+
+  const takePhoto = async () => {
+    try {
+      const r = await ImagePicker.launchCameraAsync({ quality: 0.75 });
+      if (!r.canceled && r.assets?.[0]?.uri) {
+        setF((x) => ({ ...x, images: [...(x.images || []), { uri: r.assets[0].uri }] }));
+      }
     } catch (e) {}
+  };
+
+  const pickVideo = async () => {
+    try {
+      const r = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['videos'],
+        videoMaxDuration: 180,
+        quality: 0.7,
+      });
+      if (!r.canceled && r.assets?.[0]?.uri) {
+        setF((x) => ({ ...x, video: { uri: r.assets[0].uri, duration: r.assets[0].duration || 0 } }));
+      }
+    } catch (e) {}
+  };
+
+  const removePhoto = (idx) => {
+    setF((x) => ({ ...x, images: (x.images || []).filter((_, i) => i !== idx) }));
   };
 
   const save = async () => {
     const cat = CATEGORIES.find((c) => c.id === f.cat);
     setSaving(true);
+    const mainImg = (f.images && f.images[0]) || null;
     let cloudProd = null;
     if (cloud.cloudOn()) {
       try {
         cloudProd = await cloud.pushProduct(
-          { ...f, price: Number(f.price), mrp: Number(f.mrp || f.price) },
+          {
+            ...f,
+            img: mainImg,
+            images: f.images,
+            video: f.video?.uri || null,
+            price: Number(f.price),
+            mrp: Number(f.mrp || f.price),
+          },
           state.user?.cloudId,
           state.shop?.cloudId
         );
@@ -324,8 +372,12 @@ export function Seller({ go }) {
       title: f.title, cat: f.cat,
       price: Number(f.price), mrp: Number(f.mrp || f.price),
       rating: 0, ratingCount: 0, seller: 'me',
-      sellerName: u.shopName || 'My Shop', sellerCity: u.shopCity || 'India',
-      img: f.img, tint: cat?.tint || '#F3F4F6',
+      sellerName: u.shopName || state.shop?.name || 'My Shop',
+      sellerCity: u.shopCity || state.shop?.city || 'India',
+      img: mainImg,
+      images: f.images || (mainImg ? [mainImg] : []),
+      video: f.video?.uri || null,
+      tint: cat?.tint || '#F3F4F6',
       desc: f.desc || 'Product listed by verified seller.',
       tags: ['New Arrival', 'Cash on Delivery'],
     };
@@ -340,7 +392,7 @@ export function Seller({ go }) {
     }
 
     setSaving(false);
-    setF({ title: '', price: '', mrp: '', cat: 'fashion', desc: '', img: null });
+    setF({ title: '', price: '', mrp: '', cat: 'fashion', desc: '', images: [], video: null });
     setAdd(false);
   };
 
@@ -352,8 +404,8 @@ export function Seller({ go }) {
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <View style={ac.av}><MC name="storefront-outline" size={22} color={C.brand} /></View>
             <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={{ fontWeight: '900', color: C.ink, fontSize: 15 }}>{u.shopName || 'My Shop'}</Text>
-              <Text style={{ color: C.ink3, fontSize: 12, marginTop: 2 }}>{u.shopCity || 'India'}</Text>
+              <Text style={{ fontWeight: '900', color: C.ink, fontSize: 15 }}>{u.shopName || state.shop?.name || 'My Shop'}</Text>
+              <Text style={{ color: C.ink3, fontSize: 12, marginTop: 2 }}>{u.shopCity || state.shop?.city || 'India'}</Text>
             </View>
             <HumanTag small />
           </View>
@@ -391,28 +443,64 @@ export function Seller({ go }) {
                 </TouchableOpacity>
               ))}
             </ScrollView>
-            <Text style={{ color: C.ink2, fontSize: 12, fontWeight: '700', marginBottom: 6 }}>Real Product Photo (From Camera / Gallery)</Text>
-            <TouchableOpacity onPress={pickPhoto} activeOpacity={0.85} style={ac.photoBox}>
-              {f.img ? (
-                <Image source={f.img} resizeMode="cover" style={{ width: '100%', height: '100%', borderRadius: R.md }} />
-              ) : (
-                <>
-                  <MC name="camera-plus-outline" size={26} color={C.ink3} />
-                  <Text style={{ color: C.ink2, fontSize: 12.5, fontWeight: '700', marginTop: 8 }}>Select Real Photo</Text>
-                  <Text style={{ color: C.ink3, fontSize: 10.5, marginTop: 3, textAlign: 'center', paddingHorizontal: 20 }}>Upload genuine photos taken by you</Text>
-                </>
-              )}
-            </TouchableOpacity>
-            {!!f.img && (
-              <TouchableOpacity onPress={() => setF({ ...f, img: null })} style={{ alignSelf: 'center', marginTop: 8, marginBottom: 6 }}>
-                <Text style={{ color: C.red, fontSize: 12, fontWeight: '700' }}>Remove Photo</Text>
+
+            {/* Unlimited Photos Upload Section */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+              <Text style={{ color: C.ink, fontSize: 13, fontWeight: '800' }}>Product Photos (Unlimited)</Text>
+              <Text style={{ color: C.ink3, fontSize: 11 }}>{f.images?.length || 0} photos uploaded</Text>
+            </View>
+
+            {/* Photos Preview Horizontal Scroll */}
+            {f.images && f.images.length > 0 && (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }}>
+                {f.images.map((img, idx) => (
+                  <View key={idx} style={ac.photoThumbWrapper}>
+                    <Image source={img} style={ac.photoThumb} resizeMode="cover" />
+                    {idx === 0 && <View style={ac.mainTag}><Text style={{ color: '#fff', fontSize: 8.5, fontWeight: '900' }}>MAIN</Text></View>}
+                    <TouchableOpacity onPress={() => removePhoto(idx)} style={ac.removePhotoIco}>
+                      <MC name="close" size={14} color="#fff" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </ScrollView>
+            )}
+
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
+              <TouchableOpacity onPress={pickPhotos} activeOpacity={0.85} style={[ac.uploadBoxBtn, { flex: 1 }]}>
+                <MC name="image-multiple-outline" size={20} color={C.brand} />
+                <Text style={{ color: C.brand, fontSize: 12, fontWeight: '800', marginLeft: 6 }}>+ Add Photos</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={takePhoto} activeOpacity={0.85} style={[ac.uploadBoxBtn, { flex: 0.9 }]}>
+                <MC name="camera-outline" size={20} color={C.brand} />
+                <Text style={{ color: C.brand, fontSize: 12, fontWeight: '800', marginLeft: 6 }}>Camera</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Product Video Upload Section */}
+            <Text style={{ color: C.ink, fontSize: 13, fontWeight: '800', marginBottom: 6 }}>Product Video (Optional)</Text>
+            {f.video ? (
+              <View style={[ac.videoCard, shadow]}>
+                <MC name="video-check" size={24} color={C.green} />
+                <View style={{ flex: 1, marginLeft: 10 }}>
+                  <Text style={{ color: C.ink, fontWeight: '800', fontSize: 12.5 }}>Video Attached</Text>
+                  <Text style={{ color: C.ink3, fontSize: 11, marginTop: 1 }}>Buyers can watch 360° product video</Text>
+                </View>
+                <TouchableOpacity onPress={() => setF((x) => ({ ...x, video: null }))} style={{ padding: 6 }}>
+                  <MC name="trash-can-outline" size={20} color={C.red} />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity onPress={pickVideo} activeOpacity={0.85} style={[ac.uploadBoxBtn, { marginBottom: 14, borderStyle: 'dashed' }]}>
+                <MC name="video-plus-outline" size={22} color={C.brand} />
+                <Text style={{ color: C.brand, fontSize: 12.5, fontWeight: '800', marginLeft: 8 }}>Upload Product Video</Text>
               </TouchableOpacity>
             )}
-            <View style={{ height: 14 }} />
+
+            <View style={{ height: 6 }} />
             <Field label="Description & Highlights" placeholder="Material, size, origin and specifications…" multiline value={f.desc} onChangeText={(v) => setF({ ...f, desc: v })} style={{ height: 90, textAlignVertical: 'top' }} />
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <Btn title="Cancel" tone="ghost" style={{ flex: 1 }} onPress={() => setAdd(false)} />
-              <Btn title="Publish Live" tone="green" style={{ flex: 1 }} disabled={!f.title || !f.price || !f.img} onPress={save} />
+              <Btn title="Publish Live" tone="green" style={{ flex: 1 }} disabled={!f.title || !f.price || (!f.images || f.images.length === 0)} onPress={save} />
             </View>
           </View>
         )}
@@ -430,7 +518,11 @@ export function Seller({ go }) {
               <View style={{ flex: 1, marginLeft: 12 }}>
                 <Text numberOfLines={2} style={{ color: C.ink, fontWeight: '700', fontSize: 13.5 }}>{p.title}</Text>
                 <Text style={{ color: C.ink, fontWeight: '900', marginTop: 4 }}>{money(p.price)}</Text>
-                <View style={{ marginTop: 6 }}><Badge text="ACTIVE" tone="green" small /></View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}>
+                  <Badge text="ACTIVE" tone="green" small />
+                  {p.images && p.images.length > 1 && <Badge text={`${p.images.length} Photos`} tone="brand" small />}
+                  {p.video && <Badge text="Video" tone="accent" small />}
+                </View>
               </View>
               <TouchableOpacity onPress={() => dispatch({ type: 'RM_PRODUCT', id: p.id })} style={{ padding: 8 }}>
                 <Text style={{ color: C.red, fontSize: 12, fontWeight: '800' }}>Delete</Text>
@@ -623,6 +715,19 @@ const ac = StyleSheet.create({
   photoBox: {
     height: 150, borderRadius: R.md, borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#C7D2FE',
     backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+  },
+  photoThumbWrapper: { width: 74, height: 74, borderRadius: R.md, marginRight: 8, overflow: 'hidden', position: 'relative', borderWidth: 1, borderColor: C.line },
+  photoThumb: { width: '100%', height: '100%' },
+  mainTag: { position: 'absolute', bottom: 2, left: 2, backgroundColor: C.brand, paddingHorizontal: 4, paddingVertical: 1, borderRadius: 3 },
+  removePhotoIco: { position: 'absolute', top: 2, right: 2, backgroundColor: 'rgba(0,0,0,0.65)', width: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+  uploadBoxBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: C.brandSoft, borderWidth: 1.5, borderColor: C.brand,
+    borderRadius: R.md, paddingVertical: 12, paddingHorizontal: 10,
+  },
+  videoCard: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: C.greenSoft,
+    borderRadius: R.md, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: '#86EFAC',
   },
   sellIco: { width: 42, height: 42, borderRadius: 13, backgroundColor: '#ffffff2a', alignItems: 'center', justifyContent: 'center' },
   bigIco: { width: 52, height: 52, borderRadius: 16, backgroundColor: C.brandSoft, alignItems: 'center', justifyContent: 'center' },

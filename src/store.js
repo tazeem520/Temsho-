@@ -4,6 +4,7 @@ import { PRODUCTS, BANNERS } from './data/catalog';
 import { DEFAULT_ADMIN, isOwner } from './config';
 import * as cloud from './lib/cloud';
 import * as shiprocket from './lib/shiprocket';
+import { requestNotificationPermission, showSystemNotification } from './lib/notifications';
 
 const Ctx = createContext(null);
 export const useApp = () => useContext(Ctx);
@@ -56,15 +57,37 @@ const init = {
   deliveryMode: 'standard', // 'standard' | 'local' | 'indiapost'
 };
 
-const notif = (s, icon, title, body, tone) => ({
-  ...s,
-  notifications: [{ id: 'n' + Date.now() + Math.random().toString(36).slice(2, 6), icon, tone, title, body, at: Date.now(), read: false }, ...s.notifications],
-});
+const notif = (s, icon, title, body, tone) => {
+  showSystemNotification(title, body);
+  return {
+    ...s,
+    notifications: [{ id: 'n' + Date.now() + Math.random().toString(36).slice(2, 6), icon, tone, title, body, at: Date.now(), read: false }, ...s.notifications],
+  };
+};
 
 function reducer(s, a) {
   switch (a.type) {
-    case 'HYDRATE':
-      return { ...s, ...a.data, products: mergeProducts(a.data.products), ready: true };
+    case 'HYDRATE': {
+      const savedUser = a.data?.user;
+      const savedShop = a.data?.shop;
+      const isSeller = savedUser?.isSeller || (!!savedShop?.name && savedShop.name.trim().length > 0);
+      const user = savedUser
+        ? {
+            ...savedUser,
+            isSeller,
+            shopName: savedUser.shopName || savedShop?.name || '',
+            shopCity: savedUser.shopCity || savedShop?.city || '',
+          }
+        : null;
+      return {
+        ...s,
+        ...a.data,
+        user,
+        shop: savedShop || s.shop,
+        products: mergeProducts(a.data?.products),
+        ready: true,
+      };
+    }
     case 'CLOUD_PRODUCTS':
       return { ...s, products: mergeCloudAndLocal(s.products, a.list), cloudOn: true };
     case 'CLOUD_SETTINGS':
@@ -109,11 +132,25 @@ function reducer(s, a) {
       return { ...s, banned: s.banned.includes(a.id) ? s.banned.filter((x) => x !== a.id) : [...s.banned, a.id] };
     case 'ADMIN_BROADCAST':
       return notif(s, 'bullhorn-outline', a.title, a.body, '#FF9F00');
-    case 'LOGIN':
+    case 'LOGIN': {
+      const isSeller = a.user.isSeller ?? s.user?.isSeller ?? (!!s.shop?.name && s.shop.name.trim().length > 0);
+      const shopName = a.user.shopName ?? s.user?.shopName ?? s.shop?.name ?? '';
+      const shopCity = a.user.shopCity ?? s.user?.shopCity ?? s.shop?.city ?? '';
       return notif(
-        { ...s, user: { ...a.user, referral: refCode(a.user.phone), isOwner: isOwner(a.user.phone) } },
+        {
+          ...s,
+          user: {
+            ...a.user,
+            referral: refCode(a.user.phone),
+            isOwner: isOwner(a.user.phone),
+            isSeller,
+            shopName,
+            shopCity,
+          },
+        },
         'hand-wave-outline', 'Login Successful', `Welcome ${a.user.name}! Your Temsho account is ready.`
       );
+    }
     case 'LOGOUT':
       return { ...init, ready: true, products: [] };
     case 'UPDATE_USER':
@@ -157,10 +194,25 @@ function reducer(s, a) {
     case 'PLACE_ORDER': {
       const deliveryOtp = a.order.deliveryOtp || String(Math.floor(1000 + Math.random() * 9000));
       const orderWithOtp = { ...a.order, deliveryOtp, qrData: `TEMSHO://DELIVERY/${a.order.id}?otp=${deliveryOtp}` };
-      return notif(
-        { ...s, cart: [], coupon: null, orders: [orderWithOtp, ...s.orders] },
-        'check-circle-outline', 'Order Placed Successfully', `Order #${a.order.id} is confirmed. Estimated delivery by ${a.order.eta}. Doorstep OTP: ${deliveryOtp}.`
-      );
+      
+      // Dual Notification: 1. Customer Confirmation, 2. Seller New Order Alert
+      const custMsg = `Order #${a.order.id} is confirmed. Estimated delivery by ${a.order.eta}. Doorstep OTP: ${deliveryOtp}.`;
+      const sellerMsg = `📦 New Sale Alert! You received order #${a.order.id} for ₹${a.order.total}. Tap to print shipping label & pack parcel.`;
+      
+      showSystemNotification('📦 New Order Received!', sellerMsg);
+      
+      const newNotifs = [
+        { id: 'n' + Date.now() + 'c', icon: 'check-circle-outline', tone: '#059669', title: 'Order Confirmed', body: custMsg, at: Date.now(), read: false },
+        { id: 'n' + Date.now() + 's', icon: 'package-variant', tone: '#2B2D6E', title: 'New Sale Alert (Seller)', body: sellerMsg, at: Date.now() + 1, read: false },
+      ];
+
+      return {
+        ...s,
+        cart: [],
+        coupon: null,
+        orders: [orderWithOtp, ...s.orders],
+        notifications: [...newNotifs, ...s.notifications],
+      };
     }
     case 'VERIFY_DELIVERY_OTP': {
       const orders = s.orders.map((o) => {
@@ -257,32 +309,35 @@ export function AppProvider({ children }) {
         const raw = await AsyncStorage.getItem(KEY);
         if (raw) dispatch({ type: 'HYDRATE', data: JSON.parse(raw) });
         else dispatch({ type: 'READY' });
+        requestNotificationPermission().catch(() => {});
       } catch {
         dispatch({ type: 'READY' });
       }
     })();
   }, []);
 
-  // Load cloud products & settings + setup realtime listeners
+  // Load cloud products & settings + setup realtime listeners + periodic refresh
   useEffect(() => {
     if (!state.ready || !cloud.cloudOn()) return;
 
-    (async () => {
-      const [list, settings] = await Promise.all([cloud.pullProducts(), cloud.pullSettings()]);
-      if (list && list.length > 0) dispatch({ type: 'CLOUD_PRODUCTS', list });
-      if (settings) dispatch({ type: 'CLOUD_SETTINGS', data: settings });
-    })();
+    const refresh = async () => {
+      try {
+        const [list, settings] = await Promise.all([cloud.pullProducts(), cloud.pullSettings()]);
+        if (list && list.length > 0) dispatch({ type: 'CLOUD_PRODUCTS', list });
+        if (settings) dispatch({ type: 'CLOUD_SETTINGS', data: settings });
+      } catch (e) {}
+    };
+
+    refresh();
+    const interval = setInterval(refresh, 8000); // Poll cloud every 8 seconds for real-time all-India updates
 
     // Realtime subscription for live products
     const unsubProducts = cloud.subscribeToProducts((payload) => {
-      if (payload.eventType === 'INSERT') {
-        cloud.pullProducts().then((list) => {
-          if (list) dispatch({ type: 'CLOUD_PRODUCTS', list });
-        });
-      }
+      refresh();
     });
 
     return () => {
+      clearInterval(interval);
       if (typeof unsubProducts === 'function') unsubProducts();
     };
   }, [state.ready]);

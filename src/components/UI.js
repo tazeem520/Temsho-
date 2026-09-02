@@ -110,10 +110,16 @@ export const Field = ({ label, ...p }) => (
 );
 
 export const Thumb = ({ img, title = '', tint, size = 90, radius = R.md }) => {
+  let source = null;
   if (img) {
+    if (typeof img === 'string' && img.trim()) source = { uri: img.trim() };
+    else if (img.uri && typeof img.uri === 'string' && img.uri.trim()) source = { uri: img.uri.trim() };
+    else if (typeof img === 'number') source = img;
+  }
+  if (source) {
     return (
       <Image
-        source={typeof img === 'string' ? { uri: img } : img}
+        source={source}
         resizeMode="cover"
         style={{ width: '100%', height: size, borderRadius: radius, backgroundColor: '#F3F4F6' }}
       />
@@ -131,18 +137,24 @@ export const Thumb = ({ img, title = '', tint, size = 90, radius = R.md }) => {
   );
 };
 
-export const Avatar = ({ name = '?', hue = C.brand, size = 44 }) => (
-  <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: hue + '1A', alignItems: 'center', justifyContent: 'center' }}>
-    <Text style={{ color: hue, fontWeight: '800', fontSize: size * 0.38 }}>
-      {name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase()}
-    </Text>
-  </View>
-);
+export const Avatar = ({ name = '?', hue = C.brand, size = 44 }) => {
+  const safeName = String(name || '?').trim();
+  const initials = safeName ? safeName.split(/\s+/).slice(0, 2).map((w) => w?.[0] || '').join('').toUpperCase() : '?';
+  return (
+    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: (hue || C.brand) + '1A', alignItems: 'center', justifyContent: 'center' }}>
+      <Text style={{ color: hue || C.brand, fontWeight: '800', fontSize: size * 0.38 }}>
+        {initials || '?'}
+      </Text>
+    </View>
+  );
+};
 
 /* Modern Product Card */
 export const ProductCard = ({ p, onPress, width, sellerName }) => {
-  const mrp = p.mrp || p.price;
-  const off = mrp > p.price ? Math.round(((mrp - p.price) / mrp) * 100) : 0;
+  if (!p) return null;
+  const mrp = Number(p.mrp) || Number(p.price) || 0;
+  const price = Number(p.price) || 0;
+  const off = mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
   return (
     <TouchableOpacity activeOpacity={0.9} onPress={onPress} style={[st.card, shadow, { width }]}>
       <View style={{ position: 'relative' }}>
@@ -155,11 +167,11 @@ export const ProductCard = ({ p, onPress, width, sellerName }) => {
       </View>
       <View style={{ padding: 10 }}>
         <Text numberOfLines={2} style={{ color: C.ink, fontSize: 12.5, fontWeight: '600', minHeight: 34, lineHeight: 17 }}>
-          {p.title}
+          {p.title || 'Product'}
         </Text>
         <View style={{ flexDirection: 'row', alignItems: 'baseline', marginTop: 5 }}>
-          <Text style={{ color: C.ink, fontSize: 16, fontWeight: '900' }}>{money(p.price)}</Text>
-          {mrp > p.price && (
+          <Text style={{ color: C.ink, fontSize: 16, fontWeight: '900' }}>{money(price)}</Text>
+          {mrp > price && (
             <Text style={{ color: C.ink3, fontSize: 11, textDecorationLine: 'line-through', marginLeft: 6 }}>
               {money(mrp)}
             </Text>
@@ -168,7 +180,7 @@ export const ProductCard = ({ p, onPress, width, sellerName }) => {
         </View>
 
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
-          <Stars value={p.rating || 4.8} count={p.ratingCount} size={9} />
+          <Stars value={p.rating || 4.8} count={p.ratingCount || 0} size={9} />
           <TemshoAssuredBadge small />
         </View>
 

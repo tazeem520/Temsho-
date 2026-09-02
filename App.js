@@ -103,16 +103,54 @@ function Shell() {
   );
 }
 
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.log('App Error Caught:', error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <MC name="alert-circle-outline" size={56} color={C.brand} />
+          <Text style={{ fontSize: 18, fontWeight: '900', color: C.ink, marginTop: 16, textAlign: 'center' }}>
+            Something went wrong
+          </Text>
+          <Text style={{ color: C.ink2, fontSize: 13, textAlign: 'center', marginTop: 8, lineHeight: 19 }}>
+            Temsho recovered safely. Tap below to return to the home screen.
+          </Text>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => this.setState({ hasError: false, error: null })}
+            style={{ backgroundColor: C.brand, paddingHorizontal: 24, paddingVertical: 12, borderRadius: R.md, marginTop: 20 }}
+          >
+            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>Return to Home</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function App() {
   return (
-    <AppProvider>
-      <View style={s.root}>
-        <View style={s.phone}>
-          <StatusBar style="light" />
-          <Shell />
+    <ErrorBoundary>
+      <AppProvider>
+        <View style={s.root}>
+          <View style={s.phone}>
+            <StatusBar style="light" />
+            <Shell />
+          </View>
         </View>
-      </View>
-    </AppProvider>
+      </AppProvider>
+    </ErrorBoundary>
   );
 }
 
