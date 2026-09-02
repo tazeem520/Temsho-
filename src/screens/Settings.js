@@ -5,6 +5,7 @@ import { C, R, shadow } from '../theme';
 import { Btn, Field, Avatar } from '../components/UI';
 import { Header } from './Product';
 import { useApp, LANGS } from '../store';
+import * as cloud from '../lib/cloud';
 
 const Group = ({ title, sub, children }) => (
   <View style={{ marginTop: 22 }}>
@@ -58,7 +59,9 @@ export function Settings({ go }) {
         {isOwner && (
           <Group title="OWNER ACCESS (9044468663)">
             <Row icon="crown-outline" label="Admin Control Panel" value="Manage App" onPress={() => go('admin')} />
-            <Row icon="cellphone-key" label="OTP Engine Settings" value={state.admin?.otpProvider || 'Supabase'} onPress={() => go('admin-otp')} />
+            <Row icon="history" label="Activity & Audit Ledger" value={`${(state.auditLog || []).length} events`} onPress={() => go('admin-audit')} />
+            <Row icon="bank-outline" label="Owner Payout & Settlement" value="₹49 Delivery UPI" onPress={() => go('admin-owner-payment')} />
+            <Row icon="cellphone-key" label="OTP Engine Settings" value={state.admin?.otpProvider || 'Fast2SMS'} onPress={() => go('admin-otp')} />
             <Row icon="truck-delivery-outline" label="Logistics & Delivery Rates" value="Courier Setup" onPress={() => go('admin-logistics')} last />
           </Group>
         )}
@@ -74,7 +77,7 @@ export function Settings({ go }) {
             <>
               <Row icon="storefront-outline" label="Shop Profile & Name" value={state.shop.name || 'Active'} onPress={() => go('shop-settings')} />
               <Row icon="truck-outline" label="Pickup Location & PIN" value={state.shop.pin || 'Set PIN'} onPress={() => go('shop-settings')} />
-              <Row icon="bank-outline" label="Payout UPI ID" value={state.shop.upi || 'Set UPI'} onPress={() => go('shop-settings')} last />
+              <Row icon="bank-outline" label="Bank & Payout UPI" value={state.shop.upi || 'Active'} onPress={() => go('shop-settings')} last />
             </>
           ) : (
             <Row icon="storefront-plus-outline" label="Become a Seller — Open Your Shop" onPress={() => go('become-seller')} last />
@@ -126,7 +129,7 @@ export function Settings({ go }) {
         )}
 
         <Text style={{ textAlign: 'center', color: C.ink3, fontSize: 11, marginTop: 26, lineHeight: 17 }}>
-          Temsho v1.0.0{'\n'}Made in India · For humans, by humans
+          Temsho v1.0.5{'\n'}Made in India · For humans, by humans
         </Text>
       </ScrollView>
     </View>
@@ -365,7 +368,7 @@ export function ShopSettings({ go }) {
           <Field label="PIN Code" placeholder="226010" keyboardType="number-pad" value={f.pin} onChangeText={(v) => setF({ ...f, pin: v.replace(/\D/g, '').slice(0, 6) })} />
         </View>
 
-        <Text style={[se.gTitle, { marginTop: 22 }]}>PAYOUT PREFERENCES</Text>
+        <Text style={[se.gTitle, { marginTop: 22 }]}>BANK & PAYOUT DETAILS</Text>
         <View style={[se.card, shadow, { padding: 18 }]}>
           <Text style={se.lbl}>Accepted Payment Channels</Text>
           {[['acceptUpi', 'Direct UPI Payments', 'cellphone-check'],
@@ -380,16 +383,12 @@ export function ShopSettings({ go }) {
           ))}
 
           <View style={{ height: 14 }} />
-          <Field label="Account Holder Name" placeholder="Rahul Sharma" value={f.payName} onChangeText={(v) => setF({ ...f, payName: v })} />
-          <Field label="Payout UPI ID" placeholder="9876543210@ybl" autoCapitalize="none" value={f.upi} onChangeText={(v) => setF({ ...f, upi: v })} />
+          <Field label="Account Holder Name (as in Bank)" placeholder="Rahul Sharma" value={f.payName} onChangeText={(v) => setF({ ...f, payName: v })} />
+          <Field label="Seller Payout UPI ID" placeholder="9876543210@ybl" autoCapitalize="none" value={f.upi} onChangeText={(v) => setF({ ...f, upi: v })} />
 
-          {f.acceptBank && (
-            <>
-              <Field label="Bank Name" placeholder="State Bank of India" value={f.bankName} onChangeText={(v) => setF({ ...f, bankName: v })} />
-              <Field label="Account Number" placeholder="XXXXXXXXXXXX" keyboardType="number-pad" value={f.accNo} onChangeText={(v) => setF({ ...f, accNo: v.replace(/\D/g, '') })} />
-              <Field label="IFSC Code" placeholder="SBIN0001234" autoCapitalize="characters" value={f.ifsc} onChangeText={(v) => setF({ ...f, ifsc: v.toUpperCase() })} />
-            </>
-          )}
+          <Field label="Bank Name" placeholder="State Bank of India" value={f.bankName} onChangeText={(v) => setF({ ...f, bankName: v })} />
+          <Field label="Account Number" placeholder="XXXXXXXXXXXX" keyboardType="number-pad" value={f.accNo} onChangeText={(v) => setF({ ...f, accNo: v.replace(/\D/g, '') })} />
+          <Field label="IFSC Code" placeholder="SBIN0001234" autoCapitalize="characters" value={f.ifsc} onChangeText={(v) => setF({ ...f, ifsc: v.toUpperCase() })} />
         </View>
 
         <Text style={[se.gTitle, { marginTop: 22 }]}>POLICY & TAXES</Text>

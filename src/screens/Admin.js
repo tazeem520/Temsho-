@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Switch, Image } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Switch, Image, TextInput, Share } from 'react-native';
 import { MaterialCommunityIcons as MC } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
@@ -8,8 +8,9 @@ import { Btn, Field, Badge, Thumb, Empty } from '../components/UI';
 import { Header } from './Product';
 import { useApp } from '../store';
 import * as cloud from '../lib/cloud';
-import { SELLERS, CATEGORIES } from '../data/catalog';
+import { SELLERS } from '../data/catalog';
 import { OTP_PROVIDERS_LIST } from '../lib/otp';
+import { UpiQR } from '../components/Upi';
 
 const Card = ({ children, style }) => <View style={[ad.card, shadow, style]}>{children}</View>;
 
@@ -40,6 +41,8 @@ export function Admin({ go }) {
   const sellers = Object.keys(SELLERS).length + (state.user?.isSeller ? 1 : 0);
   const totalCoupons = (state.adminCoupons || []).length;
   const totalBanners = (state.adminBanners || []).length;
+  const totalLogs = (state.auditLog || []).length;
+  const ownerPaySet = !!(admin.ownerPayment?.deliveryChargeUpi || admin.ownerPayment?.accountNumber);
 
   const Tile = ({ icon, label, value, tint }) => (
     <View style={[ad.tile, shadow]}>
@@ -49,13 +52,14 @@ export function Admin({ go }) {
     </View>
   );
 
-  const Link = ({ icon, label, sub, to, last, tone }) => (
+  const Link = ({ icon, label, sub, to, last, tone, badge }) => (
     <TouchableOpacity onPress={() => go(to)} style={[ad.row, last && { borderBottomWidth: 0 }]}>
-      <MC name={icon} size={19} color={tone || C.ink2} />
+      <MC name={icon} size={20} color={tone || C.ink2} />
       <View style={{ flex: 1, marginLeft: 14 }}>
-        <Text style={{ color: C.ink, fontWeight: '700', fontSize: 14 }}>{label}</Text>
+        <Text style={{ color: tone || C.ink, fontWeight: '700', fontSize: 14 }}>{label}</Text>
         {!!sub && <Text style={{ color: C.ink3, fontSize: 11.5, marginTop: 2 }}>{sub}</Text>}
       </View>
+      {!!badge && <View style={{ marginRight: 6 }}><Badge text={badge} tone="accent" small /></View>}
       <MC name="chevron-right" size={19} color={C.ink3} />
     </TouchableOpacity>
   );
@@ -76,7 +80,7 @@ export function Admin({ go }) {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 50 }}>
         {admin.maintenance && (
           <View style={ad.warn}>
             <MC name="alert-outline" size={17} color={C.red} />
@@ -86,7 +90,42 @@ export function Admin({ go }) {
           </View>
         )}
 
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+        {/* OWNER AUDIT & ACTIVITY HIGHLIGHT CTA */}
+        <TouchableOpacity activeOpacity={0.9} onPress={() => go('admin-audit')} style={[ad.auditHighlightCard, shadow]}>
+          <View style={ad.auditIcoBox}>
+            <MC name="history" size={24} color="#fff" />
+          </View>
+          <View style={{ flex: 1, marginLeft: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={{ color: '#fff', fontWeight: '900', fontSize: 15 }}>Owner Activity & Audit Ledger</Text>
+              <View style={ad.newTag}><Text style={{ color: '#fff', fontSize: 9, fontWeight: '900' }}>LIVE</Text></View>
+            </View>
+            <Text style={{ color: '#E2E8F0', fontSize: 12, marginTop: 2 }}>
+              Track every product added, deleted & order placed ({totalLogs} events saved)
+            </Text>
+          </View>
+          <MC name="chevron-right" size={22} color="#fff" />
+        </TouchableOpacity>
+
+        {/* OWNER PAYMENT & SETTLEMENT SETUP CTA */}
+        <TouchableOpacity activeOpacity={0.9} onPress={() => go('admin-owner-payment')} style={[ad.payoutSetupCard, shadow]}>
+          <View style={[ad.auditIcoBox, { backgroundColor: '#059669' }]}>
+            <MC name="bank-transfer" size={24} color="#fff" />
+          </View>
+          <View style={{ flex: 1, marginLeft: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={{ color: '#064E3B', fontWeight: '900', fontSize: 14.5 }}>Owner Payout & Settlement Details</Text>
+            </View>
+            <Text style={{ color: '#047857', fontSize: 11.5, marginTop: 2 }}>
+              {ownerPaySet
+                ? `Active UPI: ${admin.ownerPayment?.deliveryChargeUpi || admin.ownerPayment?.upiId}`
+                : 'Set UPI / Bank for ₹49 delivery logistics collections'}
+            </Text>
+          </View>
+          <MC name="chevron-right" size={20} color="#059669" />
+        </TouchableOpacity>
+
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 14 }}>
           <Tile icon="cash-multiple" label="Total Marketplace Sales" value={money(totalSales)} tint={C.green} />
           <Tile icon="package-variant" label="Total Orders" value={state.orders.length} tint={C.brand} />
           <Tile icon="tag-multiple-outline" label="Active Products" value={liveProducts} tint={C.accent} />
@@ -101,18 +140,18 @@ export function Admin({ go }) {
             </Text>
             <Text style={{ color: C.ink2, fontSize: 11, marginTop: 2, lineHeight: 16 }}>
               {cloudOn
-                ? 'All buyers and sellers are synchronized in real-time.'
+                ? 'All buyers, sellers, orders and listings are synchronized in real-time.'
                 : 'Supabase database credentials are offline.'}
             </Text>
           </View>
         </View>
 
-        <Text style={ad.sec}>4 CORE SYSTEMS</Text>
+        <Text style={ad.sec}>👑 OWNER CORE AUDIT & FINANCIAL TOOLS</Text>
         <Card>
-          <Link icon="cellphone-key" label="1 · OTP Authentication Engine" sub={`Current: ${admin.otpProvider || 'Supabase / Standard'}`} to="admin-otp" />
-          <Link icon="database-sync-outline" label="2 · Cloud Database & Realtime Sync" sub={cloudOn ? 'Online & Synchronized' : 'Offline'} to="admin-database" />
-          <Link icon="truck-delivery-outline" label="3 · Logistics & Delivery Charges" sub="Delivery fees, Free delivery threshold" to="admin-logistics" />
-          <Link icon="google-play" label="4 · Play Store & Legal Readiness" sub="Privacy Policy, Data Safety, Assets" to="admin-playstore" last />
+          <Link icon="history" label="1 · Activity & Audit Ledger (History Logs)" sub="Who ordered what, when added, when deleted" to="admin-audit" badge={`${totalLogs}`} />
+          <Link icon="bank-outline" label="2 · Owner Payment & Delivery Settlements" sub="₹49 delivery logistics UPI & Bank account" to="admin-owner-payment" />
+          <Link icon="cellphone-key" label="3 · OTP Authentication Engine" sub={`Current: ${admin.otpProvider || 'Fast2SMS / Standard'}`} to="admin-otp" />
+          <Link icon="truck-delivery-outline" label="4 · Logistics & Delivery Rates" sub="Delivery fees, Free delivery threshold" to="admin-logistics" last />
         </Card>
 
         <Text style={ad.sec}>PROMOTIONS & MEDIA (OWNER DYNAMIC TOOLS)</Text>
@@ -125,14 +164,362 @@ export function Admin({ go }) {
         <Card>
           <Link icon="rename-box" label="App Name & Branding" sub={admin.appName} to="admin-brand" />
           <Link icon="cash-sync" label="Pricing, Delivery & Commissions" sub={`Free delivery above ${money(admin.freeDeliveryAbove)}`} to="admin-money" />
-          <Link icon="toggle-switch-outline" label="Feature Toggles" sub="COD, UPI, WhatsApp OTP, Seller onboarding" to="admin-features" last />
+          <Link icon="toggle-switch-outline" label="Feature Toggles" sub="COD, UPI, WhatsApp OTP, Seller onboarding" to="admin-features" />
+          <Link icon="google-play" label="Play Store & Legal Readiness" sub="Privacy Policy, Data Safety, Assets" to="admin-playstore" last />
         </Card>
 
-        <Text style={ad.sec}>COMMUNICATIONS & CONTENT</Text>
+        <Text style={ad.sec}>COMMUNICATIONS & LISTINGS</Text>
         <Card>
           <Link icon="bullhorn-outline" label="Broadcast Push Notifications" sub="Send messages to all app users" to="admin-broadcast" />
-          <Link icon="format-list-bulleted" label="Manage Marketplace Listings" sub="Review or remove items" to="admin-products" last />
+          <Link icon="format-list-bulleted" label="Manage Marketplace Listings" sub="Review, search or delete products" to="admin-products" last />
         </Card>
+      </ScrollView>
+    </View>
+  );
+}
+
+/* =============== OWNER AUDIT & ACTIVITY LEDGER (REQUIREMENT 4) =============== */
+export function AdminAuditLedger({ go }) {
+  const { state, dispatch } = useApp();
+  const [filter, setFilter] = useState('all');
+  const [search, setSearch] = useState('');
+
+  const logs = state.auditLog || [];
+
+  const filteredLogs = logs.filter((log) => {
+    // Type filter
+    if (filter === 'orders' && !['ORDER_PLACED', 'ORDER_STATUS', 'ORDER_CANCELLED', 'ORDER_RETURN_REQUEST', 'ORDER_AWB_ATTACHED'].includes(log.type)) return false;
+    if (filter === 'added' && log.type !== 'PRODUCT_ADDED') return false;
+    if (filter === 'deleted' && log.type !== 'PRODUCT_DELETED') return false;
+    if (filter === 'sellers' && !['SELLER_REGISTERED', 'SELLER_UPDATED'].includes(log.type)) return false;
+
+    // Search query filter
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      const matchTitle = (log.title || '').toLowerCase().includes(q);
+      const matchDetails = (log.details || '').toLowerCase().includes(q);
+      const matchMeta = JSON.stringify(log.meta || {}).toLowerCase().includes(q);
+      return matchTitle || matchDetails || matchMeta;
+    }
+    return true;
+  });
+
+  const exportLogs = () => {
+    const text = `📋 TEMSHO OWNER AUDIT & ACTIVITY REPORT\nGenerated on: ${new Date().toLocaleString('en-IN')}\nTotal Events: ${logs.length}\n\n` +
+      logs.map((l, i) => `[${i + 1}] ${l.formattedTime || ''}\nTYPE: ${l.type}\nTITLE: ${l.title}\nDETAILS: ${l.details}\n`).join('\n----------------------------------------\n');
+    Share.share({ message: text, title: 'Temsho Owner Audit Log' }).catch(() => {});
+  };
+
+  const getBadgeTone = (type) => {
+    switch (type) {
+      case 'ORDER_PLACED': return 'green';
+      case 'PRODUCT_ADDED': return 'accent';
+      case 'PRODUCT_DELETED': return 'red';
+      case 'ORDER_CANCELLED': return 'red';
+      case 'SELLER_REGISTERED': return 'brand';
+      case 'OWNER_PAYMENT_UPDATE': return 'green';
+      default: return 'brand';
+    }
+  };
+
+  const getIcon = (type) => {
+    switch (type) {
+      case 'ORDER_PLACED': return 'package-variant-closed';
+      case 'PRODUCT_ADDED': return 'tag-plus-outline';
+      case 'PRODUCT_DELETED': return 'trash-can-outline';
+      case 'ORDER_CANCELLED': return 'close-octagon-outline';
+      case 'ORDER_STATUS': return 'truck-fast-outline';
+      case 'SELLER_REGISTERED': return 'storefront-plus-outline';
+      case 'OWNER_PAYMENT_UPDATE': return 'cash-check';
+      default: return 'history';
+    }
+  };
+
+  const totalOrders = logs.filter((l) => l.type === 'ORDER_PLACED').length;
+  const totalAdded = logs.filter((l) => l.type === 'PRODUCT_ADDED').length;
+  const totalDeleted = logs.filter((l) => l.type === 'PRODUCT_DELETED').length;
+
+  return (
+    <View style={{ flex: 1, backgroundColor: C.bg }}>
+      <Header title="Owner Activity & Audit Ledger" go={go} />
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 50 }}>
+        {/* Intro Card */}
+        <View style={[ad.auditCardTop, shadow]}>
+          <MC name="shield-lock-outline" size={24} color={C.brand} />
+          <View style={{ flex: 1, marginLeft: 12 }}>
+            <Text style={{ fontWeight: '900', color: C.ink, fontSize: 14.5 }}>
+              Real-Time Marketplace Audit Ledger
+            </Text>
+            <Text style={{ color: C.ink2, fontSize: 12, lineHeight: 17, marginTop: 3 }}>
+              Every product listed, deleted, order placed, delivery OTP verification, and seller registration is recorded chronologically.
+            </Text>
+          </View>
+        </View>
+
+        {/* Counter Summary Strip */}
+        <View style={{ flexDirection: 'row', gap: 8, marginVertical: 12 }}>
+          <View style={[ad.logCounterBox, shadow]}>
+            <Text style={{ fontSize: 17, fontWeight: '900', color: C.green }}>{totalOrders}</Text>
+            <Text style={{ fontSize: 10, color: C.ink3, fontWeight: '700', marginTop: 2 }}>Orders Placed</Text>
+          </View>
+          <View style={[ad.logCounterBox, shadow]}>
+            <Text style={{ fontSize: 17, fontWeight: '900', color: C.brand }}>{totalAdded}</Text>
+            <Text style={{ fontSize: 10, color: C.ink3, fontWeight: '700', marginTop: 2 }}>Products Added</Text>
+          </View>
+          <View style={[ad.logCounterBox, shadow]}>
+            <Text style={{ fontSize: 17, fontWeight: '900', color: C.red }}>{totalDeleted}</Text>
+            <Text style={{ fontSize: 10, color: C.ink3, fontWeight: '700', marginTop: 2 }}>Deleted Items</Text>
+          </View>
+        </View>
+
+        {/* Search Input */}
+        <Field
+          placeholder="Search logs by Order ID, Phone, Title or Keyword..."
+          value={search}
+          onChangeText={setSearch}
+        />
+
+        {/* Category Filter Chips */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
+          {[
+            ['all', 'All Activity', 'history'],
+            ['orders', 'Orders Placed & Delivered', 'package-variant'],
+            ['added', 'Products Added', 'tag-plus'],
+            ['deleted', 'Products Deleted', 'delete'],
+            ['sellers', 'Sellers Registered', 'storefront'],
+          ].map(([k, l, ic]) => (
+            <TouchableOpacity
+              key={k}
+              onPress={() => setFilter(k)}
+              style={[ad.chip, filter === k && { backgroundColor: C.brand, borderColor: C.brand }]}
+            >
+              <MC name={ic} size={14} color={filter === k ? '#fff' : C.ink2} style={{ marginRight: 5 }} />
+              <Text style={{ color: filter === k ? '#fff' : C.ink2, fontSize: 12, fontWeight: '700' }}>{l}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        {/* Action Buttons */}
+        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 14 }}>
+          <Btn
+            title="Export / Share Report"
+            icon="share-variant"
+            tone="brand"
+            style={{ flex: 1.3 }}
+            onPress={exportLogs}
+          />
+          <Btn
+            title="Reset Ledger"
+            icon="delete-sweep"
+            tone="ghost"
+            style={{ flex: 0.9 }}
+            onPress={() => dispatch({ type: 'CLEAR_AUDIT_LOG' })}
+          />
+        </View>
+
+        <Text style={ad.sec}>AUDIT LOG ENTRIES ({filteredLogs.length})</Text>
+
+        {filteredLogs.length === 0 ? (
+          <Card style={{ padding: 24, alignItems: 'center' }}>
+            <MC name="clipboard-text-search-outline" size={32} color={C.ink3} />
+            <Text style={{ color: C.ink, fontWeight: '800', fontSize: 14, marginTop: 8 }}>No Log Entries Found</Text>
+            <Text style={{ color: C.ink3, fontSize: 12, marginTop: 4, textAlign: 'center' }}>
+              No activities matched your filter/search criteria.
+            </Text>
+          </Card>
+        ) : (
+          filteredLogs.map((log) => (
+            <View key={log.id} style={[ad.auditItemCard, shadow]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={[ad.logIcoWrapper, { backgroundColor: (log.type === 'PRODUCT_DELETED' ? C.red : log.type === 'ORDER_PLACED' ? C.green : C.brand) + '1A' }]}>
+                  <MC name={getIcon(log.type)} size={18} color={log.type === 'PRODUCT_DELETED' ? C.red : log.type === 'ORDER_PLACED' ? C.green : C.brand} />
+                </View>
+                <View style={{ flex: 1, marginLeft: 10 }}>
+                  <Text style={{ color: C.ink, fontWeight: '900', fontSize: 13.5 }}>{log.title}</Text>
+                  <Text style={{ color: C.ink3, fontSize: 11, marginTop: 1 }}>{log.formattedTime}</Text>
+                </View>
+                <Badge text={log.type.replace(/_/g, ' ')} tone={getBadgeTone(log.type)} small />
+              </View>
+
+              <Text style={{ color: C.ink2, fontSize: 12, lineHeight: 18, marginTop: 10 }}>
+                {log.details}
+              </Text>
+
+              {/* Extra Metadata View */}
+              {log.meta && Object.keys(log.meta).length > 0 && (
+                <View style={ad.metaBox}>
+                  {log.meta.orderId && <Text style={ad.metaTag}>Order ID: #{log.meta.orderId}</Text>}
+                  {log.meta.buyerPhone && <Text style={ad.metaTag}>Buyer: +91 {log.meta.buyerPhone}</Text>}
+                  {log.meta.sellerPhone && <Text style={ad.metaTag}>Seller: +91 {log.meta.sellerPhone}</Text>}
+                  {log.meta.deliveryOtp && <Text style={ad.metaTag}>Doorstep OTP: {log.meta.deliveryOtp}</Text>}
+                  {log.meta.total != null && <Text style={ad.metaTag}>Amount: {money(log.meta.total)}</Text>}
+                </View>
+              )}
+            </View>
+          ))
+        )}
+      </ScrollView>
+    </View>
+  );
+}
+
+/* =============== OWNER PAYMENT & SETTLEMENT SETUP (REQUIREMENT 5) =============== */
+export function AdminOwnerPayment({ go }) {
+  const { admin, dispatch } = useApp();
+  const current = admin.ownerPayment || {};
+
+  const [f, setF] = useState({
+    payeeName: current.payeeName || 'Tazeem Ahmad',
+    deliveryChargeUpi: current.deliveryChargeUpi || current.upiId || '9044468663@upi',
+    bankName: current.bankName || 'State Bank of India',
+    accountNumber: current.accountNumber || '',
+    ifscCode: current.ifscCode || '',
+    codRemittanceMethod: current.codRemittanceMethod || 'bank_transfer',
+    notes: current.notes || '₹49 logistics delivery fee & courier cash remittance account',
+  });
+
+  const [saved, setSaved] = useState(false);
+
+  const handleSave = () => {
+    dispatch({
+      type: 'ADMIN_SET_OWNER_PAYMENT',
+      payment: {
+        ...f,
+        upiId: f.deliveryChargeUpi,
+      },
+    });
+
+    if (cloud.cloudOn()) {
+      cloud.pushSettings({
+        ...admin,
+        ownerPayment: { ...f, upiId: f.deliveryChargeUpi },
+      }).catch(() => {});
+    }
+
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1600);
+  };
+
+  return (
+    <View style={{ flex: 1, backgroundColor: C.bg }}>
+      <Header title="Owner Payout & Settlement Setup" go={go} />
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 50 }}>
+        {/* Intro Card */}
+        <View style={[ad.payoutCardTop, shadow]}>
+          <MC name="shield-crown-outline" size={26} color="#059669" />
+          <View style={{ flex: 1, marginLeft: 12 }}>
+            <Text style={{ fontWeight: '900', color: '#064E3B', fontSize: 15 }}>
+              Owner Delivery Fee Payout Setup
+            </Text>
+            <Text style={{ color: '#047857', fontSize: 12, lineHeight: 17, marginTop: 3 }}>
+              The ₹49 logistics delivery charge collected on orders is remitted directly to this Owner Bank/UPI account.
+            </Text>
+          </View>
+        </View>
+
+        <Card style={{ padding: 18, marginTop: 14 }}>
+          <Text style={{ fontWeight: '900', color: C.ink, fontSize: 16, marginBottom: 14 }}>
+            1 · Owner Logistics UPI Details
+          </Text>
+
+          <Field
+            label="Owner / Legal Payee Name *"
+            placeholder="e.g. Tazeem Ahmad"
+            value={f.payeeName}
+            onChangeText={(v) => setF({ ...f, payeeName: v })}
+          />
+
+          <Field
+            label="₹49 Delivery Fee Payout UPI ID *"
+            placeholder="e.g. 9044468663@upi or owner@okaxis"
+            autoCapitalize="none"
+            value={f.deliveryChargeUpi}
+            onChangeText={(v) => setF({ ...f, deliveryChargeUpi: v })}
+          />
+
+          <Text style={{ fontWeight: '900', color: C.ink, fontSize: 16, marginTop: 16, marginBottom: 14 }}>
+            2 · Owner Bank Account (For Courier COD Remittances)
+          </Text>
+
+          <Field
+            label="Owner Bank Name"
+            placeholder="e.g. State Bank of India, HDFC Bank"
+            value={f.bankName}
+            onChangeText={(v) => setF({ ...f, bankName: v })}
+          />
+
+          <Field
+            label="Bank Account Number"
+            placeholder="e.g. 308942187654"
+            keyboardType="number-pad"
+            value={f.accountNumber}
+            onChangeText={(v) => setF({ ...f, accountNumber: v.replace(/\D/g, '') })}
+          />
+
+          <Field
+            label="Bank IFSC Code"
+            placeholder="e.g. SBIN0001234"
+            autoCapitalize="characters"
+            value={f.ifscCode}
+            onChangeText={(v) => setF({ ...f, ifscCode: v.toUpperCase() })}
+          />
+
+          <Text style={{ color: C.ink2, fontSize: 12, fontWeight: '700', marginTop: 10, marginBottom: 8 }}>
+            Preferred Courier COD Remittance Mode
+          </Text>
+          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
+            {[
+              ['bank_transfer', 'Direct Bank NEFT / IMPS', 'bank'],
+              ['upi', 'Daily Instant UPI', 'cellphone-check'],
+            ].map(([k, l, ic]) => (
+              <TouchableOpacity
+                key={k}
+                onPress={() => setF({ ...f, codRemittanceMethod: k })}
+                style={[ad.chip, f.codRemittanceMethod === k && { backgroundColor: C.brand, borderColor: C.brand }]}
+              >
+                <MC name={ic} size={14} color={f.codRemittanceMethod === k ? '#fff' : C.ink2} style={{ marginRight: 5 }} />
+                <Text style={{ color: f.codRemittanceMethod === k ? '#fff' : C.ink2, fontSize: 12, fontWeight: '700' }}>{l}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Field
+            label="Settlement Notes / Memo"
+            placeholder="e.g. Logistics delivery settlement account"
+            value={f.notes}
+            onChangeText={(v) => setF({ ...f, notes: v })}
+          />
+
+          <Btn
+            title={saved ? 'Saved & Verified Successfully' : 'Save Owner Payment Method'}
+            icon={saved ? 'check' : 'content-save-outline'}
+            tone={saved ? 'green' : 'brand'}
+            style={{ marginTop: 14 }}
+            onPress={handleSave}
+          />
+        </Card>
+
+        {/* Live Owner UPI QR Preview */}
+        {!!f.deliveryChargeUpi && (
+          <View style={[ad.card, shadow, { padding: 18, marginTop: 16, alignItems: 'center' }]}>
+            <Text style={{ fontWeight: '900', color: C.ink, fontSize: 15 }}>Owner Logistics UPI QR Preview</Text>
+            <Text style={{ color: C.ink3, fontSize: 11.5, marginTop: 2, marginBottom: 14 }}>
+              Used by shipping partners for ₹49 delivery charge settlement
+            </Text>
+            <View style={{ backgroundColor: '#fff', padding: 12, borderRadius: R.md, borderWidth: 1, borderColor: C.line }}>
+              <UpiQR
+                upi={f.deliveryChargeUpi}
+                name={f.payeeName || 'Temsho Logistics'}
+                amount={49}
+                note="Temsho Delivery Fee"
+                size={160}
+              />
+            </View>
+            <Text style={{ fontWeight: '800', color: C.brand, fontSize: 13, marginTop: 12 }}>
+              {f.deliveryChargeUpi}
+            </Text>
+          </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -567,7 +954,7 @@ export function AdminCoupons({ go }) {
 /* =============== 1. OTP PROVIDER SWITCHER =============== */
 export function AdminOtp({ go }) {
   const { admin, dispatch } = useApp();
-  const [active, setActive] = useState(admin.otpProvider || 'supabase');
+  const [active, setActive] = useState(admin.otpProvider || 'fast2sms');
   const [done, setDone] = useState(false);
 
   const save = (id) => {
@@ -634,7 +1021,7 @@ export function AdminDatabase({ go }) {
               <Text style={{ fontWeight: '900', color: C.ink, fontSize: 16 }}>
                 {cloudOn ? 'Supabase Database Active' : 'Database Offline'}
               </Text>
-              <Text style={{ color: C.ink3, fontSize: 12, marginTop: 2 }}>Region: South Asia (Mumbai) · NANO</Text>
+              <Text style={{ color: C.ink3, fontSize: 12, marginTop: 2 }}>Region: South Asia (Mumbai) · Realtime</Text>
             </View>
           </View>
         </View>
@@ -654,8 +1041,8 @@ export function AdminDatabase({ go }) {
             <Badge text={`${state.addresses.length} saved`} tone="accent" />
           </View>
           <View style={[ad.row, { borderBottomWidth: 0 }]}>
-            <Text style={{ flex: 1, color: C.ink, fontWeight: '700' }}>Storage (Product Photos)</Text>
-            <Badge text="Public Bucket Active" tone="green" />
+            <Text style={{ flex: 1, color: C.ink, fontWeight: '700' }}>Audit Ledger Events</Text>
+            <Badge text={`${(state.auditLog || []).length} logged`} tone="brand" />
           </View>
         </Card>
       </ScrollView>
@@ -709,7 +1096,7 @@ export function AdminLogistics({ go }) {
 
         <Text style={ad.sec}>SUPPORTED COURIER PARTNERS</Text>
         <Card>
-          {['Delhivery Express (Surface & Air)', 'BlueDart Express', 'DTDC Courier', 'Ekart Logistics', 'India Post / Speed Post', 'Seller Local Self-Delivery'].map((c, i, arr) => (
+          {['Delhivery Express (Surface & Air)', 'BlueDart Express', 'DTDC Courier', 'Ekart Logistics', 'India Post / Speed Post', 'Seller Doorstep Self-Pickup'].map((c, i, arr) => (
             <View key={c} style={[ad.row, i === arr.length - 1 && { borderBottomWidth: 0 }]}>
               <MC name="check-circle" size={17} color={C.green} />
               <Text style={{ flex: 1, marginLeft: 12, color: C.ink, fontWeight: '700', fontSize: 13.5 }}>{c}</Text>
@@ -732,8 +1119,8 @@ export function AdminPlayStore({ go }) {
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <MC name="google-play" size={28} color="#0F9D58" />
             <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={{ fontWeight: '900', color: C.ink, fontSize: 16 }}>Google Play Console Ready</Text>
-              <Text style={{ color: C.ink3, fontSize: 12, marginTop: 2 }}>Package: com.temsho.app · v1.0.0</Text>
+              <Text style={{ fontWeight: '900', color: C.ink, fontSize: 16 }}>Google Play & Indus Console Ready</Text>
+              <Text style={{ color: C.ink3, fontSize: 12, marginTop: 2 }}>Package: com.temsho.app · v1.0.5</Text>
             </View>
           </View>
         </View>
@@ -899,7 +1286,7 @@ export function AdminBroadcast({ go }) {
 export function AdminProducts({ go }) {
   const { state, dispatch } = useApp();
   const [q, setQ] = useState('');
-  const list = state.products.filter((p) => p.title.toLowerCase().includes(q.toLowerCase()));
+  const list = state.products.filter((p) => (p.title || '').toLowerCase().includes(q.toLowerCase()));
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <Header title={`Manage Products (${state.products.length})`} go={go} />
@@ -913,7 +1300,7 @@ export function AdminProducts({ go }) {
             <View style={{ flex: 1, marginLeft: 12 }}>
               <Text numberOfLines={2} style={{ color: C.ink, fontWeight: '700', fontSize: 13 }}>{p.title}</Text>
               <Text style={{ color: C.ink2, fontSize: 12, marginTop: 3 }}>
-                {money(p.price)} · {SELLERS[p.seller]?.name || state.shop.name || 'Verified Seller'}
+                {money(p.price)} · {p.sellerName || SELLERS[p.seller]?.name || state.shop.name || 'Verified Seller'}
               </Text>
             </View>
             <TouchableOpacity onPress={() => dispatch({ type: 'ADMIN_REMOVE_PRODUCT', id: p.id })} style={ad.del}>
@@ -941,7 +1328,7 @@ const ad = StyleSheet.create({
   del: { width: 38, height: 38, borderRadius: 19, backgroundColor: C.redSoft, alignItems: 'center', justifyContent: 'center' },
   activeTag: { backgroundColor: C.green, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 },
   note: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.brandSoft, borderRadius: R.sm, padding: 11, marginBottom: 12 },
-  chip: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: C.line, borderRadius: R.pill, paddingHorizontal: 12, paddingVertical: 7 },
+  chip: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: C.line, borderRadius: R.pill, paddingHorizontal: 12, paddingVertical: 7, marginRight: 8 },
   colorChip: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: C.line, borderRadius: R.pill, paddingHorizontal: 10, paddingVertical: 6 },
   colorDot: { width: 16, height: 16, borderRadius: 8 },
   photoUploadBox: { height: 130, borderRadius: R.md, borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#C7D2FE', backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
@@ -951,4 +1338,21 @@ const ad = StyleSheet.create({
   bannerTagBadge: { backgroundColor: '#ffffff26', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, alignSelf: 'flex-start' },
   couponCard: { backgroundColor: C.surface, borderRadius: R.lg, padding: 14, marginBottom: 12 },
   couponCodeBadge: { backgroundColor: C.brandSoft, paddingHorizontal: 10, paddingVertical: 6, borderRadius: R.sm, borderWidth: 1, borderStyle: 'dashed', borderColor: '#C7D2FE' },
+  auditHighlightCard: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: '#1E293B',
+    borderRadius: R.lg, padding: 16, marginTop: 14, borderWidth: 1.5, borderColor: '#334155',
+  },
+  payoutSetupCard: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: '#ECFDF5',
+    borderRadius: R.lg, padding: 14, marginTop: 10, borderWidth: 1.5, borderColor: '#A7F3D0',
+  },
+  auditIcoBox: { width: 44, height: 44, borderRadius: 12, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' },
+  newTag: { backgroundColor: C.accent, paddingHorizontal: 6, paddingVertical: 1, borderRadius: 4, marginLeft: 8 },
+  auditCardTop: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.surface, borderRadius: R.lg, padding: 16 },
+  payoutCardTop: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ECFDF5', borderRadius: R.lg, padding: 16, borderWidth: 1, borderColor: '#A7F3D0' },
+  logCounterBox: { flex: 1, backgroundColor: C.surface, borderRadius: R.md, padding: 12, alignItems: 'center' },
+  auditItemCard: { backgroundColor: C.surface, borderRadius: R.lg, padding: 14, marginBottom: 12 },
+  logIcoWrapper: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  metaBox: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: C.line },
+  metaTag: { backgroundColor: C.bg, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4, color: C.ink2, fontSize: 10.5, fontWeight: '700' },
 });

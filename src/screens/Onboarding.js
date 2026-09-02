@@ -1,10 +1,11 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { C, R, shadow } from '../theme';
 import { MaterialCommunityIcons as MC } from '@expo/vector-icons';
 import { Btn, Field } from '../components/UI';
 import { useApp } from '../store';
-import { sendOtp, verifyOtp, otpInfo } from '../lib/otp';
+import { sendOtp, verifyOtp } from '../lib/otp';
 
 export default function Onboarding() {
   const { state, dispatch } = useApp();
@@ -46,11 +47,42 @@ export default function Onboarding() {
     if (d && i < 3) refs[i + 1].current?.focus();
   };
 
-  const finish = () =>
+  const finish = async () => {
+    const cleanPh = String(phone).replace(/\D/g, '').slice(-10);
+    const userKey = '@temsho/account_' + cleanPh;
+    try {
+      const [rawUser, rawAllProducts, rawAudit, rawAdmin] = await Promise.all([
+        AsyncStorage.getItem(userKey),
+        AsyncStorage.getItem('@temsho/all_products_catalog'),
+        AsyncStorage.getItem('@temsho/owner_audit_log'),
+        AsyncStorage.getItem('@temsho/admin_settings'),
+      ]);
+
+      if (rawUser) {
+        const userAccount = JSON.parse(rawUser);
+        const allProds = rawAllProducts ? JSON.parse(rawAllProducts) : [];
+        const auditLog = rawAudit ? JSON.parse(rawAudit) : [];
+        const adminSettings = rawAdmin ? JSON.parse(rawAdmin) : null;
+
+        dispatch({
+          type: 'RESTORE_USER_ACCOUNT',
+          phone: cleanPh,
+          name: name.trim() || userAccount.user?.name || 'Valued User',
+          userAccount,
+          allProducts: allProds,
+          auditLog,
+          adminSettings,
+        });
+        return;
+      }
+    } catch (e) {}
+
+    // First time login
     dispatch({
       type: 'LOGIN',
-      user: { name: name.trim() || 'Valued User', phone, humanVerified: true, isSeller: false },
+      user: { name: name.trim() || 'Valued User', phone: cleanPh, humanVerified: true, isSeller: false },
     });
+  };
 
   const doVerify = async () => {
     const code = singleOtp || otp.join('');

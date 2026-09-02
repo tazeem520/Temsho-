@@ -11,7 +11,22 @@ import { Checkout, Success, Orders } from './src/screens/Checkout';
 import { Account, Wishlist, BecomeSeller, Seller, Support, Policy, PrivacyPolicyScreen } from './src/screens/Account';
 import { Notifications, Wallet, SellerOrders, Addresses } from './src/screens/Extras';
 import { Settings, EditProfile, EditLocation, ChangePhone, Language, PaymentSettings, ShopSettings } from './src/screens/Settings';
-import { Admin, AdminBrand, AdminMoney, AdminFeatures, AdminBroadcast, AdminProducts, AdminOtp, AdminDatabase, AdminLogistics, AdminPlayStore, AdminCoupons, AdminBanners } from './src/screens/Admin';
+import {
+  Admin,
+  AdminBrand,
+  AdminMoney,
+  AdminFeatures,
+  AdminBroadcast,
+  AdminProducts,
+  AdminOtp,
+  AdminDatabase,
+  AdminLogistics,
+  AdminPlayStore,
+  AdminCoupons,
+  AdminBanners,
+  AdminAuditLedger,
+  AdminOwnerPayment,
+} from './src/screens/Admin';
 import { DeliveryBoy } from './src/screens/DeliveryBoy';
 
 const SCREENS = {
@@ -28,6 +43,7 @@ const SCREENS = {
   'admin-features': AdminFeatures, 'admin-broadcast': AdminBroadcast, 'admin-products': AdminProducts,
   'admin-otp': AdminOtp, 'admin-database': AdminDatabase, 'admin-logistics': AdminLogistics, 'admin-playstore': AdminPlayStore,
   'admin-coupons': AdminCoupons, 'admin-banners': AdminBanners,
+  'admin-audit': AdminAuditLedger, 'admin-owner-payment': AdminOwnerPayment,
   'delivery-partner': DeliveryBoy, 'delivery-verify': DeliveryBoy,
 };
 

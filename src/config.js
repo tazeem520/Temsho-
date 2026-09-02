@@ -74,4 +74,13 @@ export const DEFAULT_ADMIN = {
   announcement: '',
   otpProvider: 'supabase',
   deliveryMode: 'all',
+  ownerPayment: {
+    payeeName: 'Tazeem Ahmad',
+    deliveryChargeUpi: '9044468663@upi',
+    bankName: 'State Bank of India',
+    accountNumber: '',
+    ifscCode: '',
+    codRemittanceMethod: 'bank_transfer',
+    notes: '₹49 logistics delivery fee & courier cash remittance account',
+  },
 };

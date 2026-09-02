@@ -81,7 +81,7 @@ export function Account({ go }) {
             <View style={ac.crown}><MC name="crown" size={20} color={C.accent} /></View>
             <View style={{ flex: 1, marginLeft: 12 }}>
               <Text style={{ color: '#fff', fontWeight: '900', fontSize: 15 }}>Owner Admin Panel</Text>
-              <Text style={{ color: '#ffffffaa', fontSize: 12, marginTop: 3 }}>Full App Control & Management (9044468663)</Text>
+              <Text style={{ color: '#ffffffaa', fontSize: 12, marginTop: 3 }}>Full App Control, Audit Ledger & Payout Setup</Text>
             </View>
             <MC name="chevron-right" size={22} color="#fff" />
           </TouchableOpacity>
@@ -95,7 +95,7 @@ export function Account({ go }) {
               {u?.isSeller ? 'Open Seller Dashboard' : 'Start Selling on Temsho'}
             </Text>
             <Text style={{ color: '#ffffffcc', fontSize: 12, marginTop: 3 }}>
-              {u?.isSeller ? `${u.shopName || state.shop?.name || 'My Shop'} · ${u.shopCity || state.shop?.city || 'India'}` : '0% commission · Instant setup · Direct payments'}
+              {u?.isSeller ? `${u.shopName || state.shop?.name || 'My Shop'} · ${u.shopCity || state.shop?.city || 'India'}` : '0% commission · Direct UPI/Bank Payouts'}
             </Text>
           </View>
           <MC name="chevron-right" size={22} color="#fff" />
@@ -155,32 +155,61 @@ export function Wishlist({ go }) {
   );
 }
 
-/* ---------------- SELLER ONBOARDING ---------------- */
+/* ---------------- SELLER ONBOARDING WITH COMPLETE PAYMENT DETAILS ---------------- */
 export function BecomeSeller({ go }) {
   const { state, dispatch } = useApp();
   const [f, setF] = useState({
-    shop: '', pickup: '', city: '', state: 'Uttar Pradesh', pin: '',
+    shop: '',
+    pickup: '',
+    city: '',
+    state: 'Uttar Pradesh',
+    pin: '',
     contact: state.user?.phone || '',
-    payName: state.user?.name || '', upi: '',
-    acceptUpi: true, acceptCod: true,
+    // Payout Details
+    payName: state.user?.name || '',
+    upi: '',
+    bankName: '',
+    accNo: '',
+    ifsc: '',
+    acceptUpi: true,
+    acceptCod: true,
+    acceptBank: true,
   });
   const [saving, setSaving] = useState(false);
-  const ok = f.shop && f.city && f.pin && f.pickup && (f.acceptCod || (f.acceptUpi && f.upi));
+  const [err, setErr] = useState('');
+
+  const ok =
+    f.shop.trim() &&
+    f.city.trim() &&
+    f.pin.trim().length === 6 &&
+    f.pickup.trim() &&
+    f.payName.trim() &&
+    (f.upi.trim() || (f.accNo.trim() && f.ifsc.trim()));
 
   const launchShop = async () => {
-    if (!ok) return;
+    if (!ok) {
+      setErr('Please fill all mandatory shop and bank payout details.');
+      return;
+    }
+    setErr('');
     setSaving(true);
+
     const shopData = {
-      name: f.shop,
-      city: f.city,
-      state: f.state,
-      pin: f.pin,
-      pickup: f.pickup,
-      contact: f.contact,
-      payName: f.payName,
-      upi: f.upi,
+      name: f.shop.trim(),
+      city: f.city.trim(),
+      state: f.state.trim(),
+      pin: f.pin.trim(),
+      pickup: f.pickup.trim(),
+      contact: f.contact || state.user?.phone,
+      payName: f.payName.trim(),
+      upi: f.upi.trim(),
+      bankName: f.bankName.trim() || 'Direct Bank Settlement',
+      accNo: f.accNo.trim(),
+      ifsc: f.ifsc.trim().toUpperCase(),
       acceptUpi: f.acceptUpi,
       acceptCod: f.acceptCod,
+      acceptBank: f.acceptBank,
+      sellerPhone: state.user?.phone,
     };
 
     if (cloud.cloudOn()) {
@@ -194,10 +223,11 @@ export function BecomeSeller({ go }) {
 
     dispatch({
       type: 'BECOME_SELLER',
-      shopName: f.shop,
-      shopCity: f.city,
+      shopName: f.shop.trim(),
+      shopCity: f.city.trim(),
       shop: shopData,
     });
+
     setSaving(false);
     go('seller');
   };
@@ -205,19 +235,20 @@ export function BecomeSeller({ go }) {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <Header title="Start Selling" go={go} />
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 50 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 60 }}>
+        {/* Banner */}
         <View style={[ac.card, shadow, { padding: 18 }]}>
           <View style={ac.bigIco}><MC name="storefront-outline" size={26} color={C.brand} /></View>
           <Text style={{ fontSize: 18, fontWeight: '900', color: C.ink, marginTop: 12 }}>
             Anyone Can Sell on Temsho
           </Text>
           <Text style={{ color: C.ink2, fontSize: 13, lineHeight: 20, marginTop: 6 }}>
-            Ship directly from your own doorstep. When a customer orders, courier riders come directly to your address for pickup.
+            Set up your shop in 2 minutes. Enter your dispatch address and bank/UPI payout details to receive 100% of your earnings directly.
           </Text>
           <View style={{ flexDirection: 'row', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
             <Badge text="0% Commission" tone="green" />
+            <Badge text="Direct Payouts to Bank/UPI" tone="accent" />
             <Badge text="Doorstep Courier Pickup" tone="green" />
-            <Badge text="Direct UPI / COD" tone="accent" />
             <Badge text="No Documents Needed" tone="brand" />
           </View>
         </View>
@@ -225,11 +256,12 @@ export function BecomeSeller({ go }) {
         <View style={ac.freeNote}>
           <MC name="truck-fast" size={18} color={C.green} />
           <Text style={{ flex: 1, marginLeft: 10, color: '#059669', fontSize: 12, fontWeight: '700', lineHeight: 18 }}>
-            Every seller ships from their own address. Courier partners (Delhivery/BlueDart/Ekart) will pick up parcels directly from your shop/home.
+            Couriers (Delhivery/Ekart/Shiprocket) pick parcels directly from your entered doorstep address.
           </Text>
         </View>
 
-        <Text style={ac.step}>1 · YOUR SHOP & DISPATCH ADDRESS</Text>
+        {/* 1. SHOP DETAILS */}
+        <Text style={ac.step}>1 · SHOP & DISPATCH ADDRESS</Text>
         <View style={[ac.card, shadow, { padding: 18 }]}>
           <View style={ac.numBox}>
             <MC name="cellphone-check" size={19} color={C.green} />
@@ -238,45 +270,94 @@ export function BecomeSeller({ go }) {
               <Text style={{ color: C.green, fontSize: 11, fontWeight: '700', marginTop: 2 }}>Verified Dispatch Phone</Text>
             </View>
           </View>
-          <Field label="Shop / Business Name" placeholder="e.g. Sharma Handloom or Rahul Crafts" value={f.shop} onChangeText={(v) => setF({ ...f, shop: v })} />
-          <Field label="Pickup Street Address (Where courier will pick parcels)" placeholder="House / Shop No., Street, Area" multiline value={f.pickup} onChangeText={(v) => setF({ ...f, pickup: v })} style={{ height: 70, textAlignVertical: 'top' }} />
+          <Field label="Shop / Business Name *" placeholder="e.g. Sharma Handloom or Rahul Crafts" value={f.shop} onChangeText={(v) => setF({ ...f, shop: v })} />
+          <Field label="Pickup Street Address (Where courier picks up parcels) *" placeholder="Shop No., House No., Street, Landmark, Area" multiline value={f.pickup} onChangeText={(v) => setF({ ...f, pickup: v })} style={{ height: 75, textAlignVertical: 'top' }} />
           <View style={{ flexDirection: 'row', gap: 10 }}>
-            <View style={{ flex: 1 }}><Field label="City" placeholder="Lucknow" value={f.city} onChangeText={(v) => setF({ ...f, city: v })} /></View>
-            <View style={{ flex: 1 }}><Field label="State" placeholder="Uttar Pradesh" value={f.state} onChangeText={(v) => setF({ ...f, state: v })} /></View>
+            <View style={{ flex: 1 }}><Field label="City / District *" placeholder="Lucknow" value={f.city} onChangeText={(v) => setF({ ...f, city: v })} /></View>
+            <View style={{ flex: 1 }}><Field label="State *" placeholder="Uttar Pradesh" value={f.state} onChangeText={(v) => setF({ ...f, state: v })} /></View>
           </View>
-          <Field label="Dispatch PIN Code" placeholder="226010" keyboardType="number-pad" value={f.pin} onChangeText={(v) => setF({ ...f, pin: v.replace(/\D/g, '').slice(0, 6) })} />
+          <Field label="Dispatch PIN Code (6-digit) *" placeholder="226010" keyboardType="number-pad" value={f.pin} onChangeText={(v) => setF({ ...f, pin: v.replace(/\D/g, '').slice(0, 6) })} />
         </View>
 
-        <Text style={ac.step}>2 · HOW DO YOU RECEIVE PAYMENTS?</Text>
+        {/* 2. PAYMENT & SETTLEMENT DETAILS (MANDATORY) */}
+        <Text style={ac.step}>2 · SELLER BANK & PAYOUT DETAILS (MANDATORY)</Text>
         <View style={[ac.card, shadow, { padding: 18 }]}>
+          <Text style={{ color: C.ink2, fontSize: 12.5, lineHeight: 18, marginBottom: 14 }}>
+            Please enter your bank account or UPI ID. 100% of product payments flow directly to your account.
+          </Text>
+
+          <Field
+            label="Account Holder Name (as in Bank) *"
+            placeholder="e.g. Rahul Sharma"
+            value={f.payName}
+            onChangeText={(v) => setF({ ...f, payName: v })}
+          />
+
+          <Field
+            label="Seller Payout UPI ID *"
+            placeholder="e.g. 9876543210@paytm or shopname@upi"
+            autoCapitalize="none"
+            value={f.upi}
+            onChangeText={(v) => setF({ ...f, upi: v })}
+          />
+
+          <Field
+            label="Bank Name (Optional)"
+            placeholder="e.g. State Bank of India, HDFC Bank, PNB"
+            value={f.bankName}
+            onChangeText={(v) => setF({ ...f, bankName: v })}
+          />
+
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <View style={{ flex: 1.2 }}>
+              <Field
+                label="Bank Account Number"
+                placeholder="Account No."
+                keyboardType="number-pad"
+                value={f.accNo}
+                onChangeText={(v) => setF({ ...f, accNo: v.replace(/\D/g, '') })}
+              />
+            </View>
+            <View style={{ flex: 0.8 }}>
+              <Field
+                label="IFSC Code"
+                placeholder="SBIN0001234"
+                autoCapitalize="characters"
+                value={f.ifsc}
+                onChangeText={(v) => setF({ ...f, ifsc: v.toUpperCase() })}
+              />
+            </View>
+          </View>
+
+          <Text style={{ color: C.ink2, fontSize: 12, fontWeight: '700', marginTop: 10, marginBottom: 8 }}>Accepted Payment Channels</Text>
           <TouchableOpacity onPress={() => setF({ ...f, acceptUpi: !f.acceptUpi })} style={[ac.payOpt, f.acceptUpi && ac.payOn]}>
             <MC name={f.acceptUpi ? 'checkbox-marked' : 'checkbox-blank-outline'} size={20} color={f.acceptUpi ? C.green : C.ink3} />
             <MC name="cellphone-check" size={19} color={C.brand} style={{ marginLeft: 12 }} />
             <View style={{ flex: 1, marginLeft: 10 }}>
-              <Text style={{ color: C.ink, fontWeight: '800', fontSize: 13.5 }}>UPI — Instant Online Payments</Text>
-              <Text style={{ color: C.ink3, fontSize: 11.5, marginTop: 2 }}>Direct to your GPay / PhonePe / Paytm UPI ID</Text>
+              <Text style={{ color: C.ink, fontWeight: '800', fontSize: 13 }}>Direct UPI Payments (GPay/PhonePe)</Text>
+              <Text style={{ color: C.ink3, fontSize: 11, marginTop: 1 }}>Instant settlement to your UPI ID</Text>
             </View>
           </TouchableOpacity>
 
-          {f.acceptUpi && (
-            <View style={{ marginTop: 12 }}>
-              <Field label="Account Holder Name (as in Bank)" placeholder="e.g. Rahul Sharma" value={f.payName} onChangeText={(v) => setF({ ...f, payName: v })} />
-              <Field label="Your UPI ID" placeholder="e.g. 9876543210@ybl or name@upi" autoCapitalize="none" value={f.upi} onChangeText={(v) => setF({ ...f, upi: v })} />
-            </View>
-          )}
-
-          <TouchableOpacity onPress={() => setF({ ...f, acceptCod: !f.acceptCod })} style={[ac.payOpt, f.acceptCod && ac.payOn, { marginTop: 10 }]}>
+          <TouchableOpacity onPress={() => setF({ ...f, acceptCod: !f.acceptCod })} style={[ac.payOpt, f.acceptCod && ac.payOn, { marginTop: 8 }]}>
             <MC name={f.acceptCod ? 'checkbox-marked' : 'checkbox-blank-outline'} size={20} color={f.acceptCod ? C.green : C.ink3} />
             <MC name="cash" size={19} color={C.brand} style={{ marginLeft: 12 }} />
             <View style={{ flex: 1, marginLeft: 10 }}>
-              <Text style={{ color: C.ink, fontWeight: '800', fontSize: 13.5 }}>Cash on Delivery (COD)</Text>
-              <Text style={{ color: C.ink3, fontSize: 11.5, marginTop: 2 }}>Collect cash directly upon delivery</Text>
+              <Text style={{ color: C.ink, fontWeight: '800', fontSize: 13 }}>Cash on Delivery (COD)</Text>
+              <Text style={{ color: C.ink3, fontSize: 11, marginTop: 1 }}>Cash collected by courier and remitted to you</Text>
             </View>
           </TouchableOpacity>
         </View>
 
+        {!!err && (
+          <View style={[ac.freeNote, { backgroundColor: C.redSoft, marginTop: 12 }]}>
+            <MC name="alert-circle" size={18} color={C.red} />
+            <Text style={{ flex: 1, marginLeft: 8, color: C.red, fontSize: 12, fontWeight: '800' }}>{err}</Text>
+          </View>
+        )}
+
         <Btn
-          title={saving ? "Setting up Shop…" : "Launch My Shop"}
+          title={saving ? 'Launching Shop…' : 'Launch My Shop & Start Selling'}
           icon="storefront-plus-outline"
           tone="green"
           disabled={!ok || saving}
@@ -288,11 +369,14 @@ export function BecomeSeller({ go }) {
   );
 }
 
-/* ---------------- SELLER DASHBOARD ---------------- */
+/* ---------------- SELLER DASHBOARD (WITH UNLIMITED PHOTOS & VIDEO) ---------------- */
 export function Seller({ go }) {
   const { state, dispatch } = useApp();
   const u = state.user;
-  const mine = state.products.filter((p) => p.seller === 'me' || p.sellerName === u.shopName || p.sellerName === state.shop?.name);
+  const userPhone = u?.phone || '';
+  const mine = state.products.filter(
+    (p) => p.seller === 'me' || p.sellerPhone === userPhone || p.sellerName === u.shopName || p.sellerName === state.shop?.name
+  );
   const [add, setAdd] = useState(false);
   const [saving, setSaving] = useState(false);
   const [f, setF] = useState({ title: '', price: '', mrp: '', cat: 'fashion', desc: '', images: [], video: null });
@@ -360,6 +444,7 @@ export function Seller({ go }) {
             video: f.video?.uri || null,
             price: Number(f.price),
             mrp: Number(f.mrp || f.price),
+            sellerPhone: userPhone,
           },
           state.user?.cloudId,
           state.shop?.cloudId
@@ -372,8 +457,10 @@ export function Seller({ go }) {
       title: f.title, cat: f.cat,
       price: Number(f.price), mrp: Number(f.mrp || f.price),
       rating: 0, ratingCount: 0, seller: 'me',
+      sellerPhone: userPhone,
       sellerName: u.shopName || state.shop?.name || 'My Shop',
       sellerCity: u.shopCity || state.shop?.city || 'India',
+      sellerUpi: state.shop?.upi || '',
       img: mainImg,
       images: f.images || (mainImg ? [mainImg] : []),
       video: f.video?.uri || null,
@@ -400,12 +487,13 @@ export function Seller({ go }) {
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <Header title="Seller Dashboard" go={go} />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+        {/* Shop Header Card */}
         <View style={[ac.shopCard, shadow]}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <View style={ac.av}><MC name="storefront-outline" size={22} color={C.brand} /></View>
             <View style={{ flex: 1, marginLeft: 12 }}>
               <Text style={{ fontWeight: '900', color: C.ink, fontSize: 15 }}>{u.shopName || state.shop?.name || 'My Shop'}</Text>
-              <Text style={{ color: C.ink3, fontSize: 12, marginTop: 2 }}>{u.shopCity || state.shop?.city || 'India'}</Text>
+              <Text style={{ color: C.ink3, fontSize: 12, marginTop: 2 }}>{u.shopCity || state.shop?.city || 'India'} · +91 {userPhone}</Text>
             </View>
             <HumanTag small />
           </View>
@@ -419,7 +507,23 @@ export function Seller({ go }) {
           </View>
         </View>
 
-        <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
+        {/* Bank & Payout Badge */}
+        <View style={[ac.payoutBadge, shadow]}>
+          <MC name="bank-check" size={20} color={C.green} />
+          <View style={{ flex: 1, marginLeft: 10 }}>
+            <Text style={{ color: C.ink, fontSize: 12.5, fontWeight: '800' }}>
+              Payout Account: {state.shop?.upi || state.shop?.bankName || 'Direct UPI Active'}
+            </Text>
+            <Text style={{ color: C.ink3, fontSize: 11, marginTop: 1 }}>
+              Holder: {state.shop?.payName || u.name} · Direct Settlements
+            </Text>
+          </View>
+          <TouchableOpacity onPress={() => go('shop-settings')}>
+            <Text style={{ color: C.brand, fontWeight: '800', fontSize: 11.5 }}>Edit</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={{ flexDirection: 'row', gap: 10, marginTop: 14 }}>
           <Btn title="Orders & Dispatch" icon="tray-arrow-down" tone="ghost" style={{ flex: 1 }} onPress={() => go('seller-orders')} />
           <Btn title="Shop Settings" icon="cog-outline" tone="ghost" style={{ flex: 1 }} onPress={() => go('shop-settings')} />
         </View>
@@ -505,7 +609,9 @@ export function Seller({ go }) {
           </View>
         )}
 
-        <Text style={{ fontWeight: '900', color: C.ink, fontSize: 16, marginTop: 24, marginBottom: 12 }}>Active Listings</Text>
+        <Text style={{ fontWeight: '900', color: C.ink, fontSize: 16, marginTop: 24, marginBottom: 12 }}>
+          Active Listings ({mine.length})
+        </Text>
         {mine.length === 0 ? (
           <View style={[ac.card, shadow, { padding: 24, alignItems: 'center' }]}>
             <MC name="package-variant" size={30} color={C.ink3} />
@@ -711,6 +817,10 @@ const ac = StyleSheet.create({
   payOn: { borderColor: C.green, backgroundColor: C.greenSoft },
   numBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.greenSoft, borderRadius: R.md, padding: 12, marginBottom: 16 },
   shopCard: { backgroundColor: C.surface, borderRadius: R.lg, padding: 16 },
+  payoutBadge: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: '#ECFDF5',
+    borderRadius: R.md, padding: 12, marginTop: 12, borderWidth: 1, borderColor: '#A7F3D0',
+  },
   chip: { borderWidth: 1, borderColor: C.line, borderRadius: R.pill, paddingHorizontal: 13, paddingVertical: 7, marginRight: 8 },
   photoBox: {
     height: 150, borderRadius: R.md, borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#C7D2FE',

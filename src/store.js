@@ -8,20 +8,55 @@ import { requestNotificationPermission, showSystemNotification } from './lib/not
 
 const Ctx = createContext(null);
 export const useApp = () => useContext(Ctx);
-const KEY = '@temsho/v4_dynamic_banners';
 
-const refCode = (phone) => 'TEM' + (phone ? phone.slice(-4) : '2026') + 'X';
+const KEY_SESSION = '@temsho/v4_dynamic_banners';
+const KEY_ALL_PRODUCTS = '@temsho/all_products_catalog';
+const KEY_AUDIT_LOG = '@temsho/owner_audit_log';
+const KEY_ADMIN_SETTINGS = '@temsho/admin_settings';
+const USER_KEY_PREFIX = '@temsho/account_';
+
+const refCode = (phone) => 'TEM' + (phone ? String(phone).slice(-4) : '2026') + 'X';
+const cleanPhone = (p) => String(p || '').replace(/\D/g, '').slice(-10);
 
 const LANGS = ['English', 'Hindi', 'Bengali', 'Marathi', 'Tamil', 'Telugu', 'Gujarati', 'Kannada', 'Malayalam', 'Punjabi'];
 export { LANGS };
+
+const formatLogTime = (ts = Date.now()) => {
+  return new Date(ts).toLocaleString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+};
+
+const createAuditEntry = (type, title, details, meta = {}) => ({
+  id: 'aud_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+  type, // 'ORDER_PLACED' | 'ORDER_STATUS' | 'ORDER_CANCELLED' | 'PRODUCT_ADDED' | 'PRODUCT_DELETED' | 'SELLER_REGISTERED' | 'OWNER_PAYMENT_UPDATE' | 'COUPON_ACTION'
+  title,
+  details,
+  meta,
+  timestamp: Date.now(),
+  formattedTime: formatLogTime(Date.now()),
+});
 
 const init = {
   ready: false,
   user: null,
   admin: { ...DEFAULT_ADMIN },
-  adminCoupons: [], // Owner-generated dynamic coupons (initially empty)
+  adminCoupons: [], // Owner-generated dynamic coupons
   adminBanners: BANNERS, // Owner-generated dynamic banners/posters
   banned: [],
+  auditLog: [
+    createAuditEntry(
+      'SYSTEM',
+      'Temsho Ledger Initialized',
+      'Audit ledger active — tracking all product additions, deletions, orders, and seller registrations.',
+      { system: 'Temsho Core v1.0.5' }
+    ),
+  ],
   settings: {
     lang: 'English',
     notifOrders: true,
@@ -36,9 +71,10 @@ const init = {
     pickup: '', contact: '', hours: '10:00 AM – 8:00 PM',
     returnDays: '7', gst: '',
     payName: '', upi: '', bankName: '', accNo: '', ifsc: '',
-    acceptUpi: true, acceptCod: true, acceptBank: false,
+    acceptUpi: true, acceptCod: true, acceptBank: true,
   },
   products: PRODUCTS,
+  myProducts: [], // Products created by this seller
   cart: [],
   wishlist: [],
   orders: [],
@@ -54,7 +90,7 @@ const init = {
   supportChat: [
     { id: 'm0', who: 'agent', agent: 'Priya S.', text: 'Hello! I am Priya, your dedicated Temsho Support Executive. There are no bots here — I am a real human assistant. How may I help you today?', at: Date.now() },
   ],
-  deliveryMode: 'standard', // 'standard' | 'local' | 'indiapost'
+  deliveryMode: 'standard',
 };
 
 const notif = (s, icon, title, body, tone) => {
@@ -85,54 +121,180 @@ function reducer(s, a) {
         user,
         shop: savedShop || s.shop,
         products: mergeProducts(a.data?.products),
+        auditLog: a.data?.auditLog && a.data.auditLog.length > 0 ? a.data.auditLog : s.auditLog,
         ready: true,
       };
     }
+
+    case 'RESTORE_USER_ACCOUNT': {
+      const { userAccount, allProducts, auditLog, adminSettings } = a;
+      const phone = userAccount?.user?.phone || a.phone;
+      const owner = isOwner(phone);
+
+      const user = userAccount?.user
+        ? {
+            ...userAccount.user,
+            phone,
+            isOwner: owner,
+            referral: userAccount.user.referral || refCode(phone),
+          }
+        : {
+            phone,
+            name: a.name || 'Valued User',
+            humanVerified: true,
+            isOwner: owner,
+            isSeller: false,
+            referral: refCode(phone),
+          };
+
+      const shop = userAccount?.shop || {
+        name: '', tagline: '', city: '', state: '', pin: '',
+        pickup: '', contact: phone, hours: '10:00 AM – 8:00 PM',
+        returnDays: '7', gst: '',
+        payName: user.name || '', upi: '', bankName: '', accNo: '', ifsc: '',
+        acceptUpi: true, acceptCod: true, acceptBank: true,
+      };
+
+      const myProducts = userAccount?.myProducts || (allProducts || []).filter((p) => p && (p.sellerPhone === phone || p.seller === 'me'));
+      const orders = userAccount?.orders || [];
+      const cart = userAccount?.cart || [];
+      const wishlist = userAccount?.wishlist || [];
+      const addresses = userAccount?.addresses && userAccount.addresses.length > 0
+        ? userAccount.addresses
+        : [{ id: 'a1', name: 'Home', line: '221, Gomti Nagar', city: 'Lucknow', state: 'Uttar Pradesh', pin: '226010', phone }];
+      const notifications = userAccount?.notifications || s.notifications;
+      const supportChat = userAccount?.supportChat || s.supportChat;
+      const settings = userAccount?.settings || s.settings;
+
+      const mergedProds = mergeCloudAndLocal(allProducts || s.products, myProducts);
+
+      return notif(
+        {
+          ...s,
+          user,
+          shop,
+          myProducts,
+          products: mergedProds,
+          orders,
+          cart,
+          wishlist,
+          addresses,
+          notifications,
+          supportChat,
+          settings,
+          admin: adminSettings ? { ...s.admin, ...adminSettings } : s.admin,
+          auditLog: auditLog && auditLog.length > 0 ? auditLog : s.auditLog,
+        },
+        'hand-wave-outline',
+        'Welcome Back!',
+        `Logged in as +91 ${phone}. All your orders, shop data, and listings have been restored.`
+      );
+    }
+
     case 'CLOUD_PRODUCTS':
       return { ...s, products: mergeCloudAndLocal(s.products, a.list), cloudOn: true };
+
     case 'CLOUD_SETTINGS':
       return { ...s, admin: { ...s.admin, ...a.data } };
+
     case 'READY':
       return { ...s, ready: true };
-    case 'ADMIN_SET':
-      return { ...s, admin: { ...s.admin, ...a.patch } };
+
+    case 'ADMIN_SET': {
+      const audit = createAuditEntry('SETTINGS_UPDATE', 'Owner Settings Updated', 'System settings modified by owner.', a.patch);
+      return { ...s, admin: { ...s.admin, ...a.patch }, auditLog: [audit, ...s.auditLog] };
+    }
+
+    case 'ADMIN_SET_OWNER_PAYMENT': {
+      const audit = createAuditEntry(
+        'OWNER_PAYMENT_UPDATE',
+        'Owner Payment & Settlement Updated',
+        `Owner Payout UPI: ${a.payment?.deliveryChargeUpi || a.payment?.upiId} · Bank: ${a.payment?.bankName} · Acc: ${a.payment?.accountNumber}`,
+        a.payment
+      );
+      return notif(
+        {
+          ...s,
+          admin: {
+            ...s.admin,
+            ownerPayment: { ...s.admin?.ownerPayment, ...a.payment },
+          },
+          auditLog: [audit, ...s.auditLog],
+        },
+        'cash-check',
+        'Owner Payment Setup Saved',
+        'Delivery fee logistics & COD remittance account updated successfully.',
+        '#059669'
+      );
+    }
+
     case 'ADMIN_RESET':
       return { ...s, admin: { ...DEFAULT_ADMIN } };
-    case 'ADMIN_ADD_COUPON':
+
+    case 'ADMIN_ADD_COUPON': {
+      const audit = createAuditEntry('COUPON_CREATED', `Coupon "${a.coupon.code}" Created`, a.coupon.desc, a.coupon);
       return notif(
-        { ...s, adminCoupons: [a.coupon, ...(s.adminCoupons || [])] },
+        { ...s, adminCoupons: [a.coupon, ...(s.adminCoupons || [])], auditLog: [audit, ...s.auditLog] },
         'ticket-percent', 'Coupon Created', `Coupon "${a.coupon.code}" is now live across the app.`
       );
-    case 'ADMIN_DELETE_COUPON':
-      return { ...s, adminCoupons: (s.adminCoupons || []).filter((c) => c.id !== a.id) };
+    }
+
+    case 'ADMIN_DELETE_COUPON': {
+      const audit = createAuditEntry('COUPON_DELETED', `Coupon Deleted`, `Coupon ID ${a.id} removed from marketplace.`);
+      return { ...s, adminCoupons: (s.adminCoupons || []).filter((c) => c.id !== a.id), auditLog: [audit, ...s.auditLog] };
+    }
+
     case 'ADMIN_CLEAR_COUPONS':
       return { ...s, adminCoupons: [], coupon: null };
+
     case 'ADMIN_TOGGLE_COUPON':
       return {
         ...s,
         adminCoupons: (s.adminCoupons || []).map((c) => (c.id === a.id ? { ...c, active: !c.active } : c)),
       };
+
     case 'ADMIN_ADD_BANNER':
       return notif(
         { ...s, adminBanners: [a.banner, ...(s.adminBanners || [])] },
         'image-multiple-outline', 'Poster / Banner Published', `Banner "${a.banner.title}" is now live on the app home screen.`
       );
+
     case 'ADMIN_DELETE_BANNER':
       return { ...s, adminBanners: (s.adminBanners || []).filter((b) => b.id !== a.id) };
+
     case 'ADMIN_TOGGLE_BANNER':
       return {
         ...s,
         adminBanners: (s.adminBanners || []).map((b) => (b.id === a.id ? { ...b, active: !b.active } : b)),
       };
+
     case 'ADMIN_RESET_BANNERS':
       return { ...s, adminBanners: [...BANNERS] };
-    case 'ADMIN_REMOVE_PRODUCT':
-      return { ...s, products: s.products.filter((p) => p.id !== a.id) };
+
+    case 'ADMIN_REMOVE_PRODUCT': {
+      const prod = s.products.find((p) => p.id === a.id);
+      const audit = createAuditEntry(
+        'PRODUCT_DELETED',
+        `Product Deleted: ${prod?.title || a.id}`,
+        `Deleted by Owner Admin · Price: ₹${prod?.price || 0} · Seller: ${prod?.sellerName || 'Verified Seller'}`,
+        { productId: a.id, title: prod?.title, price: prod?.price, seller: prod?.sellerName, deletedBy: 'Owner' }
+      );
+      return {
+        ...s,
+        products: s.products.filter((p) => p.id !== a.id),
+        myProducts: (s.myProducts || []).filter((p) => p.id !== a.id),
+        auditLog: [audit, ...s.auditLog],
+      };
+    }
+
     case 'ADMIN_BAN':
       return { ...s, banned: s.banned.includes(a.id) ? s.banned.filter((x) => x !== a.id) : [...s.banned, a.id] };
+
     case 'ADMIN_BROADCAST':
       return notif(s, 'bullhorn-outline', a.title, a.body, '#FF9F00');
+
     case 'LOGIN': {
+      const phone = cleanPhone(a.user?.phone);
       const isSeller = a.user.isSeller ?? s.user?.isSeller ?? (!!s.shop?.name && s.shop.name.trim().length > 0);
       const shopName = a.user.shopName ?? s.user?.shopName ?? s.shop?.name ?? '';
       const shopCity = a.user.shopCity ?? s.user?.shopCity ?? s.shop?.city ?? '';
@@ -141,8 +303,9 @@ function reducer(s, a) {
           ...s,
           user: {
             ...a.user,
-            referral: refCode(a.user.phone),
-            isOwner: isOwner(a.user.phone),
+            phone,
+            referral: refCode(phone),
+            isOwner: isOwner(phone),
             isSeller,
             shopName,
             shopCity,
@@ -151,60 +314,131 @@ function reducer(s, a) {
         'hand-wave-outline', 'Login Successful', `Welcome ${a.user.name}! Your Temsho account is ready.`
       );
     }
+
     case 'LOGOUT':
-      return { ...init, ready: true, products: [] };
+      return {
+        ...init,
+        ready: true,
+        admin: s.admin,
+        adminCoupons: s.adminCoupons,
+        adminBanners: s.adminBanners,
+        auditLog: s.auditLog,
+        products: s.products,
+      };
+
     case 'UPDATE_USER':
       return { ...s, user: { ...s.user, ...a.patch } };
+
     case 'UPDATE_SETTINGS':
       return { ...s, settings: { ...s.settings, ...a.patch } };
-    case 'UPDATE_SHOP':
+
+    case 'UPDATE_SHOP': {
+      const audit = createAuditEntry(
+        'SELLER_UPDATED',
+        `Shop Updated: ${a.patch.name || s.shop.name}`,
+        `Seller: +91 ${s.user?.phone} · UPI: ${a.patch.upi || s.shop.upi} · Bank: ${a.patch.bankName || s.shop.bankName}`,
+        { shop: a.patch, sellerPhone: s.user?.phone }
+      );
       return {
         ...s,
         shop: { ...s.shop, ...a.patch },
         user: { ...s.user, shopName: a.patch.name ?? s.user?.shopName, shopCity: a.patch.city ?? s.user?.shopCity },
+        auditLog: [audit, ...s.auditLog],
       };
-    case 'DELETE_ACCOUNT':
-      return { ...init, ready: true, products: [] };
-    case 'BECOME_SELLER':
-      return notif(
-        { ...s, shop: { ...s.shop, ...a.shop, name: a.shopName, city: a.shopCity }, user: { ...s.user, isSeller: true, shopName: a.shopName, shopCity: a.shopCity } },
-        'storefront-outline', 'Shop Created Successfully', `${a.shopName} is now live on Temsho. You can list your first product.`
+    }
+
+    case 'DELETE_ACCOUNT': {
+      const audit = createAuditEntry('ACCOUNT_DELETED', `Account Deleted: +91 ${s.user?.phone}`, 'User permanently wiped their account.', { phone: s.user?.phone });
+      return {
+        ...init,
+        ready: true,
+        admin: s.admin,
+        adminCoupons: s.adminCoupons,
+        adminBanners: s.adminBanners,
+        auditLog: [audit, ...s.auditLog],
+        products: s.products.filter((p) => p.sellerPhone !== s.user?.phone),
+      };
+    }
+
+    case 'BECOME_SELLER': {
+      const audit = createAuditEntry(
+        'SELLER_REGISTERED',
+        `New Seller Registered: ${a.shopName}`,
+        `Seller Phone: +91 ${s.user?.phone} · City: ${a.shopCity} · Payout UPI: ${a.shop?.upi} · Bank: ${a.shop?.bankName || 'Direct UPI'} (Acc: ${a.shop?.accNo ? '***' + a.shop.accNo.slice(-4) : 'N/A'}, IFSC: ${a.shop?.ifsc || 'N/A'})`,
+        { shop: a.shop, shopName: a.shopName, shopCity: a.shopCity, sellerPhone: s.user?.phone }
       );
+      return notif(
+        {
+          ...s,
+          shop: { ...s.shop, ...a.shop, name: a.shopName, city: a.shopCity, contact: s.user?.phone || a.shop?.contact },
+          user: { ...s.user, isSeller: true, shopName: a.shopName, shopCity: a.shopCity },
+          auditLog: [audit, ...s.auditLog],
+        },
+        'storefront-outline',
+        'Shop Created Successfully',
+        `${a.shopName} is now live on Temsho. You can list your first product.`
+      );
+    }
+
     case 'ADD_CART': {
       const ex = s.cart.find((c) => c.id === a.id);
       return ex
         ? { ...s, cart: s.cart.map((c) => (c.id === a.id ? { ...c, qty: c.qty + 1 } : c)) }
         : { ...s, cart: [...s.cart, { id: a.id, qty: 1 }] };
     }
+
     case 'QTY':
       return a.qty <= 0
         ? { ...s, cart: s.cart.filter((c) => c.id !== a.id) }
         : { ...s, cart: s.cart.map((c) => (c.id === a.id ? { ...c, qty: a.qty } : c)) };
+
     case 'RM_CART':
       return { ...s, cart: s.cart.filter((c) => c.id !== a.id) };
+
     case 'WISH':
       return {
         ...s,
         wishlist: s.wishlist.includes(a.id) ? s.wishlist.filter((x) => x !== a.id) : [...s.wishlist, a.id],
       };
+
     case 'COUPON':
       return { ...s, coupon: a.code };
+
     case 'SET_DELIVERY_MODE':
       return { ...s, deliveryMode: a.mode };
+
     case 'PLACE_ORDER': {
       const deliveryOtp = a.order.deliveryOtp || String(Math.floor(1000 + Math.random() * 9000));
       const orderWithOtp = { ...a.order, deliveryOtp, qrData: `TEMSHO://DELIVERY/${a.order.id}?otp=${deliveryOtp}` };
-      
+
       // Dual Notification: 1. Customer Confirmation, 2. Seller New Order Alert
       const custMsg = `Order #${a.order.id} is confirmed. Estimated delivery by ${a.order.eta}. Doorstep OTP: ${deliveryOtp}.`;
       const sellerMsg = `📦 New Sale Alert! You received order #${a.order.id} for ₹${a.order.total}. Tap to print shipping label & pack parcel.`;
-      
+
       showSystemNotification('📦 New Order Received!', sellerMsg);
-      
+
       const newNotifs = [
         { id: 'n' + Date.now() + 'c', icon: 'check-circle-outline', tone: '#059669', title: 'Order Confirmed', body: custMsg, at: Date.now(), read: false },
         { id: 'n' + Date.now() + 's', icon: 'package-variant', tone: '#2B2D6E', title: 'New Sale Alert (Seller)', body: sellerMsg, at: Date.now() + 1, read: false },
       ];
+
+      // Owner Audit Ledger Logging
+      const itemsSummary = (a.order.items || []).map((it) => `${it.title} (x${it.qty}) - ₹${(Number(it.price) || 0) * (Number(it.qty) || 1)}`).join(', ');
+      const audit = createAuditEntry(
+        'ORDER_PLACED',
+        `Order Placed: #${a.order.id} (₹${a.order.total})`,
+        `Buyer: ${a.order.customerName || 'Customer'} (+91 ${a.order.customerPhone}) · Pay: ${a.order.pay?.toUpperCase()} · Items: ${itemsSummary} · Deliver to: ${a.order.address?.city || 'India'} (${a.order.address?.pin || '226010'}) · Doorstep OTP: ${deliveryOtp}`,
+        {
+          orderId: a.order.id,
+          total: a.order.total,
+          pay: a.order.pay,
+          buyerPhone: a.order.customerPhone,
+          buyerName: a.order.customerName,
+          items: a.order.items,
+          address: a.order.address,
+          deliveryOtp,
+        }
+      );
 
       return {
         ...s,
@@ -212,8 +446,10 @@ function reducer(s, a) {
         coupon: null,
         orders: [orderWithOtp, ...s.orders],
         notifications: [...newNotifs, ...s.notifications],
+        auditLog: [audit, ...s.auditLog],
       };
     }
+
     case 'VERIFY_DELIVERY_OTP': {
       const orders = s.orders.map((o) => {
         if (o.id !== a.id) return o;
@@ -226,53 +462,155 @@ function reducer(s, a) {
           cashCollected: o.pay === 'cod' ? o.total : 0,
         };
       });
+
+      const targetOrder = s.orders.find((o) => o.id === a.id);
+      const audit = createAuditEntry(
+        'ORDER_STATUS',
+        `Order Delivered: #${a.id}`,
+        `Securely delivered at doorstep via OTP verification. Verified by: ${a.agentName || 'Delivery Partner'}. Cash Collected: ₹${targetOrder?.pay === 'cod' ? targetOrder.total : 0}`,
+        { orderId: a.id, newStatus: 'Delivered', agent: a.agentName, verified: true }
+      );
+
       return notif(
-        { ...s, orders },
+        { ...s, orders, auditLog: [audit, ...s.auditLog] },
         'truck-check',
         'Order Delivered Successfully',
         `Order #${a.id} has been securely delivered at doorstep via OTP verification.`,
         '#059669'
       );
     }
+
     case 'ADVANCE_ORDER': {
       const steps = ['Confirmed', 'Packed', 'Shipped', 'Out for Delivery', 'Delivered'];
       let msg = null;
+      let targetOrder = null;
       const orders = s.orders.map((o) => {
         if (o.id !== a.id || o.status === 'Cancelled' || o.status === 'Delivered') return o;
         const nx = steps[Math.min(steps.indexOf(o.status) + 1, steps.length - 1)];
         msg = nx;
-        return { ...o, status: nx, deliveredAt: nx === 'Delivered' ? Date.now() : o.deliveredAt };
+        targetOrder = { ...o, status: nx, deliveredAt: nx === 'Delivered' ? Date.now() : o.deliveredAt };
+        return targetOrder;
       });
-      const ns = { ...s, orders };
+
+      const audit = msg
+        ? createAuditEntry(
+            'ORDER_STATUS',
+            `Order #${a.id} Advanced to ${msg}`,
+            `Status updated to "${msg}" for customer ${targetOrder?.customerName || ''} (+91 ${targetOrder?.customerPhone || ''}).`,
+            { orderId: a.id, status: msg }
+          )
+        : null;
+
+      const ns = { ...s, orders, auditLog: audit ? [audit, ...s.auditLog] : s.auditLog };
       return msg ? notif(ns, 'truck-fast-outline', 'Order Status Update', `Order #${a.id} is now ${msg}.`) : ns;
     }
+
     case 'ATTACH_AWB': {
+      const audit = createAuditEntry(
+        'ORDER_AWB_ATTACHED',
+        `Shipment AWB Generated: #${a.id}`,
+        `Courier: ${a.shipment?.courier} · AWB: ${a.shipment?.awb} · Pickup: ${a.shipment?.pickupScheduled}`,
+        { orderId: a.id, shipment: a.shipment }
+      );
       return {
         ...s,
         orders: s.orders.map((o) => (o.id === a.id ? { ...o, shipment: a.shipment, status: 'Shipped' } : o)),
+        auditLog: [audit, ...s.auditLog],
       };
     }
-    case 'CANCEL_ORDER':
-      return notif({ ...s, orders: s.orders.map((o) => (o.id === a.id ? { ...o, status: 'Cancelled' } : o)) },
-        'close-circle-outline', 'Order Cancelled', `Order #${a.id} has been cancelled.`, '#EF4444');
-    case 'RETURN_ORDER':
-      return notif(
-        { ...s, orders: s.orders.map((o) => (o.id === a.id ? { ...o, status: 'Return Requested', returnReason: a.reason } : o)) },
-        'backup-restore', 'Return Requested', `Pickup for Order #${a.id} will be scheduled within 2 business days.`
+
+    case 'CANCEL_ORDER': {
+      const targetOrder = s.orders.find((o) => o.id === a.id);
+      const audit = createAuditEntry(
+        'ORDER_CANCELLED',
+        `Order Cancelled: #${a.id}`,
+        `Order for ₹${targetOrder?.total || 0} cancelled by user/seller.`,
+        { orderId: a.id, total: targetOrder?.total }
       );
-    case 'ADD_PRODUCT':
-      return notif({ ...s, products: [a.product, ...s.products] },
-        'tag-outline', 'Product Listed', `"${a.product.title}" is now active in the marketplace.`);
-    case 'RM_PRODUCT':
-      return { ...s, products: s.products.filter((p) => p.id !== a.id) };
+      return notif(
+        { ...s, orders: s.orders.map((o) => (o.id === a.id ? { ...o, status: 'Cancelled' } : o)), auditLog: [audit, ...s.auditLog] },
+        'close-circle-outline',
+        'Order Cancelled',
+        `Order #${a.id} has been cancelled.`,
+        '#EF4444'
+      );
+    }
+
+    case 'RETURN_ORDER': {
+      const audit = createAuditEntry(
+        'ORDER_RETURN_REQUEST',
+        `Return Requested: #${a.id}`,
+        `Customer requested return. Reason: ${a.reason}`,
+        { orderId: a.id, reason: a.reason }
+      );
+      return notif(
+        {
+          ...s,
+          orders: s.orders.map((o) => (o.id === a.id ? { ...o, status: 'Return Requested', returnReason: a.reason } : o)),
+          auditLog: [audit, ...s.auditLog],
+        },
+        'backup-restore',
+        'Return Requested',
+        `Pickup for Order #${a.id} will be scheduled within 2 business days.`
+      );
+    }
+
+    case 'ADD_PRODUCT': {
+      const p = a.product;
+      const audit = createAuditEntry(
+        'PRODUCT_ADDED',
+        `Product Listed: ${p.title} (₹${p.price})`,
+        `Seller: ${p.sellerName || s.shop.name || 'Verified Seller'} (+91 ${p.sellerPhone || s.user?.phone}) · MRP: ₹${p.mrp || p.price} · Category: ${p.cat} · Photos: ${p.images?.length || 1} · Video: ${p.video ? 'Yes' : 'No'}`,
+        { product: p, sellerPhone: p.sellerPhone || s.user?.phone }
+      );
+      return notif(
+        {
+          ...s,
+          products: [p, ...s.products],
+          myProducts: [p, ...(s.myProducts || [])],
+          auditLog: [audit, ...s.auditLog],
+        },
+        'tag-outline',
+        'Product Listed',
+        `"${p.title}" is now active in the marketplace.`
+      );
+    }
+
+    case 'RM_PRODUCT': {
+      const prod = s.products.find((p) => p.id === a.id);
+      const audit = createAuditEntry(
+        'PRODUCT_DELETED',
+        `Product Deleted: ${prod?.title || a.id}`,
+        `Deleted by Seller (+91 ${s.user?.phone}) · Price: ₹${prod?.price || 0} · Category: ${prod?.cat}`,
+        { productId: a.id, title: prod?.title, sellerPhone: s.user?.phone }
+      );
+      return {
+        ...s,
+        products: s.products.filter((p) => p.id !== a.id),
+        myProducts: (s.myProducts || []).filter((p) => p.id !== a.id),
+        auditLog: [audit, ...s.auditLog],
+      };
+    }
+
     case 'ADDRESS':
       return { ...s, addresses: [a.address, ...s.addresses] };
+
     case 'RM_ADDRESS':
       return { ...s, addresses: s.addresses.filter((x) => x.id !== a.id) };
+
     case 'READ_NOTIFS':
       return { ...s, notifications: s.notifications.map((n) => ({ ...n, read: true })) };
+
     case 'CHAT':
       return { ...s, supportChat: [...s.supportChat, a.msg] };
+
+    case 'CLEAR_AUDIT_LOG': {
+      const freshAudit = [
+        createAuditEntry('SYSTEM', 'Ledger Reset', 'Audit ledger reset by owner on ' + formatLogTime(Date.now())),
+      ];
+      return { ...s, auditLog: freshAudit };
+    }
+
     default:
       return s;
   }
@@ -289,7 +627,7 @@ function mergeCloudAndLocal(localProds = [], cloudProds = []) {
   (cloudProds || []).forEach((p) => {
     if (p && p.id) map.set(p.id, p);
   });
-  // Also keep any local-only draft products that haven't synced yet
+  // Also keep any local-only products
   (localProds || []).forEach((p) => {
     if (p && p.id && !map.has(p.id)) {
       map.set(p.id, p);
@@ -306,15 +644,98 @@ export function AppProvider({ children }) {
   useEffect(() => {
     (async () => {
       try {
-        const raw = await AsyncStorage.getItem(KEY);
-        if (raw) dispatch({ type: 'HYDRATE', data: JSON.parse(raw) });
-        else dispatch({ type: 'READY' });
+        const [rawSession, rawProducts, rawAudit, rawAdmin] = await Promise.all([
+          AsyncStorage.getItem(KEY_SESSION),
+          AsyncStorage.getItem(KEY_ALL_PRODUCTS),
+          AsyncStorage.getItem(KEY_AUDIT_LOG),
+          AsyncStorage.getItem(KEY_ADMIN_SETTINGS),
+        ]);
+
+        let sessionData = rawSession ? JSON.parse(rawSession) : null;
+        let allProds = rawProducts ? JSON.parse(rawProducts) : [];
+        let auditList = rawAudit ? JSON.parse(rawAudit) : [];
+        let adminPatch = rawAdmin ? JSON.parse(rawAdmin) : null;
+
+        if (sessionData && sessionData.user?.phone) {
+          const userKey = USER_KEY_PREFIX + cleanPhone(sessionData.user.phone);
+          const rawUserAcc = await AsyncStorage.getItem(userKey);
+          const userAcc = rawUserAcc ? JSON.parse(rawUserAcc) : sessionData;
+
+          dispatch({
+            type: 'RESTORE_USER_ACCOUNT',
+            phone: cleanPhone(sessionData.user.phone),
+            userAccount: userAcc,
+            allProducts: allProds,
+            auditLog: auditList,
+            adminSettings: adminPatch,
+          });
+        } else if (sessionData) {
+          dispatch({
+            type: 'HYDRATE',
+            data: {
+              ...sessionData,
+              products: mergeCloudAndLocal(allProds, sessionData.products),
+              auditLog: auditList.length > 0 ? auditList : sessionData.auditLog,
+              admin: adminPatch ? { ...DEFAULT_ADMIN, ...adminPatch } : sessionData.admin,
+            },
+          });
+        } else {
+          dispatch({ type: 'READY' });
+        }
+
         requestNotificationPermission().catch(() => {});
-      } catch {
+      } catch (err) {
+        console.log('Error hydrating state:', err);
         dispatch({ type: 'READY' });
       }
     })();
   }, []);
+
+  // Multi-account Phone-Indexed Persistence: When user logs in or state changes
+  useEffect(() => {
+    if (!state.ready) return;
+    if (first.current) { first.current = false; }
+
+    const phone = state.user?.phone ? cleanPhone(state.user.phone) : null;
+
+    // 1. Save Session State
+    const { ready, ...rest } = state;
+    AsyncStorage.setItem(KEY_SESSION, JSON.stringify(rest)).catch(() => {});
+
+    // 2. Save Global Catalog of Products
+    if (state.products && state.products.length > 0) {
+      AsyncStorage.setItem(KEY_ALL_PRODUCTS, JSON.stringify(state.products)).catch(() => {});
+    }
+
+    // 3. Save Owner Audit Log
+    if (state.auditLog && state.auditLog.length > 0) {
+      AsyncStorage.setItem(KEY_AUDIT_LOG, JSON.stringify(state.auditLog.slice(0, 500))).catch(() => {});
+    }
+
+    // 4. Save Admin Settings & Owner Payment Setup
+    if (state.admin) {
+      AsyncStorage.setItem(KEY_ADMIN_SETTINGS, JSON.stringify(state.admin)).catch(() => {});
+    }
+
+    // 5. Save Phone-Indexed User Account
+    if (phone) {
+      const userKey = USER_KEY_PREFIX + phone;
+      const userAccountBundle = {
+        user: state.user,
+        shop: state.shop,
+        myProducts: state.myProducts || state.products.filter((p) => p.sellerPhone === phone || p.seller === 'me'),
+        orders: state.orders,
+        cart: state.cart,
+        wishlist: state.wishlist,
+        addresses: state.addresses,
+        notifications: state.notifications,
+        supportChat: state.supportChat,
+        settings: state.settings,
+        savedAt: Date.now(),
+      };
+      AsyncStorage.setItem(userKey, JSON.stringify(userAccountBundle)).catch(() => {});
+    }
+  }, [state]);
 
   // Load cloud products & settings + setup realtime listeners + periodic refresh
   useEffect(() => {
@@ -341,14 +762,6 @@ export function AppProvider({ children }) {
       if (typeof unsubProducts === 'function') unsubProducts();
     };
   }, [state.ready]);
-
-  // Sync state to local AsyncStorage
-  useEffect(() => {
-    if (!state.ready) return;
-    if (first.current) { first.current = false; }
-    const { ready, ...rest } = state;
-    AsyncStorage.setItem(KEY, JSON.stringify(rest)).catch(() => {});
-  }, [state]);
 
   const value = useMemo(() => {
     const byId = (id) => (state.products || []).find((p) => p && p.id === id);
