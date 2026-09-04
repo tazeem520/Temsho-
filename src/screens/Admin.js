@@ -634,18 +634,6 @@ export function AdminSellers({ go }) {
     </View>
   );
 }
-                >
-                  <MC name="whatsapp" size={17} color="#fff" />
-                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: 12.5, marginLeft: 6 }}>WhatsApp</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          );
-        })}
-      </ScrollView>
-    </View>
-  );
-}
 
 /* =============== 3. SHIPROCKET COURIER ACTIVATION GUIDE (REQUIREMENT 5) =============== */
 export function AdminShiprocket({ go }) {

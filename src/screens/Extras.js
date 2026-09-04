@@ -221,23 +221,6 @@ export function SellerOrders({ go }) {
     </View>
   );
 }
-                    icon="whatsapp"
-                    tone="green"
-                    style={{ flex: 1 }}
-                    onPress={() => {
-                      const url = getWhatsAppConnectUrl(o.address?.phone || '9044468663', o.id, firstItem?.title);
-                      Linking.openURL(url).catch(() => {});
-                    }}
-                  />
-                </View>
-              </View>
-            );
-          })}
-        </ScrollView>
-      )}
-    </View>
-  );
-}
 
 export function Addresses({ go }) {
   const { state, dispatch } = useApp();
