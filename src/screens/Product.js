@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, Share, Linking } from 'react-native';
 import { C, R, shadow, money } from '../theme';
 import { MaterialCommunityIcons as MC } from '@expo/vector-icons';
 import { Btn, Badge, TemshoAssuredBadge, HumanTag, Stars, Thumb, Empty, ProductCard, Avatar, RatingsBreakdown, BankOffers, SpecTable } from '../components/UI';
@@ -20,8 +20,15 @@ export function Product({ go, params }) {
   const [myReviewText, setMyReviewText] = useState('');
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
+  // Dispatch VIEW_PRODUCT for Recently Viewed tracking
+  useEffect(() => {
+    if (p?.id) {
+      dispatch({ type: 'VIEW_PRODUCT', id: p.id });
+    }
+  }, [p?.id]);
+
   // Load real reviews from Supabase
-  React.useEffect(() => {
+  useEffect(() => {
     if (p?.id && cloud.cloudOn()) {
       cloud.pullReviews(p.id).then((cloudRevs) => {
         if (cloudRevs && cloudRevs.length > 0) {
@@ -47,6 +54,7 @@ export function Product({ go, params }) {
     hue: C.brand,
     orders: 0,
     since: 2026,
+    phone: p.sellerPhone || '9044468663',
   };
 
   const mrp = Number(p.mrp) || Number(p.price) || 0;
@@ -54,6 +62,11 @@ export function Product({ go, params }) {
   const wished = state.wishlist.includes(p.id);
   const related = (state.products || []).filter((x) => x.cat === p.cat && x.id !== p.id).slice(0, 6);
   const pinResult = checkPincodeServiceability(pinInput);
+
+  const handleShareProduct = () => {
+    const shareText = `🛍️ *${p.title}* on Temsho!\n💰 Price: ₹${p.price} (MRP: ₹${mrp} - ${off}% OFF)\n📦 Direct from Verified Seller: ${s.name}\n\nBuy directly: https://temsho.in/product/${p.id}`;
+    Share.share({ message: shareText }).catch(() => {});
+  };
 
   const submitReview = () => {
     if (!myReviewText.trim()) return;
@@ -81,7 +94,10 @@ export function Product({ go, params }) {
       <View style={sx.topBar}>
         <TouchableOpacity onPress={() => go(-1)} style={sx.round}><MC name="chevron-left" size={24} color={C.ink} /></TouchableOpacity>
         <View style={{ flex: 1 }} />
-        <TouchableOpacity onPress={() => dispatch({ type: 'WISH', id: p.id })} style={sx.round}>
+        <TouchableOpacity onPress={handleShareProduct} style={sx.round}>
+          <MC name="share-variant-outline" size={19} color={C.ink} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => dispatch({ type: 'WISH', id: p.id })} style={[sx.round, { marginLeft: 8 }]}>
           <MC name={wished ? 'heart' : 'heart-outline'} size={19} color={wished ? C.red : C.ink} />
         </TouchableOpacity>
         <TouchableOpacity onPress={() => go('cart')} style={[sx.round, { marginLeft: 8 }]}>
@@ -217,18 +233,23 @@ export function Product({ go, params }) {
             </>
           )}
 
-          {/* Seller Profile Card */}
-          <View style={[sx.sellerBox, shadow]}>
+          {/* Seller Profile Card with Direct Storefront Link */}
+          <TouchableOpacity
+            activeOpacity={0.88}
+            onPress={() => go('seller-storefront', { sellerKey: p.seller, phone: s.phone, name: s.name, city: s.city })}
+            style={[sx.sellerBox, shadow]}
+          >
             <Avatar name={s.name} hue={s.hue || C.brand} size={48} />
             <View style={{ flex: 1, marginLeft: 12 }}>
               <Text style={{ fontWeight: '900', color: C.ink, fontSize: 14.5 }}>{s.name}</Text>
-              <Text style={{ color: C.ink3, fontSize: 11.5, marginTop: 1 }}>{s.city} · Verified Seller</Text>
+              <Text style={{ color: C.ink3, fontSize: 11.5, marginTop: 1 }}>{s.city} · Verified Seller · Tap to visit shop</Text>
               <View style={{ marginTop: 6, flexDirection: 'row', gap: 6 }}>
                 <HumanTag small />
-                <Badge text="PHONE VERIFIED" tone="brand" small />
+                <Badge text="VISIT SHOP →" tone="brand" small />
               </View>
             </View>
-          </View>
+            <MC name="chevron-right" size={22} color={C.ink3} />
+          </TouchableOpacity>
 
           {/* Ratings & Customer Reviews Breakdown */}
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 24 }}>

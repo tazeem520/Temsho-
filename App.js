@@ -6,7 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { C, R } from './src/theme';
 import { AppProvider, useApp } from './src/store';
 import Onboarding from './src/screens/Onboarding';
-import { Home, Search, Category, Offers } from './src/screens/Shop';
+import { Home, Search, Category, Offers, SellerStorefront } from './src/screens/Shop';
 import { Product, Cart } from './src/screens/Product';
 import { Checkout, Success, Orders } from './src/screens/Checkout';
 import { Account, Wishlist, BecomeSeller, Seller, Support, Policy, PrivacyPolicyScreen } from './src/screens/Account';
@@ -42,6 +42,7 @@ const SCREENS = {
   settings: Settings, 'edit-profile': EditProfile, 'edit-location': EditLocation,
   'change-phone': ChangePhone, language: Language,
   'payment-settings': PaymentSettings, 'shop-settings': ShopSettings,
+  'seller-storefront': SellerStorefront,
   admin: Admin, 'admin-brand': AdminBrand, 'admin-money': AdminMoney,
   'admin-features': AdminFeatures, 'admin-broadcast': AdminBroadcast, 'admin-products': AdminProducts,
   'admin-otp': AdminOtp, 'admin-database': AdminDatabase, 'admin-logistics': AdminLogistics, 'admin-playstore': AdminPlayStore,

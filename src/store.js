@@ -50,6 +50,7 @@ const init = {
   adminCoupons: [], // Owner-generated dynamic coupons
   adminBanners: BANNERS, // Owner-generated dynamic banners/posters
   sellerSettlements: {}, // Owner payouts ledger { [sellerPhone]: { settledTotal: number, history: [] } }
+  recentlyViewed: [], // Product IDs browsed by customer
   banned: [],
   auditLog: [
     createAuditEntry(
@@ -441,6 +442,11 @@ function reducer(s, a) {
         ...s,
         wishlist: s.wishlist.includes(a.id) ? s.wishlist.filter((x) => x !== a.id) : [...s.wishlist, a.id],
       };
+
+    case 'VIEW_PRODUCT': {
+      const filtered = (s.recentlyViewed || []).filter((id) => id !== a.id);
+      return { ...s, recentlyViewed: [a.id, ...filtered].slice(0, 10) };
+    }
 
     case 'COUPON':
       return { ...s, coupon: a.code };

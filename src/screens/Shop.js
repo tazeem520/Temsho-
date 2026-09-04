@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, FlatList, Dimensions, Image } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, FlatList, Dimensions, Image, Linking, Share } from 'react-native';
 import { C, R, shadow, money } from '../theme';
 import { MaterialCommunityIcons as MC } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ProductCard, Section, Badge, TemshoAssuredBadge, HumanTag, Empty, Btn, Avatar, Thumb, CountdownTimer } from '../components/UI';
 import { CATEGORIES, SELLERS } from '../data/catalog';
 import { useApp } from '../store';
+import { Header } from './Product';
 
 const W = Dimensions.get('window').width;
 const SCREEN_W = Math.min(W, 430);
@@ -26,6 +27,9 @@ export function Home({ go }) {
   const budgetProducts = state.products.filter((p) => p.price <= budgetTab).slice(0, 6);
   const trending = state.products.slice(0, 10);
   const forYou = [...state.products].reverse().slice(0, 8);
+  const recentItems = (state.recentlyViewed || [])
+    .map((id) => state.products.find((p) => p && p.id === id))
+    .filter(Boolean);
 
   // 2 rows Flipkart-style category circle grid
   const gridCats = [
@@ -189,6 +193,28 @@ export function Home({ go }) {
               {deals.map((p) => (
                 <View key={p.id} style={{ marginRight: 12 }}>
                   <ProductCard p={p} width={154} onPress={() => go('product', { id: p.id })} />
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Recently Viewed (Flipkart Style) */}
+        {recentItems.length > 0 && (
+          <View style={[st.dealsSection, shadow]}>
+            <View style={st.dealsHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <MC name="history" size={20} color={C.brand} />
+                <Text style={{ color: C.ink, fontSize: 16.5, fontWeight: '900', marginLeft: 6 }}>Recently Viewed</Text>
+              </View>
+              <TouchableOpacity onPress={() => go('category', { cat: null })}>
+                <Text style={{ color: C.brand, fontWeight: '800', fontSize: 12 }}>See More</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 4 }}>
+              {recentItems.map((rp) => (
+                <View key={rp.id} style={{ marginRight: 12 }}>
+                  <ProductCard p={rp} width={150} onPress={() => go('product', { id: rp.id })} />
                 </View>
               ))}
             </ScrollView>
@@ -571,7 +597,95 @@ export function Category({ go, params }) {
   );
 }
 
+/* ---------------- SELLER STOREFRONT (FLIPKART STYLE) ---------------- */
+export function SellerStorefront({ go, params }) {
+  const { state } = useApp();
+  const sellerKey = params?.sellerKey;
+  const sellerPhone = params?.phone;
+  const sellerName = params?.name || 'Verified Seller';
+
+  const sellerProducts = state.products.filter(
+    (p) =>
+      (sellerKey && p.seller === sellerKey) ||
+      (sellerPhone && p.sellerPhone === sellerPhone) ||
+      (sellerName && p.sellerName === sellerName)
+  );
+
+  const shopInfo = {
+    name: sellerName,
+    city: params?.city || 'India',
+    phone: sellerPhone || '9044468663',
+    pickup: params?.pickup || 'Verified Dispatch Hub',
+    rating: 4.9,
+    productsCount: sellerProducts.length,
+  };
+
+  const shareShop = () => {
+    const text = `🛍️ Check out *${shopInfo.name}* on Temsho!\nVerified Indian Seller with 100% genuine products.\n\nShop link: https://temsho.in/shop/${encodeURIComponent(shopInfo.name)}`;
+    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    Linking.openURL(url).catch(() => {});
+  };
+
+  return (
+    <View style={{ flex: 1, backgroundColor: C.bg }}>
+      <Header title={shopInfo.name} go={go} />
+      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+        {/* Banner Card */}
+        <LinearGradient colors={['#1E2562', '#2874F0']} style={st.storeBanner}>
+          <Avatar name={shopInfo.name} hue="#fff" size={56} />
+          <View style={{ marginLeft: 14, flex: 1 }}>
+            <Text style={{ color: '#fff', fontSize: 18, fontWeight: '900' }}>{shopInfo.name}</Text>
+            <Text style={{ color: '#93C5FD', fontSize: 12, marginTop: 2 }}>📍 {shopInfo.city} · Verified Producer</Text>
+            <View style={{ flexDirection: 'row', gap: 6, marginTop: 8 }}>
+              <HumanTag small />
+              <Badge text="DIRECT PAYOUTS" tone="green" small />
+            </View>
+          </View>
+        </LinearGradient>
+
+        {/* Action Buttons */}
+        <View style={{ flexDirection: 'row', gap: 10, paddingHorizontal: 16, marginTop: 14 }}>
+          <Btn
+            title="Chat on WhatsApp"
+            icon="whatsapp"
+            tone="green"
+            style={{ flex: 1.2 }}
+            onPress={() => {
+              const url = `https://wa.me/91${shopInfo.phone}?text=${encodeURIComponent(`Hello ${shopInfo.name}, I am interested in your products on Temsho.`)}`;
+              Linking.openURL(url).catch(() => {});
+            }}
+          />
+          <Btn title="Share Shop" icon="share-variant" tone="ghost" style={{ flex: 0.9 }} onPress={shareShop} />
+        </View>
+
+        {/* Listings Section */}
+        <Text style={{ fontSize: 16, fontWeight: '900', color: C.ink, marginHorizontal: 16, marginTop: 20, marginBottom: 10 }}>
+          All Products by {shopInfo.name} ({sellerProducts.length})
+        </Text>
+
+        {sellerProducts.length === 0 ? (
+          <View style={[st.emptySection, shadow]}>
+            <MC name="package-variant" size={36} color={C.ink3} />
+            <Text style={{ color: C.ink2, fontSize: 13, marginTop: 8 }}>No active listings for this seller right now.</Text>
+          </View>
+        ) : (
+          <View style={[st.grid, { paddingHorizontal: 16 }]}>
+            {sellerProducts.map((p) => (
+              <ProductCard key={p.id} p={p} width={CARD_W} onPress={() => go('product', { id: p.id })} />
+            ))}
+          </View>
+        )}
+      </ScrollView>
+    </View>
+  );
+}
+
 export const st = StyleSheet.create({
+  storeBanner: {
+    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   header: { backgroundColor: C.brand, paddingTop: 46, paddingHorizontal: 16, paddingBottom: 16 },
   headWrap: { paddingTop: 46, paddingBottom: 14 },
   brandBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, marginBottom: 8 },
