@@ -338,7 +338,6 @@ export function Orders({ go }) {
   const { state, dispatch } = useApp();
   const [tab, setTab] = useState('all');
   const [retFor, setRetFor] = useState(null);
-  const [qrModal, setQrModal] = useState(null);
 
   const REASONS = ['Item damaged during transit', 'Wrong product delivered', 'Size does not fit', 'Quality did not match description', 'No longer required'];
   const steps = ['Confirmed', 'Packed', 'Shipped', 'Out for Delivery', 'Delivered'];
@@ -363,52 +362,6 @@ export function Orders({ go }) {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <Header title="My Orders" go={go} />
-
-      {/* Parcel QR Code Modal for Doorstep Scanning */}
-      {qrModal && (
-        <Modal animationType="fade" transparent visible={!!qrModal}>
-          <View style={ck.qrModalOverlay}>
-            <View style={[ck.qrModalCard, shadow]}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%', marginBottom: 12 }}>
-                <Text style={{ fontSize: 16, fontWeight: '900', color: C.ink, flex: 1 }}>
-                  Doorstep Parcel QR & OTP
-                </Text>
-                <TouchableOpacity onPress={() => setQrModal(null)} style={{ padding: 4 }}>
-                  <MC name="close" size={22} color={C.ink3} />
-                </TouchableOpacity>
-              </View>
-
-              <Text style={{ color: C.ink3, fontSize: 12, textAlign: 'center', marginBottom: 14 }}>
-                Show this QR Code to delivery partner to verify your parcel at doorstep
-              </Text>
-
-              <View style={ck.qrCodeContainer}>
-                <UpiQR
-                  upi={`TEMSHO-PARCEL-ID-${qrModal.id}`}
-                  name={qrModal.address?.name || 'Customer'}
-                  amount={qrModal.total}
-                  note={`Order #${qrModal.id}`}
-                  size={160}
-                />
-              </View>
-
-              <View style={ck.qrOtpBox}>
-                <Text style={{ color: C.ink3, fontSize: 11, fontWeight: '800' }}>DOORSTEP DELIVERY OTP</Text>
-                <Text style={{ color: C.brand, fontSize: 26, fontWeight: '900', letterSpacing: 4, marginTop: 2 }}>
-                  {qrModal.deliveryOtp || '4821'}
-                </Text>
-              </View>
-
-              <Btn
-                title="Close"
-                tone="ghost"
-                style={{ alignSelf: 'stretch', marginTop: 12 }}
-                onPress={() => setQrModal(null)}
-              />
-            </View>
-          </View>
-        </Modal>
-      )}
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ maxHeight: 50, flexGrow: 0, backgroundColor: C.surface }} contentContainerStyle={{ paddingHorizontal: 12, alignItems: 'center' }}>
         {[['all', 'All Orders'], ['active', 'In Transit'], ['done', 'Delivered'], ['other', 'Cancelled / Returns']].map(([k, l]) => (
@@ -464,18 +417,14 @@ export function Orders({ go }) {
               {!bad && !isDone && (
                 <View style={ck.otpBanner}>
                   <MC name="shield-key" size={20} color={C.brand} />
-                  <View style={{ flex: 1, marginLeft: 8 }}>
-                    <Text style={{ color: C.ink, fontSize: 11, fontWeight: '800' }}>
-                      Doorstep Delivery OTP: <Text style={{ color: C.brand, fontSize: 14, fontWeight: '900', letterSpacing: 1.5 }}>{otp}</Text>
+                  <View style={{ flex: 1, marginLeft: 10 }}>
+                    <Text style={{ color: C.ink, fontSize: 11.5, fontWeight: '800' }}>
+                      Doorstep Delivery OTP: <Text style={{ color: C.brand, fontSize: 16, fontWeight: '900', letterSpacing: 2 }}>{otp}</Text>
                     </Text>
-                    <Text style={{ color: C.ink3, fontSize: 10, marginTop: 1 }}>
-                      Share with delivery partner upon receiving package.
+                    <Text style={{ color: C.ink3, fontSize: 10.5, marginTop: 1 }}>
+                      Share this 4-digit OTP with the delivery partner upon parcel arrival.
                     </Text>
                   </View>
-                  <TouchableOpacity onPress={() => setQrModal(o)} style={ck.qrSmallBtn}>
-                    <MC name="qrcode" size={16} color={C.brand} />
-                    <Text style={{ color: C.brand, fontSize: 10.5, fontWeight: '800', marginLeft: 3 }}>QR</Text>
-                  </TouchableOpacity>
                 </View>
               )}
 

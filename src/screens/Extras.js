@@ -6,6 +6,7 @@ import { Btn, Badge, Empty, Field, Avatar } from '../components/UI';
 import { Header } from './Product';
 import { useApp } from '../store';
 import { createShipment, getWhatsAppConnectUrl } from '../lib/shiprocket';
+import { ShippingLabelModal } from '../components/ShippingLabel';
 
 const ago = (t) => {
   const d = Math.floor((Date.now() - t) / 60000);
@@ -95,6 +96,7 @@ export function Wallet({ go }) {
 /* Seller Incoming Orders & Logistics */
 export function SellerOrders({ go }) {
   const { state, dispatch } = useApp();
+  const [activeLabelOrder, setActiveLabelOrder] = useState(null);
   const myIds = state.products.filter((p) => p.seller === 'me').map((p) => p.id);
   const mine = state.orders.filter((o) => o.items.some((it) => myIds.includes(it.id)) || true);
 
@@ -108,6 +110,17 @@ export function SellerOrders({ go }) {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <Header title="Seller Orders & Dispatch" go={go} />
+
+      {/* 4x6 Printable Shipping Label Modal */}
+      {activeLabelOrder && (
+        <ShippingLabelModal
+          visible={!!activeLabelOrder}
+          onClose={() => setActiveLabelOrder(null)}
+          order={activeLabelOrder}
+          sellerInfo={state.shop}
+        />
+      )}
+
       {mine.length === 0 ? (
         <Empty icon="tray-arrow-down" title="No Incoming Orders Yet" sub="Orders placed by customers for your products will appear here.">
           <Btn title="Dashboard" onPress={() => go(-1)} />
@@ -116,19 +129,27 @@ export function SellerOrders({ go }) {
         <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
           {mine.map((o) => {
             const firstItem = o.items[0];
+            const isCod = o.pay === 'cod';
             return (
-              <View key={o.id} style={[nt.card, shadow, { marginBottom: 12 }]}>
+              <View key={o.id} style={[nt.card, shadow, { marginBottom: 14 }]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Text style={{ fontWeight: '900', color: C.ink, fontSize: 13.5 }}>#{o.id}</Text>
+                  <Text style={{ fontWeight: '900', color: C.ink, fontSize: 13.5 }}>Order #{o.id}</Text>
                   <View style={{ flex: 1 }} />
-                  <Badge text={o.status} tone={o.status === 'Cancelled' ? 'red' : 'green'} />
+                  <Badge text={o.status} tone={o.status === 'Cancelled' ? 'red' : o.status === 'Delivered' ? 'green' : 'brand'} />
                 </View>
 
                 {o.items.map((it) => (
-                  <Text key={it.id} style={{ color: C.ink2, fontSize: 12.5, marginTop: 8 }}>
+                  <Text key={it.id} style={{ color: C.ink, fontSize: 13, fontWeight: '700', marginTop: 8 }}>
                     {it.title} × {it.qty}
                   </Text>
                 ))}
+
+                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isCod ? '#FEF3C7' : '#ECFDF5', padding: 8, borderRadius: R.sm, marginTop: 8 }}>
+                  <MC name={isCod ? 'cash' : 'check-circle'} size={16} color={isCod ? '#B45309' : C.green} />
+                  <Text style={{ color: isCod ? '#92400E' : '#047857', fontSize: 11.5, fontWeight: '800', marginLeft: 6 }}>
+                    {isCod ? `Cash on Delivery (Collect ${money(o.total)})` : 'Prepaid Order (Paid Online)'}
+                  </Text>
+                </View>
 
                 <View style={{ backgroundColor: '#F8FAFC', borderRadius: R.sm, padding: 10, marginTop: 8, borderWidth: 1, borderColor: C.line }}>
                   <Text style={{ color: C.ink, fontSize: 11.5, fontWeight: '800' }}>
@@ -136,6 +157,9 @@ export function SellerOrders({ go }) {
                   </Text>
                   <Text style={{ color: C.ink2, fontSize: 11.5, marginTop: 4 }}>
                     🎯 Deliver To: {o.address?.name || 'Customer'} · {o.address?.line || ''}, {o.address?.city || ''} – PIN {o.address?.pin || ''}
+                  </Text>
+                  <Text style={{ color: C.ink3, fontSize: 11, marginTop: 3 }}>
+                    📱 Customer Phone: +91 {o.address?.phone || o.customerPhone || '9044468663'}
                   </Text>
                 </View>
 
@@ -148,13 +172,25 @@ export function SellerOrders({ go }) {
                   </View>
                 )}
 
-                <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+                {/* Print Parcel Shipping Label Button */}
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => setActiveLabelOrder(o)}
+                  style={nt.printLabelBtn}
+                >
+                  <MC name="printer-pos" size={17} color="#fff" />
+                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: 12.5, marginLeft: 6 }}>
+                    📄 Print Shipping Label & Parcel Slip
+                  </Text>
+                </TouchableOpacity>
+
+                <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
                   {!o.shipment ? (
                     <Btn
-                      title="Dispatch via Shiprocket"
+                      title="Dispatch Shiprocket"
                       icon="truck-fast"
                       tone="brand"
-                      style={{ flex: 1.3 }}
+                      style={{ flex: 1.2 }}
                       onPress={() => handleShiprocketDispatch(o)}
                     />
                   ) : (
@@ -167,7 +203,24 @@ export function SellerOrders({ go }) {
                     />
                   )}
                   <Btn
-                    title="WhatsApp Customer"
+                    title="WhatsApp"
+                    icon="whatsapp"
+                    tone="green"
+                    style={{ flex: 0.9 }}
+                    onPress={() => {
+                      const url = getWhatsAppConnectUrl(o.address?.phone || '9044468663', o.id, firstItem?.title);
+                      Linking.openURL(url).catch(() => {});
+                    }}
+                  />
+                </View>
+              </View>
+            );
+          })}
+        </ScrollView>
+      )}
+    </View>
+  );
+}
                     icon="whatsapp"
                     tone="green"
                     style={{ flex: 1 }}
@@ -251,4 +304,9 @@ const nt = StyleSheet.create({
   },
   copyBtn: { backgroundColor: C.brand, paddingHorizontal: 16, paddingVertical: 9, borderRadius: R.sm },
   awbBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.brandSoft, borderRadius: R.sm, padding: 8, marginTop: 10 },
+  printLabelBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: C.brand, paddingVertical: 10, borderRadius: R.md,
+    marginTop: 10,
+  },
 });

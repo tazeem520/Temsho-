@@ -13,6 +13,7 @@ const KEY_SESSION = '@temsho/v4_dynamic_banners';
 const KEY_ALL_PRODUCTS = '@temsho/all_products_catalog';
 const KEY_AUDIT_LOG = '@temsho/owner_audit_log';
 const KEY_ADMIN_SETTINGS = '@temsho/admin_settings';
+const KEY_SETTLEMENTS = '@temsho/seller_settlements_v1';
 const USER_KEY_PREFIX = '@temsho/account_';
 
 const refCode = (phone) => 'TEM' + (phone ? String(phone).slice(-4) : '2026') + 'X';
@@ -48,6 +49,7 @@ const init = {
   admin: { ...DEFAULT_ADMIN },
   adminCoupons: [], // Owner-generated dynamic coupons
   adminBanners: BANNERS, // Owner-generated dynamic banners/posters
+  sellerSettlements: {}, // Owner payouts ledger { [sellerPhone]: { settledTotal: number, history: [] } }
   banned: [],
   auditLog: [
     createAuditEntry(
@@ -270,6 +272,45 @@ function reducer(s, a) {
 
     case 'ADMIN_RESET_BANNERS':
       return { ...s, adminBanners: [...BANNERS] };
+
+    case 'SETTLE_SELLER_PAYOUT': {
+      const { sellerPhone, amount, utr, shopName, note } = a;
+      const cur = s.sellerSettlements?.[sellerPhone] || { settledTotal: 0, history: [] };
+      const newSettledTotal = (Number(cur.settledTotal) || 0) + Number(amount);
+      const entry = {
+        id: 'stl_' + Date.now(),
+        amount: Number(amount),
+        utr: utr || 'UPI_REF_' + Date.now(),
+        timestamp: Date.now(),
+        formattedTime: formatLogTime(Date.now()),
+        shopName: shopName || 'Seller',
+        sellerPhone,
+        note: note || 'Direct Settlement by Owner',
+      };
+      const audit = createAuditEntry(
+        'SELLER_PAYOUT',
+        `Payout Settled: ₹${amount} to ${shopName || sellerPhone}`,
+        `Amount ₹${amount} paid to +91 ${sellerPhone}. UTR/Ref: ${entry.utr}. Total settled to date: ₹${newSettledTotal}`,
+        { sellerPhone, amount, utr: entry.utr, newSettledTotal }
+      );
+      return notif(
+        {
+          ...s,
+          sellerSettlements: {
+            ...s.sellerSettlements,
+            [sellerPhone]: {
+              settledTotal: newSettledTotal,
+              history: [entry, ...(cur.history || [])],
+            },
+          },
+          auditLog: [audit, ...s.auditLog],
+        },
+        'cash-check',
+        'Payout Settled',
+        `₹${amount} settled for ${shopName || sellerPhone}.`,
+        '#059669'
+      );
+    }
 
     case 'ADMIN_REMOVE_PRODUCT': {
       const prod = s.products.find((p) => p.id === a.id);
@@ -644,17 +685,19 @@ export function AppProvider({ children }) {
   useEffect(() => {
     (async () => {
       try {
-        const [rawSession, rawProducts, rawAudit, rawAdmin] = await Promise.all([
+        const [rawSession, rawProducts, rawAudit, rawAdmin, rawSettlements] = await Promise.all([
           AsyncStorage.getItem(KEY_SESSION),
           AsyncStorage.getItem(KEY_ALL_PRODUCTS),
           AsyncStorage.getItem(KEY_AUDIT_LOG),
           AsyncStorage.getItem(KEY_ADMIN_SETTINGS),
+          AsyncStorage.getItem(KEY_SETTLEMENTS),
         ]);
 
         let sessionData = rawSession ? JSON.parse(rawSession) : null;
         let allProds = rawProducts ? JSON.parse(rawProducts) : [];
         let auditList = rawAudit ? JSON.parse(rawAudit) : [];
         let adminPatch = rawAdmin ? JSON.parse(rawAdmin) : null;
+        let settlementsData = rawSettlements ? JSON.parse(rawSettlements) : {};
 
         if (sessionData && sessionData.user?.phone) {
           const userKey = USER_KEY_PREFIX + cleanPhone(sessionData.user.phone);
@@ -668,6 +711,7 @@ export function AppProvider({ children }) {
             allProducts: allProds,
             auditLog: auditList,
             adminSettings: adminPatch,
+            sellerSettlements: settlementsData,
           });
         } else if (sessionData) {
           dispatch({
@@ -677,6 +721,7 @@ export function AppProvider({ children }) {
               products: mergeCloudAndLocal(allProds, sessionData.products),
               auditLog: auditList.length > 0 ? auditList : sessionData.auditLog,
               admin: adminPatch ? { ...DEFAULT_ADMIN, ...adminPatch } : sessionData.admin,
+              sellerSettlements: settlementsData || {},
             },
           });
         } else {
@@ -715,6 +760,11 @@ export function AppProvider({ children }) {
     // 4. Save Admin Settings & Owner Payment Setup
     if (state.admin) {
       AsyncStorage.setItem(KEY_ADMIN_SETTINGS, JSON.stringify(state.admin)).catch(() => {});
+    }
+
+    // 4b. Save Seller Settlements
+    if (state.sellerSettlements) {
+      AsyncStorage.setItem(KEY_SETTLEMENTS, JSON.stringify(state.sellerSettlements)).catch(() => {});
     }
 
     // 5. Save Phone-Indexed User Account

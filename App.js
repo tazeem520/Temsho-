@@ -27,6 +27,8 @@ import {
   AdminBanners,
   AdminAuditLedger,
   AdminOwnerPayment,
+  AdminSellers,
+  AdminShiprocket,
 } from './src/screens/Admin';
 import { DeliveryBoy } from './src/screens/DeliveryBoy';
 
@@ -45,6 +47,7 @@ const SCREENS = {
   'admin-otp': AdminOtp, 'admin-database': AdminDatabase, 'admin-logistics': AdminLogistics, 'admin-playstore': AdminPlayStore,
   'admin-coupons': AdminCoupons, 'admin-banners': AdminBanners,
   'admin-audit': AdminAuditLedger, 'admin-owner-payment': AdminOwnerPayment,
+  'admin-sellers': AdminSellers, 'admin-shiprocket': AdminShiprocket,
   'delivery-partner': DeliveryBoy, 'delivery-verify': DeliveryBoy,
 };
 

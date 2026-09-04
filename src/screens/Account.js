@@ -661,8 +661,15 @@ export function Seller({ go }) {
                   {p.video && <Badge text="Video" tone="accent" small />}
                 </View>
               </View>
-              <TouchableOpacity onPress={() => dispatch({ type: 'RM_PRODUCT', id: p.id })} style={{ padding: 8 }}>
-                <Text style={{ color: C.red, fontSize: 12, fontWeight: '800' }}>Delete</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  dispatch({ type: 'RM_PRODUCT', id: p.id });
+                  if (cloud.cloudOn()) cloud.removeProduct(p.id).catch(() => {});
+                }}
+                style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: C.redSoft, paddingHorizontal: 10, paddingVertical: 6, borderRadius: R.sm }}
+              >
+                <MC name="trash-can-outline" size={15} color={C.red} />
+                <Text style={{ color: C.red, fontSize: 11.5, fontWeight: '800', marginLeft: 4 }}>Delete</Text>
               </TouchableOpacity>
             </TouchableOpacity>
           ))
