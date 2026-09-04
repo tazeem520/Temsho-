@@ -335,7 +335,7 @@ export function Search({ go, params }) {
     const t = q.trim().toLowerCase();
     if (!t) return [];
     return state.products.filter(
-      (p) => p.title.toLowerCase().includes(t) || p.cat.includes(t) || (p.desc && p.desc.toLowerCase().includes(t))
+      (p) => (p.title || '').toLowerCase().includes(t) || (p.cat || '').includes(t) || (p.desc && p.desc.toLowerCase().includes(t))
     );
   }, [q, state.products]);
 
@@ -400,7 +400,7 @@ export function Search({ go, params }) {
   );
 }
 
-/* ---------------- CATEGORIES SCREEN ---------------- */
+/* ---------------- CATEGORIES SCREEN (FIXED CLEAN SPACIOUS LAYOUT) ---------------- */
 export function Category({ go, params }) {
   const { state } = useApp();
   const [cat, setCat] = useState(params?.cat || null);
@@ -426,67 +426,112 @@ export function Category({ go, params }) {
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <View style={[st.header, { paddingBottom: 12 }]}>
+      {/* Header Bar */}
+      <View style={[st.header, { paddingBottom: 14 }]}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <TouchableOpacity onPress={() => go(-1)} style={{ paddingRight: 10 }}>
             <MC name="chevron-left" size={26} color="#fff" />
           </TouchableOpacity>
-          <Text style={{ color: '#fff', fontSize: 16.5, fontWeight: '900' }}>
-            {cat ? CATEGORIES.find((c) => c.id === cat)?.name : 'All Categories'}
+          <Text style={{ color: '#fff', fontSize: 17, fontWeight: '900' }}>
+            {cat ? CATEGORIES.find((c) => c.id === cat)?.name || 'Category' : 'All Categories'}
           </Text>
           <View style={{ flex: 1 }} />
-          <TouchableOpacity onPress={() => go('search')} style={st.iconBtn}><MC name="magnify" size={18} color="#fff" /></TouchableOpacity>
+          <TouchableOpacity onPress={() => go('search')} style={st.iconBtn}>
+            <MC name="magnify" size={19} color="#fff" />
+          </TouchableOpacity>
         </View>
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ maxHeight: 46, flexGrow: 0 }} contentContainerStyle={{ paddingHorizontal: 12, paddingVertical: 8, alignItems: 'center' }}>
-        {cats.map((c) => (
-          <TouchableOpacity
-            key={String(c.id)}
-            onPress={() => setCat(c.id)}
-            style={[st.chip, { flexDirection: 'row', alignItems: 'center' }, cat === c.id && { backgroundColor: C.brand, borderColor: C.brand }]}
-          >
-            <MC name={c.icon} size={14} color={cat === c.id ? '#fff' : C.ink2} style={{ marginRight: 5 }} />
-            <Text style={{ color: cat === c.id ? '#fff' : C.ink2, fontSize: 12.5, fontWeight: '700' }}>{c.name}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      {/* 1. HORIZONTAL CATEGORIES BAR (CLEAN UNCLIPPED PILLS) */}
+      <View style={st.categoryScrollContainer}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={st.catScrollContent}
+        >
+          {cats.map((c) => {
+            const isSel = cat === c.id;
+            return (
+              <TouchableOpacity
+                key={String(c.id)}
+                onPress={() => setCat(c.id)}
+                activeOpacity={0.8}
+                style={[st.cleanCatChip, isSel && st.cleanCatChipActive]}
+              >
+                <MC name={c.icon} size={16} color={isSel ? '#fff' : C.brand} style={{ marginRight: 6 }} />
+                <Text style={[st.cleanCatText, isSel && st.cleanCatTextActive]}>
+                  {c.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ maxHeight: 42, flexGrow: 0 }} contentContainerStyle={{ paddingHorizontal: 12, alignItems: 'center' }}>
-        {[['pop', 'Popularity'], ['low', 'Price: Low to High'], ['high', 'Price: High to Low'], ['rate', 'Top Rated']].map(([k, l]) => (
-          <TouchableOpacity key={k} onPress={() => setSort(k)} style={[st.sortChip, sort === k && { backgroundColor: C.brandSoft, borderColor: C.brand }]}>
-            <Text style={{ color: sort === k ? C.brand : C.ink2, fontSize: 12, fontWeight: '800' }}>{l}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      {/* 2. SORTING PILLS BAR */}
+      <View style={st.sortScrollContainer}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={st.sortScrollContent}
+        >
+          {[
+            ['pop', 'Popularity', 'fire'],
+            ['low', 'Price: Low to High', 'sort-ascending'],
+            ['high', 'Price: High to Low', 'sort-descending'],
+            ['rate', 'Top Rated', 'star-outline'],
+          ].map(([k, l, ic]) => {
+            const isSel = sort === k;
+            return (
+              <TouchableOpacity
+                key={k}
+                onPress={() => setSort(k)}
+                style={[st.cleanSortPill, isSel && st.cleanSortPillActive]}
+              >
+                <MC name={ic} size={14} color={isSel ? C.brand : C.ink3} style={{ marginRight: 5 }} />
+                <Text style={[st.cleanSortText, isSel && st.cleanSortTextActive]}>
+                  {l}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
 
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 10 }}>
-        <TouchableOpacity onPress={() => setShowF(!showF)} style={[st.filterBtn, { flexDirection: 'row', alignItems: 'center' }, activeF > 0 && { borderColor: C.brand, backgroundColor: C.brandSoft }]}>
-          <MC name="tune-variant" size={14} color={activeF > 0 ? C.brand : C.ink2} style={{ marginRight: 5 }} />
-          <Text style={{ color: activeF > 0 ? C.brand : C.ink2, fontWeight: '800', fontSize: 12.5 }}>
+      {/* 3. FILTER TOGGLE BAR */}
+      <View style={st.filterBarRow}>
+        <TouchableOpacity
+          onPress={() => setShowF(!showF)}
+          style={[st.filterBtn, activeF > 0 && { borderColor: C.brand, backgroundColor: C.brandSoft }]}
+        >
+          <MC name="tune-variant" size={15} color={activeF > 0 ? C.brand : C.ink} style={{ marginRight: 6 }} />
+          <Text style={{ color: activeF > 0 ? C.brand : C.ink, fontWeight: '800', fontSize: 13 }}>
             Filters{activeF > 0 ? ` (${activeF})` : ''}
           </Text>
         </TouchableOpacity>
-        <Text style={{ color: C.ink3, fontSize: 12, marginLeft: 12 }}>{list.length} products</Text>
+        <Text style={{ color: C.ink3, fontSize: 12.5, marginLeft: 12, fontWeight: '600' }}>
+          {list.length} products
+        </Text>
         {activeF > 0 && (
           <>
             <View style={{ flex: 1 }} />
-            <TouchableOpacity onPress={() => { setPrice(null); setMinRate(0); }}>
+            <TouchableOpacity onPress={() => { setPrice(null); setMinRate(0); }} style={{ padding: 4 }}>
               <Text style={{ color: C.red, fontSize: 12, fontWeight: '800' }}>Clear Filters</Text>
             </TouchableOpacity>
           </>
         )}
       </View>
 
+      {/* Filter Dropdown Panel */}
       {showF && (
-        <View style={st.filterPanel}>
+        <View style={[st.filterPanel, shadow]}>
           <Text style={st.fLabel}>PRICE RANGE</Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
             {PRICES.map((r) => {
               const on = price && price[0] === r[0];
               return (
                 <TouchableOpacity key={r[0]} onPress={() => setPrice(on ? null : r)} style={[st.fChip, on && { backgroundColor: C.brand, borderColor: C.brand }]}>
-                  <Text style={{ color: on ? '#fff' : C.ink2, fontSize: 12, fontWeight: '600' }}>{priceLabel(r)}</Text>
+                  <Text style={{ color: on ? '#fff' : C.ink2, fontSize: 12, fontWeight: '700' }}>{priceLabel(r)}</Text>
                 </TouchableOpacity>
               );
             })}
@@ -495,19 +540,20 @@ export function Category({ go, params }) {
           <View style={{ flexDirection: 'row', gap: 8 }}>
             {[4.5, 4.0, 3.5].map((r) => (
               <TouchableOpacity key={r} onPress={() => setMinRate(minRate === r ? 0 : r)} style={[st.fChip, minRate === r && { backgroundColor: C.brand, borderColor: C.brand }]}>
-                <Text style={{ color: minRate === r ? '#fff' : C.ink2, fontSize: 12, fontWeight: '600' }}>{r}★ & above</Text>
+                <Text style={{ color: minRate === r ? '#fff' : C.ink2, fontSize: 12, fontWeight: '700' }}>{r}★ & above</Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
       )}
 
+      {/* Products Grid */}
       <FlatList
         data={list}
         keyExtractor={(i) => i.id}
         numColumns={2}
         columnWrapperStyle={{ paddingHorizontal: 16, justifyContent: 'space-between' }}
-        contentContainerStyle={{ paddingVertical: 12, gap: 12, paddingBottom: 30 }}
+        contentContainerStyle={{ paddingVertical: 12, gap: 12, paddingBottom: 40 }}
         renderItem={({ item }) => (
           <ProductCard p={item} width={CARD_W} sellerName={SELLERS[item.seller]?.name} onPress={() => go('product', { id: item.id })} />
         )}
@@ -515,7 +561,7 @@ export function Category({ go, params }) {
           <Empty
             icon="package-variant"
             title="No listings in this category yet"
-            sub="Sellers are currently adding genuine handmade and retail items. Check back soon!"
+            sub="Sellers are currently adding genuine items. Tap below to list the first product!"
           >
             <Btn title="List a Product" icon="plus" tone="brand" onPress={() => go('become-seller')} />
           </Empty>
@@ -526,8 +572,8 @@ export function Category({ go, params }) {
 }
 
 export const st = StyleSheet.create({
-  header: { backgroundColor: C.brand, paddingTop: 44, paddingHorizontal: 16, paddingBottom: 16 },
-  headWrap: { paddingTop: 44, paddingBottom: 14 },
+  header: { backgroundColor: C.brand, paddingTop: 46, paddingHorizontal: 16, paddingBottom: 16 },
+  headWrap: { paddingTop: 46, paddingBottom: 14 },
   brandBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, marginBottom: 8 },
   logoBox: { width: 34, height: 34, borderRadius: 10, backgroundColor: '#ffffff26', alignItems: 'center', justifyContent: 'center' },
   brandTitle: { color: '#fff', fontSize: 19, fontWeight: '900', letterSpacing: -0.5 },
@@ -573,14 +619,93 @@ export const st = StyleSheet.create({
     backgroundColor: C.surface, borderRadius: R.pill, paddingHorizontal: 14, paddingVertical: 8,
     marginRight: 8, marginBottom: 8,
   },
-  filterBtn: { borderWidth: 1.5, borderColor: C.line, backgroundColor: C.surface, borderRadius: R.sm, paddingHorizontal: 12, paddingVertical: 7 },
-  filterPanel: { backgroundColor: C.surface, marginHorizontal: 16, marginTop: 10, borderRadius: R.md, padding: 14 },
+  categoryScrollContainer: {
+    backgroundColor: C.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    paddingVertical: 10,
+  },
+  catScrollContent: {
+    paddingHorizontal: 14,
+    alignItems: 'center',
+  },
+  cleanCatChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    borderRadius: R.pill,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginRight: 8,
+  },
+  cleanCatChipActive: {
+    backgroundColor: C.brand,
+    borderColor: C.brand,
+  },
+  cleanCatText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#334155',
+  },
+  cleanCatTextActive: {
+    color: '#ffffff',
+  },
+  sortScrollContainer: {
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    paddingVertical: 8,
+  },
+  sortScrollContent: {
+    paddingHorizontal: 14,
+    alignItems: 'center',
+  },
+  cleanSortPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    borderRadius: R.md,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    marginRight: 8,
+  },
+  cleanSortPillActive: {
+    backgroundColor: '#EFF6FF',
+    borderColor: C.brand,
+  },
+  cleanSortText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  cleanSortTextActive: {
+    color: C.brand,
+    fontWeight: '900',
+  },
+  filterBarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: C.bg,
+  },
+  filterBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#CBD5E1',
+    backgroundColor: '#fff',
+    borderRadius: R.sm,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+  },
+  filterPanel: { backgroundColor: C.surface, marginHorizontal: 16, marginTop: 4, marginBottom: 8, borderRadius: R.md, padding: 14 },
   fLabel: { color: C.ink2, fontSize: 11.5, fontWeight: '900', marginBottom: 8, letterSpacing: 0.4 },
   fChip: { borderWidth: 1, borderColor: C.line, borderRadius: R.pill, paddingHorizontal: 13, paddingVertical: 7 },
-  sortChip: {
-    borderWidth: 1, borderColor: C.line, backgroundColor: C.surface, borderRadius: R.sm,
-    paddingHorizontal: 12, paddingVertical: 6, marginRight: 8,
-  },
   emptySection: {
     backgroundColor: C.surface, margin: 16, marginTop: 20, borderRadius: R.xl,
     padding: 24, alignItems: 'center',

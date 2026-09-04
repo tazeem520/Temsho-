@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, Image, Linking, Share } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, Image, Linking, Share, Modal } from 'react-native';
 import { C, R, shadow, money } from '../theme';
 import { MaterialCommunityIcons as MC } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -8,8 +8,9 @@ import { Header } from './Product';
 import { CATEGORIES } from '../data/catalog';
 import { useApp } from '../store';
 import * as cloud from '../lib/cloud';
+import { UpiQR } from '../components/Upi';
 
-/* ---------------- ACCOUNT HOME ---------------- */
+/* ---------------- ACCOUNT HOME (CLEAN NO-OVERLAP LAYOUT) ---------------- */
 export function Account({ go }) {
   const { state, dispatch, unread, isOwner } = useApp();
   const u = state.user;
@@ -22,33 +23,37 @@ export function Account({ go }) {
     Linking.openURL(url).catch(() => {});
   };
 
-  const Row = ({ e, t, s, onPress, tone }) => (
+  const Row = ({ e, t, s, onPress, tone, badge }) => (
     <TouchableOpacity onPress={onPress} style={ac.row}>
       <MC name={e} size={20} color={tone === 'red' ? C.red : C.ink2} />
       <View style={{ flex: 1, marginLeft: 14 }}>
         <Text style={{ color: tone === 'red' ? C.red : C.ink, fontWeight: '700', fontSize: 14 }}>{t}</Text>
         {!!s && <Text style={{ color: C.ink3, fontSize: 11.5, marginTop: 2 }}>{s}</Text>}
       </View>
+      {!!badge && <View style={{ marginRight: 6 }}><Badge text={badge} tone="accent" small /></View>}
       <MC name="chevron-right" size={20} color={C.ink3} />
     </TouchableOpacity>
   );
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <View style={ac.head}>
+      {/* 1. Clean Header without Negative Margin Overlaps */}
+      <View style={ac.headerWrap}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Text style={{ color: '#fff', fontSize: 18, fontWeight: '900' }}>My Account</Text>
+          <Text style={{ color: '#fff', fontSize: 19, fontWeight: '900' }}>My Account</Text>
           <View style={{ flex: 1 }} />
           <TouchableOpacity onPress={() => go('settings')} style={ac.gear}>
-            <MC name="cog-outline" size={19} color="#fff" />
+            <MC name="cog-outline" size={20} color="#fff" />
           </TouchableOpacity>
         </View>
-        <View style={[ac.profile, shadow]}>
-          <Avatar name={u?.name || 'User'} hue={C.brand} size={52} />
+
+        {/* Profile Info Card Inside Header Flow */}
+        <View style={[ac.profileBox, shadow]}>
+          <Avatar name={u?.name || 'User'} hue={C.brand} size={54} />
           <View style={{ flex: 1, marginLeft: 14 }}>
-            <Text style={{ fontWeight: '900', color: C.ink, fontSize: 16 }}>{u?.name}</Text>
-            <Text style={{ color: C.ink3, fontSize: 12.5, marginTop: 2 }}>+91 {u?.phone}</Text>
-            <View style={{ flexDirection: 'row', gap: 6, marginTop: 8 }}>
+            <Text style={{ fontWeight: '900', color: C.ink, fontSize: 16.5 }}>{u?.name || 'Valued User'}</Text>
+            <Text style={{ color: C.ink3, fontSize: 13, marginTop: 2, fontWeight: '600' }}>+91 {u?.phone}</Text>
+            <View style={{ flexDirection: 'row', gap: 6, marginTop: 8, alignItems: 'center' }}>
               <HumanTag small />
               {u?.isSeller && <Badge text="VERIFIED SELLER" tone="accent" small />}
             </View>
@@ -56,7 +61,7 @@ export function Account({ go }) {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 60, paddingBottom: 40 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 14, paddingBottom: 50 }}>
         {/* Share with Friends Banner */}
         <TouchableOpacity activeOpacity={0.85} onPress={shareWhatsApp} style={[ac.shareBanner, shadow]}>
           <MC name="whatsapp" size={24} color="#25D366" />
@@ -67,21 +72,13 @@ export function Account({ go }) {
           <MC name="share-variant" size={18} color={C.brand} />
         </TouchableOpacity>
 
-        {/* Main Orders & Activity Links */}
-        <View style={[ac.card, shadow, { marginTop: 16 }]}>
-          <Row e="package-variant" t="My Orders" s={`${state.orders.length} orders`} onPress={() => go('orders')} />
-          <Row e="bell-outline" t="Notifications" s={unread > 0 ? `${unread} new` : 'All read'} onPress={() => go('notifications')} />
-          <Row e="heart-outline" t="Wishlist" s={`${wish.length} saved items`} onPress={() => go('wishlist')} />
-          <Row e="map-marker-outline" t="Saved Addresses" s={`${state.addresses.length} saved`} onPress={() => go('addresses')} />
-        </View>
-
         {/* OWNER ADMIN CTA */}
         {isOwner && (
           <TouchableOpacity activeOpacity={0.9} onPress={() => go('admin')} style={[ac.ownerCta, shadow]}>
-            <View style={ac.crown}><MC name="crown" size={20} color={C.accent} /></View>
+            <View style={ac.crown}><MC name="crown" size={22} color={C.accent} /></View>
             <View style={{ flex: 1, marginLeft: 12 }}>
               <Text style={{ color: '#fff', fontWeight: '900', fontSize: 15 }}>Owner Admin Panel</Text>
-              <Text style={{ color: '#ffffffaa', fontSize: 12, marginTop: 3 }}>Full App Control, Audit Ledger & Payout Setup</Text>
+              <Text style={{ color: '#ffffffcc', fontSize: 12, marginTop: 2 }}>Activity Ledger, Owner Payout & Control (9044468663)</Text>
             </View>
             <MC name="chevron-right" size={22} color="#fff" />
           </TouchableOpacity>
@@ -89,28 +86,59 @@ export function Account({ go }) {
 
         {/* SELLER CTA */}
         <TouchableOpacity activeOpacity={0.9} onPress={() => go(u?.isSeller ? 'seller' : 'become-seller')} style={[ac.sellCta, shadow]}>
-          <View style={ac.sellIco}><MC name="storefront-outline" size={22} color="#fff" /></View>
+          <View style={ac.sellIco}><MC name="storefront-outline" size={24} color="#fff" /></View>
           <View style={{ flex: 1, marginLeft: 12 }}>
             <Text style={{ color: '#fff', fontWeight: '900', fontSize: 15 }}>
               {u?.isSeller ? 'Open Seller Dashboard' : 'Start Selling on Temsho'}
             </Text>
             <Text style={{ color: '#ffffffcc', fontSize: 12, marginTop: 3 }}>
-              {u?.isSeller ? `${u.shopName || state.shop?.name || 'My Shop'} · ${u.shopCity || state.shop?.city || 'India'}` : '0% commission · Direct UPI/Bank Payouts'}
+              {u?.isSeller ? `${u.shopName || state.shop?.name || 'My Shop'} · ${u.shopCity || state.shop?.city || 'India'}` : '0% commission · Direct UPI / Bank Payouts'}
             </Text>
           </View>
           <MC name="chevron-right" size={22} color="#fff" />
         </TouchableOpacity>
 
+        {/* PAYMENT METHODS & BANK/UPI DETAILS CARD (REQUIREMENT 1 & 2) */}
+        <TouchableOpacity
+          activeOpacity={0.88}
+          onPress={() => go(u?.isSeller ? 'shop-settings' : 'payment-settings')}
+          style={[ac.paymentCard, shadow]}
+        >
+          <View style={ac.payoutIco}>
+            <MC name="bank-transfer" size={22} color="#059669" />
+          </View>
+          <View style={{ flex: 1, marginLeft: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={{ color: '#064E3B', fontWeight: '900', fontSize: 14 }}>
+                {u?.isSeller ? 'Seller Bank & Payout Details' : 'Payment Settings & UPI'}
+              </Text>
+              <View style={ac.activeBadge}><Text style={{ color: '#fff', fontSize: 8.5, fontWeight: '900' }}>DIRECT PAY</Text></View>
+            </View>
+            <Text style={{ color: '#047857', fontSize: 11.5, marginTop: 2 }}>
+              {state.shop?.upi ? `UPI: ${state.shop.upi} · Bank: ${state.shop.bankName || 'Direct'}` : 'Add UPI ID & Bank Account for receiving payments'}
+            </Text>
+          </View>
+          <MC name="chevron-right" size={20} color="#059669" />
+        </TouchableOpacity>
+
+        {/* Main Orders & Activity Links */}
+        <View style={[ac.card, shadow, { marginTop: 14 }]}>
+          <Row e="package-variant" t="My Orders" s={`${state.orders.length} orders placed`} onPress={() => go('orders')} />
+          <Row e="bell-outline" t="Notifications" s={unread > 0 ? `${unread} new updates` : 'All caught up'} onPress={() => go('notifications')} />
+          <Row e="heart-outline" t="Wishlist" s={`${wish.length} saved items`} onPress={() => go('wishlist')} />
+          <Row e="map-marker-outline" t="Saved Delivery Addresses" s={`${state.addresses.length} saved addresses`} onPress={() => go('addresses')} />
+        </View>
+
         {/* Support & Legal */}
-        <View style={[ac.card, shadow, { marginTop: 16 }]}>
+        <View style={[ac.card, shadow, { marginTop: 14 }]}>
           <Row e="headset" t="Contact Real Human Support" s="24x7 dedicated human team" onPress={() => go('support')} />
           <Row e="shield-check-outline" t="No Bot, Only Humans Policy" s="Our marketplace commitment" onPress={() => go('policy')} />
           <Row e="file-document-outline" t="Privacy Policy & Terms" s="DPDP Act 2023 compliant" onPress={() => go('privacy-policy')} />
-          <Row e="cog-outline" t="Settings" s="Profile, location, payment, preferences" onPress={() => go('settings')} />
+          <Row e="cog-outline" t="Settings & Preferences" s="Profile, location, language" onPress={() => go('settings')} />
           <Row e="logout" t="Log Out" tone="red" onPress={() => dispatch({ type: 'LOGOUT' })} />
         </View>
 
-        <Text style={{ textAlign: 'center', color: C.ink3, fontSize: 11, marginTop: 24, lineHeight: 17 }}>
+        <Text style={{ textAlign: 'center', color: C.ink3, fontSize: 11.5, marginTop: 24, lineHeight: 18 }}>
           Temsho v1.0.5{'\n'}Crafted in India · Built by humans, for humans
         </Text>
       </ScrollView>
@@ -155,7 +183,7 @@ export function Wishlist({ go }) {
   );
 }
 
-/* ---------------- SELLER ONBOARDING WITH COMPLETE PAYMENT DETAILS ---------------- */
+/* ---------------- SELLER ONBOARDING (WITH PAYMENT METHODS) ---------------- */
 export function BecomeSeller({ go }) {
   const { state, dispatch } = useApp();
   const [f, setF] = useState({
@@ -165,7 +193,6 @@ export function BecomeSeller({ go }) {
     state: 'Uttar Pradesh',
     pin: '',
     contact: state.user?.phone || '',
-    // Payout Details
     payName: state.user?.name || '',
     upi: '',
     bankName: '',
@@ -188,7 +215,7 @@ export function BecomeSeller({ go }) {
 
   const launchShop = async () => {
     if (!ok) {
-      setErr('Please fill all mandatory shop and bank payout details.');
+      setErr('Please fill in all mandatory shop details and your Bank / UPI payout information.');
       return;
     }
     setErr('');
@@ -247,7 +274,7 @@ export function BecomeSeller({ go }) {
           </Text>
           <View style={{ flexDirection: 'row', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
             <Badge text="0% Commission" tone="green" />
-            <Badge text="Direct Payouts to Bank/UPI" tone="accent" />
+            <Badge text="Direct Bank / UPI Payouts" tone="accent" />
             <Badge text="Doorstep Courier Pickup" tone="green" />
             <Badge text="No Documents Needed" tone="brand" />
           </View>
@@ -256,7 +283,7 @@ export function BecomeSeller({ go }) {
         <View style={ac.freeNote}>
           <MC name="truck-fast" size={18} color={C.green} />
           <Text style={{ flex: 1, marginLeft: 10, color: '#059669', fontSize: 12, fontWeight: '700', lineHeight: 18 }}>
-            Couriers (Delhivery/Ekart/Shiprocket) pick parcels directly from your entered doorstep address.
+            Couriers (Delhivery/Ekart/India Post) pick parcels directly from your entered doorstep address.
           </Text>
         </View>
 
@@ -507,25 +534,29 @@ export function Seller({ go }) {
           </View>
         </View>
 
-        {/* Bank & Payout Badge */}
-        <View style={[ac.payoutBadge, shadow]}>
+        {/* Bank & Payout Badge with Direct Add/Edit Option */}
+        <TouchableOpacity
+          activeOpacity={0.88}
+          onPress={() => go('shop-settings')}
+          style={[ac.payoutBadge, shadow]}
+        >
           <MC name="bank-check" size={20} color={C.green} />
           <View style={{ flex: 1, marginLeft: 10 }}>
-            <Text style={{ color: C.ink, fontSize: 12.5, fontWeight: '800' }}>
+            <Text style={{ color: C.ink, fontSize: 13, fontWeight: '800' }}>
               Payout Account: {state.shop?.upi || state.shop?.bankName || 'Direct UPI Active'}
             </Text>
             <Text style={{ color: C.ink3, fontSize: 11, marginTop: 1 }}>
-              Holder: {state.shop?.payName || u.name} · Direct Settlements
+              Holder: {state.shop?.payName || u.name} · Tap to update Bank/UPI details
             </Text>
           </View>
-          <TouchableOpacity onPress={() => go('shop-settings')}>
-            <Text style={{ color: C.brand, fontWeight: '800', fontSize: 11.5 }}>Edit</Text>
-          </TouchableOpacity>
-        </View>
+          <View style={ac.editBtnSmall}>
+            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 11 }}>EDIT</Text>
+          </View>
+        </TouchableOpacity>
 
         <View style={{ flexDirection: 'row', gap: 10, marginTop: 14 }}>
           <Btn title="Orders & Dispatch" icon="tray-arrow-down" tone="ghost" style={{ flex: 1 }} onPress={() => go('seller-orders')} />
-          <Btn title="Shop Settings" icon="cog-outline" tone="ghost" style={{ flex: 1 }} onPress={() => go('shop-settings')} />
+          <Btn title="Shop & Payment Settings" icon="cog-outline" tone="ghost" style={{ flex: 1.1 }} onPress={() => go('shop-settings')} />
         </View>
 
         {!add ? (
@@ -796,19 +827,59 @@ export function PrivacyPolicyScreen({ go }) {
 }
 
 const ac = StyleSheet.create({
-  head: { backgroundColor: C.brand, paddingTop: 46, paddingHorizontal: 16, paddingBottom: 60 },
-  profile: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: C.surface,
-    borderRadius: R.lg, padding: 16, marginTop: 16, marginBottom: -70,
+  headerWrap: {
+    backgroundColor: C.brand,
+    paddingTop: 46,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  profileBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: C.surface,
+    borderRadius: R.lg,
+    padding: 16,
+    marginTop: 14,
   },
   av: { width: 52, height: 52, borderRadius: 26, backgroundColor: C.brandSoft, alignItems: 'center', justifyContent: 'center' },
   card: { backgroundColor: C.surface, borderRadius: R.lg, overflow: 'hidden' },
-  ownerCta: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#0F172A', borderRadius: R.lg, padding: 16, marginTop: 16 },
-  crown: { width: 42, height: 42, borderRadius: 13, backgroundColor: '#ffffff1f', alignItems: 'center', justifyContent: 'center' },
-  gear: { width: 34, height: 34, borderRadius: 17, backgroundColor: '#ffffff2a', alignItems: 'center', justifyContent: 'center' },
+  ownerCta: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#0F172A', borderRadius: R.lg, padding: 16, marginTop: 14 },
+  crown: { width: 44, height: 44, borderRadius: 13, backgroundColor: '#ffffff1f', alignItems: 'center', justifyContent: 'center' },
+  gear: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#ffffff2a', alignItems: 'center', justifyContent: 'center' },
   shareBanner: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ECFDF5', borderRadius: R.lg, padding: 14, borderWidth: 1, borderColor: '#A7F3D0' },
   row: { flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: C.line },
-  sellCta: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.brand, borderRadius: R.lg, padding: 16, marginTop: 16 },
+  sellCta: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.brand, borderRadius: R.lg, padding: 16, marginTop: 12 },
+  paymentCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ECFDF5',
+    borderRadius: R.lg,
+    padding: 14,
+    marginTop: 12,
+    borderWidth: 1.5,
+    borderColor: '#A7F3D0',
+  },
+  payoutIco: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: '#D1FAE5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeBadge: {
+    backgroundColor: '#059669',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginLeft: 8,
+  },
+  editBtnSmall: {
+    backgroundColor: '#059669',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: R.sm,
+  },
   wishRow: { flexDirection: 'row', backgroundColor: C.surface, borderRadius: R.lg, padding: 12, marginBottom: 12 },
   mini: { borderWidth: 1, borderColor: C.line, borderRadius: R.sm, paddingHorizontal: 10, paddingVertical: 6 },
   step: { color: C.ink3, fontSize: 11.5, fontWeight: '900', letterSpacing: 0.8, marginTop: 22, marginBottom: 8, marginLeft: 4 },
@@ -839,7 +910,7 @@ const ac = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', backgroundColor: C.greenSoft,
     borderRadius: R.md, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: '#86EFAC',
   },
-  sellIco: { width: 42, height: 42, borderRadius: 13, backgroundColor: '#ffffff2a', alignItems: 'center', justifyContent: 'center' },
+  sellIco: { width: 44, height: 44, borderRadius: 13, backgroundColor: '#ffffff2a', alignItems: 'center', justifyContent: 'center' },
   bigIco: { width: 52, height: 52, borderRadius: 16, backgroundColor: C.brandSoft, alignItems: 'center', justifyContent: 'center' },
   agentBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.surface, padding: 14, borderBottomWidth: 1, borderBottomColor: C.line },
   callBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#ECFDF5', alignItems: 'center', justifyContent: 'center' },
