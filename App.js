@@ -99,49 +99,59 @@ function AppSplashIntro({ onFinish }) {
       ])
     ).start();
 
-    // 4. Finish intro after 2.2 seconds
+    // 4. Finish intro after 1.8 seconds with fallback
     const timer = setTimeout(() => {
       Animated.timing(opacity, {
         toValue: 0,
-        duration: 400,
+        duration: 300,
         useNativeDriver: true,
       }).start(() => {
         onFinish();
       });
+    }, 1800);
+
+    // Hard fallback after 2.2 seconds guaranteed
+    const hardFallback = setTimeout(() => {
+      onFinish();
     }, 2200);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(hardFallback);
+    };
   }, []);
 
   return (
-    <Animated.View style={[s.splashRoot, { opacity }]}>
-      <LinearGradient colors={['#0F172A', '#1E2562', '#2874F0']} style={StyleSheet.absoluteFillObject} />
+    <TouchableOpacity activeOpacity={1} onPress={onFinish} style={{ flex: 1 }}>
+      <Animated.View style={[s.splashRoot, { opacity }]}>
+        <LinearGradient colors={['#0F172A', '#1E2562', '#2874F0']} style={StyleSheet.absoluteFillObject} />
 
-      {/* Pulsing Animated Emblem */}
-      <Animated.View style={{ transform: [{ scale: Animated.multiply(scale, pulse) }] }}>
-        <View style={s.splashGlow}>
-          <View style={s.splashLogoBox}>
-            <MC name="storefront" size={56} color="#fff" />
+        {/* Pulsing Animated Emblem */}
+        <Animated.View style={{ transform: [{ scale: Animated.multiply(scale, pulse) }] }}>
+          <View style={s.splashGlow}>
+            <View style={s.splashLogoBox}>
+              <MC name="storefront" size={56} color="#fff" />
+            </View>
           </View>
-        </View>
+        </Animated.View>
+
+        {/* Brand & Tagline */}
+        <Animated.View style={{ alignItems: 'center', opacity: textFade, marginTop: 24 }}>
+          <Text style={s.splashBrandTitle}>Temsho</Text>
+          <Text style={s.splashBrandSub}>POORE BHARAT KA APNA BAZAAR</Text>
+
+          <View style={s.pledgeBadge}>
+            <MC name="account-check" size={16} color="#4ADE80" />
+            <Text style={s.pledgeText}>No Bots · 100% Real Humans</Text>
+          </View>
+
+          <View style={{ flexDirection: 'row', gap: 8, marginTop: 20 }}>
+            <View style={s.miniPill}><Text style={s.miniPillText}>⚡ Instant WhatsApp OTP</Text></View>
+            <View style={s.miniPill}><Text style={s.miniPillText}>🤝 Direct UPI Payouts</Text></View>
+          </View>
+        </Animated.View>
       </Animated.View>
-
-      {/* Brand & Tagline */}
-      <Animated.View style={{ alignItems: 'center', opacity: textFade, marginTop: 24 }}>
-        <Text style={s.splashBrandTitle}>Temsho</Text>
-        <Text style={s.splashBrandSub}>POORE BHARAT KA APNA BAZAAR</Text>
-
-        <View style={s.pledgeBadge}>
-          <MC name="account-check" size={16} color="#4ADE80" />
-          <Text style={s.pledgeText}>No Bots · 100% Real Humans</Text>
-        </View>
-
-        <View style={{ flexDirection: 'row', gap: 8, marginTop: 20 }}>
-          <View style={s.miniPill}><Text style={s.miniPillText}>⚡ Instant WhatsApp OTP</Text></View>
-          <View style={s.miniPill}><Text style={s.miniPillText}>🤝 Direct UPI Payouts</Text></View>
-        </View>
-      </Animated.View>
-    </Animated.View>
+    </TouchableOpacity>
   );
 }
 

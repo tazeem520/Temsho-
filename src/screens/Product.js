@@ -12,8 +12,8 @@ export function Product({ go, params }) {
   const { byId, dispatch, state, cartCount } = useApp();
   const p = byId(params.id);
   const [size, setSize] = useState('M');
-  const [pinInput, setPinInput] = useState('226010');
-  const [pinChecked, setPinChecked] = useState(true);
+  const [pinInput, setPinInput] = useState(state.addresses[0]?.pin || '');
+  const [pinChecked, setPinChecked] = useState(!!state.addresses[0]?.pin);
   const [reviews, setReviews] = useState([]);
   const [writingReview, setWritingReview] = useState(false);
   const [myRating, setMyRating] = useState(5);

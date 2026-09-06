@@ -79,10 +79,10 @@ export function Home({ go }) {
         <TouchableOpacity onPress={() => go('addresses')} style={st.deliverBar}>
           <MC name="map-marker-radius" size={16} color="#FDE047" />
           <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800', marginLeft: 6 }}>
-            Deliver to {u?.name || 'Customer'} – {addr?.pin || '226010'}
+            Deliver to {u?.name || 'Customer'}{addr?.pin ? ` – ${addr.pin}` : ''}
           </Text>
           <Text numberOfLines={1} style={{ color: '#ffffffcc', fontSize: 11.5, marginLeft: 6, flex: 1 }}>
-            {addr?.city || 'Lucknow'}
+            {addr ? `${addr.city}, ${addr.state}` : 'Add Delivery Address'}
           </Text>
           <MC name="chevron-down" size={16} color="#fff" />
         </TouchableOpacity>

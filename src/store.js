@@ -82,9 +82,7 @@ const init = {
   wishlist: [],
   orders: [],
   coupon: null,
-  addresses: [
-    { id: 'a1', name: 'Home', line: '221, Gomti Nagar, Vibhuti Khand', city: 'Lucknow', state: 'Uttar Pradesh', pin: '226010', phone: '9044468663' },
-  ],
+  addresses: [],
   notifications: [
     { id: 'n1', icon: 'party-popper', title: 'Welcome to Temsho!', body: 'Shop directly from verified human sellers with 100% transparency.', at: Date.now() - 3600000, read: false },
     { id: 'n2', icon: 'shield-check-outline', title: '100% Human Marketplace', body: 'No bots or automated shops on Temsho. Every seller is a real verified human.', at: Date.now() - 86400000, read: false },
@@ -162,9 +160,7 @@ function reducer(s, a) {
       const orders = userAccount?.orders || [];
       const cart = userAccount?.cart || [];
       const wishlist = userAccount?.wishlist || [];
-      const addresses = userAccount?.addresses && userAccount.addresses.length > 0
-        ? userAccount.addresses
-        : [{ id: 'a1', name: 'Home', line: '221, Gomti Nagar', city: 'Lucknow', state: 'Uttar Pradesh', pin: '226010', phone }];
+      const addresses = userAccount?.addresses || [];
       const notifications = userAccount?.notifications || s.notifications;
       const supportChat = userAccount?.supportChat || s.supportChat;
       const settings = userAccount?.settings || s.settings;
@@ -174,6 +170,7 @@ function reducer(s, a) {
       return notif(
         {
           ...s,
+          ready: true,
           user,
           shop,
           myProducts,

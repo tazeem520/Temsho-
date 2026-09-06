@@ -26,8 +26,16 @@ export function Checkout({ go }) {
   const [addr, setAddr] = useState(state.addresses[0]?.id);
   const [pay, setPay] = useState('cod');
   const [code, setCode] = useState('');
-  const [adding, setAdding] = useState(false);
-  const [f, setF] = useState({ name: '', line: '', city: '', state: '', pin: '', phone: '' });
+  const [adding, setAdding] = useState(state.addresses.length === 0);
+  const [err, setErr] = useState('');
+  const [f, setF] = useState({
+    name: state.user?.name || '',
+    line: '',
+    city: '',
+    state: 'Uttar Pradesh',
+    pin: '',
+    phone: state.user?.phone || '',
+  });
 
   const activeAddress = state.addresses.find((x) => x.id === addr) || state.addresses[0];
 
@@ -58,6 +66,13 @@ export function Checkout({ go }) {
 
   const place = async () => {
     const a = activeAddress;
+    if (!a || !a.line || !a.city || !a.pin) {
+      setAdding(true);
+      setErr('Please add and save your delivery address before placing order.');
+      return;
+    }
+    setErr('');
+
     const etaFormatted = new Date(Date.now() + 3 * 86400000).toLocaleDateString('en-IN', {
       day: 'numeric',
       month: 'short',
