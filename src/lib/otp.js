@@ -10,6 +10,16 @@ import { supabase, isConfigured as supaReady } from './supabase';
 
 const digits = (p) => String(p || '').replace(/\D/g, '').slice(-10);
 
+const safeBtoa = (str) => {
+  try {
+    if (typeof btoa === 'function') return btoa(str);
+  } catch (e) {}
+  try {
+    if (typeof Buffer !== 'undefined') return Buffer.from(str).toString('base64');
+  } catch (e) {}
+  return '';
+};
+
 // In-memory code verification storage: { [phone]: { code: '1234', at: timestamp } }
 const _memory = {};
 
@@ -59,7 +69,7 @@ export async function sendOtp(phone, via = 'whatsapp', overrideProvider = null) 
           const r = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${TWILIO.sid}/Messages.json`, {
             method: 'POST',
             headers: {
-              Authorization: 'Basic ' + btoa(`${TWILIO.sid}:${TWILIO.token}`),
+              Authorization: 'Basic ' + safeBtoa(`${TWILIO.sid}:${TWILIO.token}`),
               'Content-Type': 'application/x-www-form-urlencoded',
             },
             body: body.toString(),
