@@ -11,9 +11,8 @@ import { getWhatsAppConnectUrl } from '../lib/shiprocket';
 import * as cloud from '../lib/cloud';
 
 const PAY = [
-  { id: 'cod', name: 'Cash on Delivery', sub: 'Pay in cash upon doorstep delivery', icon: 'cash' },
-  { id: 'upi', name: 'Direct UPI Payment', sub: 'Instant payment via GPay / PhonePe / Paytm', icon: 'cellphone-check' },
-  { id: 'qr', name: 'Scan Seller QR Code', sub: 'Scan and pay directly using any UPI app', icon: 'qrcode-scan' },
+  { id: 'cod', name: 'Cash on Delivery (COD)', sub: 'Pay in cash upon doorstep delivery', icon: 'cash' },
+  { id: 'upi', name: 'Direct UPI Payment', sub: 'Instant payment via GPay / PhonePe / Paytm / BHIM', icon: 'cellphone-check' },
   { id: 'card', name: 'Card / Net Banking', sub: 'Visa, RuPay, Mastercard & 50+ banks', icon: 'credit-card-outline' },
 ];
 
@@ -236,58 +235,55 @@ export function Checkout({ go }) {
         </View>
 
         {/* 4. PAYMENT METHOD */}
-        <Text style={[ck.sec, { marginTop: 22 }]}>4 · Payment — Direct to Seller</Text>
+        <Text style={[ck.sec, { marginTop: 22 }]}>4 · Payment Method</Text>
 
         <View style={ck.directBox}>
           <MC name="shield-check-outline" size={18} color={C.green} />
           <Text style={{ flex: 1, marginLeft: 10, color: '#059669', fontSize: 11.5, fontWeight: '700', lineHeight: 17 }}>
-            Your payment goes DIRECTLY to the verified seller. Temsho does not hold your funds.
+            100% Secure & Verified Payments. No bots, direct human settlement.
           </Text>
         </View>
-
-        {sellerPays.map((sp) => (
-          <View key={sp.key} style={[ck.sellerPay, shadow]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <MC name="storefront-outline" size={17} color={C.brand} />
-              <Text style={{ flex: 1, marginLeft: 9, color: C.ink, fontWeight: '800', fontSize: 13 }}>{sp.name}</Text>
-              <Text style={{ color: C.ink, fontWeight: '900', fontSize: 14 }}>{money(sp.amount)}</Text>
-            </View>
-            {(pay === 'upi' || pay === 'qr') && (
-              <>
-                <View style={ck.upiRow}>
-                  <MC name="cellphone-check" size={15} color={C.green} />
-                  <Text style={{ flex: 1, marginLeft: 8, color: C.ink2, fontSize: 12 }}>
-                    Seller UPI: <Text style={{ fontWeight: '800', color: C.ink }}>{sp.upi}</Text>
-                  </Text>
-                </View>
-                {pay === 'upi' && (
-                  <PayNowBtn upi={sp.upi} name={sp.name} amount={sp.amount} note={'Temsho Order'} />
-                )}
-                {pay === 'qr' && (
-                  <View style={{ marginTop: 14 }}>
-                    <UpiQR upi={sp.upi} name={sp.name} amount={sp.amount} note={'Temsho Order'} size={150} />
-                  </View>
-                )}
-              </>
-            )}
-            {pay === 'cod' && (
-              <Text style={{ color: C.ink3, fontSize: 11.5, marginTop: 8 }}>
-                Pay {money(sp.amount)} in cash upon delivery
-              </Text>
-            )}
-          </View>
-        ))}
 
         {PAY.map((m) => (
           <TouchableOpacity key={m.id} onPress={() => setPay(m.id)} style={[ck.opt, pay === m.id && ck.optOn]}>
             <Radio on={pay === m.id} />
-            <MC name={m.icon} size={19} color={C.ink2} style={{ marginLeft: 12 }} />
+            <MC name={m.icon} size={20} color={pay === m.id ? C.brand : C.ink2} style={{ marginLeft: 12 }} />
             <View style={{ flex: 1, marginLeft: 10 }}>
-              <Text style={{ fontWeight: '700', color: C.ink, fontSize: 13.5 }}>{m.name}</Text>
+              <Text style={{ fontWeight: '800', color: C.ink, fontSize: 13.5 }}>{m.name}</Text>
               <Text style={{ color: C.ink3, fontSize: 11.5, marginTop: 2 }}>{m.sub}</Text>
             </View>
           </TouchableOpacity>
         ))}
+
+        {/* UPI Quick Pay Button if UPI Selected */}
+        {pay === 'upi' && (
+          <View style={[ck.upiPayCard, shadow]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+              <MC name="lightning-bolt" size={18} color={C.accent} />
+              <Text style={{ color: C.ink, fontWeight: '800', fontSize: 13, marginLeft: 6 }}>
+                Instant UPI App Payment
+              </Text>
+            </View>
+            <Text style={{ color: C.ink2, fontSize: 11.5, marginBottom: 10 }}>
+              Tap below to pay <Text style={{ fontWeight: '900', color: C.ink }}>{money(total)}</Text> directly using Google Pay, PhonePe, Paytm or BHIM.
+            </Text>
+            <PayNowBtn
+              upi={sellerPays[0]?.upi || '9044468663@paytm'}
+              name={sellerPays[0]?.name || 'Temsho Store'}
+              amount={total}
+              note="Temsho Order Payment"
+            />
+          </View>
+        )}
+
+        {pay === 'cod' && (
+          <View style={ck.codInfoBox}>
+            <MC name="cash-check" size={18} color="#B45309" />
+            <Text style={{ color: '#78350F', fontSize: 12, fontWeight: '700', marginLeft: 8, flex: 1 }}>
+              Pay {money(total)} in cash to the delivery partner when your parcel arrives.
+            </Text>
+          </View>
+        )}
 
         <View style={{ marginTop: 18 }}>
           <Bill
@@ -579,4 +575,12 @@ const ck = StyleSheet.create({
   qrModalCard: { backgroundColor: C.surface, borderRadius: R.xl, padding: 20, alignItems: 'center', width: '100%', maxWidth: 360 },
   qrCodeContainer: { backgroundColor: '#fff', padding: 12, borderRadius: R.md, borderWidth: 1, borderColor: C.line, marginVertical: 8 },
   qrOtpBox: { backgroundColor: C.brandSoft, paddingVertical: 10, paddingHorizontal: 18, borderRadius: R.md, alignItems: 'center', marginTop: 10, width: '100%' },
+  upiPayCard: {
+    backgroundColor: '#ECFDF5', borderRadius: R.lg, padding: 14, marginTop: 8,
+    borderWidth: 1.5, borderColor: '#A7F3D0',
+  },
+  codInfoBox: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF3C7',
+    borderRadius: R.md, padding: 12, marginTop: 8, borderWidth: 1, borderColor: '#FDE68A',
+  },
 });

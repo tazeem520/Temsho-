@@ -74,14 +74,27 @@ export function Account({ go }) {
 
         {/* OWNER ADMIN CTA */}
         {isOwner && (
-          <TouchableOpacity activeOpacity={0.9} onPress={() => go('admin')} style={[ac.ownerCta, shadow]}>
-            <View style={ac.crown}><MC name="crown" size={22} color={C.accent} /></View>
-            <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={{ color: '#fff', fontWeight: '900', fontSize: 15 }}>Owner Admin Panel</Text>
-              <Text style={{ color: '#ffffffcc', fontSize: 12, marginTop: 2 }}>Activity Ledger, Owner Payout & Control (9044468663)</Text>
-            </View>
-            <MC name="chevron-right" size={22} color="#fff" />
-          </TouchableOpacity>
+          <>
+            <TouchableOpacity activeOpacity={0.9} onPress={() => go('admin')} style={[ac.ownerCta, shadow]}>
+              <View style={ac.crown}><MC name="crown" size={22} color={C.accent} /></View>
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={{ color: '#fff', fontWeight: '900', fontSize: 15 }}>Owner Admin Panel</Text>
+                <Text style={{ color: '#ffffffcc', fontSize: 12, marginTop: 2 }}>Seller Directory, Payouts & Audit Ledger (9044468663)</Text>
+              </View>
+              <MC name="chevron-right" size={22} color="#fff" />
+            </TouchableOpacity>
+
+            <TouchableOpacity activeOpacity={0.9} onPress={() => go('admin-owner-payment')} style={[ac.ownerPayCard, shadow]}>
+              <View style={ac.crownSmall}><MC name="bank-transfer" size={20} color="#059669" /></View>
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={{ color: '#064E3B', fontWeight: '900', fontSize: 14 }}>Owner Payout Setup (Logistics & Bank)</Text>
+                <Text style={{ color: '#047857', fontSize: 11.5, marginTop: 2 }}>
+                  Set your UPI ID & Bank Account for ₹49 delivery logistics collections
+                </Text>
+              </View>
+              <MC name="chevron-right" size={20} color="#059669" />
+            </TouchableOpacity>
+          </>
         )}
 
         {/* SELLER CTA */}
@@ -851,6 +864,11 @@ const ac = StyleSheet.create({
   av: { width: 52, height: 52, borderRadius: 26, backgroundColor: C.brandSoft, alignItems: 'center', justifyContent: 'center' },
   card: { backgroundColor: C.surface, borderRadius: R.lg, overflow: 'hidden' },
   ownerCta: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#0F172A', borderRadius: R.lg, padding: 16, marginTop: 14 },
+  ownerPayCard: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: '#ECFDF5',
+    borderRadius: R.lg, padding: 14, marginTop: 8, borderWidth: 1.5, borderColor: '#A7F3D0',
+  },
+  crownSmall: { width: 38, height: 38, borderRadius: 10, backgroundColor: '#D1FAE5', alignItems: 'center', justifyContent: 'center' },
   crown: { width: 44, height: 44, borderRadius: 13, backgroundColor: '#ffffff1f', alignItems: 'center', justifyContent: 'center' },
   gear: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#ffffff2a', alignItems: 'center', justifyContent: 'center' },
   shareBanner: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ECFDF5', borderRadius: R.lg, padding: 14, borderWidth: 1, borderColor: '#A7F3D0' },
