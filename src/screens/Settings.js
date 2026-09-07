@@ -97,11 +97,6 @@ export function Settings({ go }) {
             on={st.notifWhatsapp} onChange={(v) => dispatch({ type: 'UPDATE_SETTINGS', patch: { notifWhatsapp: v } })} last />
         </Group>
 
-        <Group title="PAYMENT PREFERENCES">
-          <Row icon="wallet-outline" label="Default Payment Mode" value={st.defaultPay === 'cod' ? 'Cash on Delivery' : st.defaultPay.toUpperCase()} onPress={() => go('payment-settings')} />
-          <Row icon="cellphone" label="Saved Payout UPI ID" value={st.upiId || 'Add UPI'} onPress={() => go('payment-settings')} last />
-        </Group>
-
         <Group title="PRIVACY & LEGAL (DPDP 2023)">
           <Toggle icon="history" label="Save Search History" sub="Keep recent searches for fast access"
             on={st.saveHistory} onChange={(v) => dispatch({ type: 'UPDATE_SETTINGS', patch: { saveHistory: v } })} />

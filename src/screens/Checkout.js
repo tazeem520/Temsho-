@@ -89,6 +89,7 @@ export function Checkout({ go }) {
         tint: l.product.tint,
         qty: l.qty,
         price: l.product.price,
+        size: l.size || null,
       })),
       total,
       pay,
@@ -172,10 +173,17 @@ export function Checkout({ go }) {
         {/* 2. ORDER SUMMARY */}
         <Text style={[ck.sec, { marginTop: 22 }]}>2 · Order Summary</Text>
         <View style={[ck.box, shadow]}>
-          {cartLines.map((l) => (
-            <View key={l.id} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+          {cartLines.map((l, idx) => (
+            <View key={l.key || (l.id + '-' + idx)} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
               <View style={{ width: 46 }}><Thumb img={l.product.img} title={l.product.title} tint={l.product.tint} size={46} radius={10} /></View>
-              <Text numberOfLines={1} style={{ flex: 1, marginLeft: 10, color: C.ink, fontSize: 13 }}>{l.product.title}</Text>
+              <View style={{ flex: 1, marginLeft: 10 }}>
+                <Text numberOfLines={1} style={{ color: C.ink, fontSize: 13, fontWeight: '700' }}>{l.product.title}</Text>
+                {!!l.size && (
+                  <Text style={{ color: C.brand, fontSize: 11, fontWeight: '800', marginTop: 1 }}>
+                    {l.size.includes('Year') || l.size.includes('Month') || l.size.includes('Y') ? `Age: ${l.size}` : `Size: ${l.size}`}
+                  </Text>
+                )}
+              </View>
               <Text style={{ color: C.ink2, fontSize: 12, marginHorizontal: 8 }}>x{l.qty}</Text>
               <Text style={{ color: C.ink, fontWeight: '800', fontSize: 13 }}>{money(l.product.price * l.qty)}</Text>
             </View>
@@ -404,10 +412,17 @@ export function Orders({ go }) {
                 Placed on {new Date(o.at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
               </Text>
 
-              {o.items.map((it) => (
-                <TouchableOpacity key={it.id} onPress={() => go('product', { id: it.id })} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+              {o.items.map((it, itIdx) => (
+                <TouchableOpacity key={it.id || itIdx} onPress={() => go('product', { id: it.id })} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
                   <View style={{ width: 46 }}><Thumb img={it.img} title={it.title} tint={it.tint} size={46} radius={10} /></View>
-                  <Text numberOfLines={2} style={{ flex: 1, marginLeft: 10, color: C.ink, fontSize: 13 }}>{it.title}</Text>
+                  <View style={{ flex: 1, marginLeft: 10 }}>
+                    <Text numberOfLines={2} style={{ color: C.ink, fontSize: 13, fontWeight: '700' }}>{it.title}</Text>
+                    {!!it.size && (
+                      <Text style={{ color: C.brand, fontSize: 11, fontWeight: '800', marginTop: 2 }}>
+                        {it.size.includes('Year') || it.size.includes('Month') || it.size.includes('Y') ? `Age: ${it.size}` : `Size: ${it.size}`}
+                      </Text>
+                    )}
+                  </View>
                   <Text style={{ color: C.ink2, fontSize: 12 }}>x{it.qty}</Text>
                 </TouchableOpacity>
               ))}

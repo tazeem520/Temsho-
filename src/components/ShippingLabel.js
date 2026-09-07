@@ -149,7 +149,7 @@ export function ShippingLabelModal({ visible, onClose, order, sellerInfo }) {
                 {order.items?.map((it, idx) => (
                   <View key={it.id || idx} style={sl.itemRow}>
                     <Text numberOfLines={1} style={{ flex: 1, fontSize: 11.5, color: C.ink, fontWeight: '700' }}>
-                      {it.title}
+                      {it.title} {it.size ? `(${it.size})` : ''}
                     </Text>
                     <Text style={{ fontSize: 11.5, color: C.ink2, marginHorizontal: 8 }}>x{it.qty}</Text>
                     <Text style={{ fontSize: 11.5, color: C.ink, fontWeight: '800' }}>{money((Number(it.price) || 0) * (Number(it.qty) || 1))}</Text>

@@ -926,8 +926,8 @@ export function AdminOwnerPayment({ go }) {
     bankName: current.bankName || 'State Bank of India',
     accountNumber: current.accountNumber || '',
     ifscCode: current.ifscCode || '',
-    codRemittanceMethod: current.codRemittanceMethod || 'bank_transfer',
-    notes: current.notes || '₹49 logistics delivery fee & courier cash remittance account',
+    codRemittanceMethod: current.codRemittanceMethod || 'upi',
+    notes: current.notes || '₹49 logistics delivery fee payout account',
   });
 
   const [saved, setSaved] = useState(false);
@@ -949,53 +949,55 @@ export function AdminOwnerPayment({ go }) {
     }
 
     setSaved(true);
-    setTimeout(() => setSaved(false), 1600);
+    setTimeout(() => setSaved(false), 2000);
   };
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <Header title="Owner Payout & Settlement Setup" go={go} />
+      <Header title="Owner Payout Setup" go={go} />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 50 }}>
-        {/* Intro Card */}
+        {/* Clean Info Header */}
         <View style={[ad.payoutCardTop, shadow]}>
-          <MC name="shield-crown-outline" size={26} color="#059669" />
+          <MC name="shield-crown-outline" size={24} color="#059669" />
           <View style={{ flex: 1, marginLeft: 12 }}>
-            <Text style={{ fontWeight: '900', color: '#064E3B', fontSize: 15 }}>
-              Owner Delivery Fee Payout Setup
+            <Text style={{ fontWeight: '900', color: '#064E3B', fontSize: 14.5 }}>
+              Owner Delivery Fee Account (₹49 / Order)
             </Text>
-            <Text style={{ color: '#047857', fontSize: 12, lineHeight: 17, marginTop: 3 }}>
-              The ₹49 logistics delivery charge collected on orders is remitted directly to this Owner Bank/UPI account.
+            <Text style={{ color: '#047857', fontSize: 11.5, lineHeight: 16, marginTop: 2 }}>
+              Delivery logistics fees collected on customer orders are remitted to this account.
             </Text>
           </View>
         </View>
 
         <Card style={{ padding: 18, marginTop: 14 }}>
-          <Text style={{ fontWeight: '900', color: C.ink, fontSize: 16, marginBottom: 14 }}>
-            1 · Owner Logistics UPI Details
+          <Text style={{ fontWeight: '900', color: C.ink, fontSize: 15, marginBottom: 12 }}>
+            Owner UPI & Bank Details
           </Text>
 
           <Field
-            label="Owner / Legal Payee Name *"
+            label="Owner Payee Name *"
             placeholder="e.g. Tazeem Ahmad"
             value={f.payeeName}
             onChangeText={(v) => setF({ ...f, payeeName: v })}
           />
 
           <Field
-            label="₹49 Delivery Fee Payout UPI ID *"
-            placeholder="e.g. 9044468663@upi or owner@okaxis"
+            label="Owner Delivery Fee UPI ID *"
+            placeholder="e.g. 9044468663@upi or tazeemahmadsbn12@oksbi"
             autoCapitalize="none"
             value={f.deliveryChargeUpi}
             onChangeText={(v) => setF({ ...f, deliveryChargeUpi: v })}
           />
 
-          <Text style={{ fontWeight: '900', color: C.ink, fontSize: 16, marginTop: 16, marginBottom: 14 }}>
-            2 · Owner Bank Account (For Courier COD Remittances)
+          <View style={{ height: 1, backgroundColor: C.line, marginVertical: 14 }} />
+
+          <Text style={{ fontWeight: '800', color: C.ink, fontSize: 13, marginBottom: 10 }}>
+            Bank Account Details (Optional)
           </Text>
 
           <Field
-            label="Owner Bank Name"
-            placeholder="e.g. State Bank of India, HDFC Bank"
+            label="Bank Name"
+            placeholder="e.g. State Bank of India"
             value={f.bankName}
             onChangeText={(v) => setF({ ...f, bankName: v })}
           />
@@ -1016,60 +1018,28 @@ export function AdminOwnerPayment({ go }) {
             onChangeText={(v) => setF({ ...f, ifscCode: v.toUpperCase() })}
           />
 
-          <Text style={{ color: C.ink2, fontSize: 12, fontWeight: '700', marginTop: 10, marginBottom: 8 }}>
-            Preferred Courier COD Remittance Mode
-          </Text>
-          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
-            {[
-              ['bank_transfer', 'Direct Bank NEFT / IMPS', 'bank'],
-              ['upi', 'Daily Instant UPI', 'cellphone-check'],
-            ].map(([k, l, ic]) => (
-              <TouchableOpacity
-                key={k}
-                onPress={() => setF({ ...f, codRemittanceMethod: k })}
-                style={[ad.chip, f.codRemittanceMethod === k && { backgroundColor: C.brand, borderColor: C.brand }]}
-              >
-                <MC name={ic} size={14} color={f.codRemittanceMethod === k ? '#fff' : C.ink2} style={{ marginRight: 5 }} />
-                <Text style={{ color: f.codRemittanceMethod === k ? '#fff' : C.ink2, fontSize: 12, fontWeight: '700' }}>{l}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          <Field
-            label="Settlement Notes / Memo"
-            placeholder="e.g. Logistics delivery settlement account"
-            value={f.notes}
-            onChangeText={(v) => setF({ ...f, notes: v })}
-          />
-
           <Btn
-            title={saved ? 'Saved & Verified Successfully' : 'Save Owner Payment Method'}
+            title={saved ? '✓ Saved Successfully' : 'Save Payout Details'}
             icon={saved ? 'check' : 'content-save-outline'}
             tone={saved ? 'green' : 'brand'}
-            style={{ marginTop: 14 }}
+            style={{ marginTop: 10 }}
             onPress={handleSave}
           />
         </Card>
 
-        {/* Live Owner UPI QR Preview */}
+        {/* Saved Status Card */}
         {!!f.deliveryChargeUpi && (
-          <View style={[ad.card, shadow, { padding: 18, marginTop: 16, alignItems: 'center' }]}>
-            <Text style={{ fontWeight: '900', color: C.ink, fontSize: 15 }}>Owner Logistics UPI QR Preview</Text>
-            <Text style={{ color: C.ink3, fontSize: 11.5, marginTop: 2, marginBottom: 14 }}>
-              Used by shipping partners for ₹49 delivery charge settlement
-            </Text>
-            <View style={{ backgroundColor: '#fff', padding: 12, borderRadius: R.md, borderWidth: 1, borderColor: C.line }}>
-              <UpiQR
-                upi={f.deliveryChargeUpi}
-                name={f.payeeName || 'Temsho Logistics'}
-                amount={49}
-                note="Temsho Delivery Fee"
-                size={160}
-              />
+          <View style={[ad.card, shadow, { padding: 16, marginTop: 14, backgroundColor: '#ECFDF5', borderWidth: 1, borderColor: '#A7F3D0' }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <MC name="check-decagram" size={20} color="#059669" />
+              <View style={{ flex: 1, marginLeft: 10 }}>
+                <Text style={{ color: '#064E3B', fontWeight: '900', fontSize: 13.5 }}>Owner Payout Configured & Active</Text>
+                <Text style={{ color: '#047857', fontSize: 11.5, marginTop: 2 }}>
+                  Active UPI: <Text style={{ fontWeight: '800' }}>{f.deliveryChargeUpi}</Text>
+                  {f.accountNumber ? ` · Bank Acc: ***${f.accountNumber.slice(-4)}` : ''}
+                </Text>
+              </View>
             </View>
-            <Text style={{ fontWeight: '800', color: C.brand, fontSize: 13, marginTop: 12 }}>
-              {f.deliveryChargeUpi}
-            </Text>
           </View>
         )}
       </ScrollView>

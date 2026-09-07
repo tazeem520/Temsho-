@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, Share, Linking } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, Share, Linking, Image } from 'react-native';
 import { C, R, shadow, money } from '../theme';
 import { MaterialCommunityIcons as MC } from '@expo/vector-icons';
 import { Btn, Badge, TemshoAssuredBadge, HumanTag, Stars, Thumb, Empty, ProductCard, Avatar, RatingsBreakdown, BankOffers, SpecTable } from '../components/UI';
@@ -11,7 +11,31 @@ import * as cloud from '../lib/cloud';
 export function Product({ go, params }) {
   const { byId, dispatch, state, cartCount } = useApp();
   const p = byId(params.id);
-  const [size, setSize] = useState('M');
+
+  if (!p) return <Empty icon="package-variant-closed-remove" title="Product Not Found" sub="This listing may have been removed or updated." />;
+
+  const rawImages = (p.images && p.images.length > 0) ? p.images : (p.img ? [p.img] : []);
+  const allImages = rawImages.map((im) => (typeof im === 'object' && im !== null && im.uri ? im.uri : im)).filter(Boolean);
+  const [activeImgIdx, setActiveImgIdx] = useState(0);
+  const currentImg = allImages[activeImgIdx] || p.img;
+
+  const isAgeBased = p.variantType === 'age' ||
+    (p.sizes && p.sizes.some((s) => typeof s === 'string' && (s.includes('Y') || s.includes('M') || s.includes('Year') || s.includes('Month')))) ||
+    (p.cat === 'kids' && p.variantType !== 'size');
+
+  const isSizeBased = p.variantType === 'size' ||
+    (p.sizes && p.sizes.length > 0 && !isAgeBased) ||
+    (p.cat === 'fashion' && p.variantType !== 'none') ||
+    (p.cat === 'footwear' && p.variantType !== 'none');
+
+  const defaultVariants = isAgeBased
+    ? ['0-6 Months', '6-12 Months', '1-2 Years', '2-3 Years', '3-4 Years', '4-5 Years', '5-6 Years']
+    : (p.cat === 'footwear' ? ['UK 6', 'UK 7', 'UK 8', 'UK 9', 'UK 10'] : ['S', 'M', 'L', 'XL', 'XXL']);
+
+  const availableVariants = (p.sizes && p.sizes.length > 0) ? p.sizes : defaultVariants;
+  const showVariants = (p.variantType && p.variantType !== 'none') || isAgeBased || isSizeBased;
+
+  const [selectedVariant, setSelectedVariant] = useState(availableVariants[0] || (isAgeBased ? '1-2 Years' : 'M'));
   const [pinInput, setPinInput] = useState(state.addresses[0]?.pin || '');
   const [pinChecked, setPinChecked] = useState(!!state.addresses[0]?.pin);
   const [reviews, setReviews] = useState([]);
@@ -44,8 +68,6 @@ export function Product({ go, params }) {
       }).catch(() => {});
     }
   }, [p?.id]);
-
-  if (!p) return <Empty icon="package-variant-closed-remove" title="Product Not Found" sub="This listing may have been removed or updated." />;
 
   const s = SELLERS[p.seller] || {
     name: p.sellerName || 'Verified Independent Seller',
@@ -107,10 +129,50 @@ export function Product({ go, params }) {
       </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
-        {/* Main Product Image */}
-        <View style={{ height: 340, backgroundColor: '#F3F4F6' }}>
-          <Thumb img={p.img} title={p.title} tint={p.tint} size={340} radius={0} />
+        {/* Main Product Image Hero with Gallery Count */}
+        <View style={{ height: 340, backgroundColor: '#F3F4F6', position: 'relative' }}>
+          <Thumb img={currentImg} title={p.title} tint={p.tint} size={340} radius={0} />
+          {allImages.length > 1 && (
+            <View style={sx.imgCountBadge}>
+              <MC name="image-multiple" size={12} color="#fff" style={{ marginRight: 4 }} />
+              <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>
+                {activeImgIdx + 1} / {allImages.length}
+              </Text>
+            </View>
+          )}
+          {p.video && (
+            <View style={sx.videoBadge}>
+              <MC name="video" size={13} color="#fff" style={{ marginRight: 4 }} />
+              <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>Video Included</Text>
+            </View>
+          )}
         </View>
+
+        {/* Thumbnail Gallery Strip for Viewing All Uploaded Photos */}
+        {allImages.length > 1 && (
+          <View style={sx.thumbStrip}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 10 }}>
+              {allImages.map((im, idx) => {
+                const on = activeImgIdx === idx;
+                return (
+                  <TouchableOpacity
+                    key={idx}
+                    activeOpacity={0.85}
+                    onPress={() => setActiveImgIdx(idx)}
+                    style={[sx.thumbStripItem, on && sx.thumbStripItemActive]}
+                  >
+                    <Image source={typeof im === 'string' ? { uri: im } : im} style={{ width: '100%', height: '100%', borderRadius: 6 }} resizeMode="cover" />
+                    {idx === 0 && (
+                      <View style={sx.mainCoverPill}>
+                        <Text style={{ color: '#fff', fontSize: 7.5, fontWeight: '900' }}>MAIN</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
 
         <View style={sx.sheet}>
           {/* Tags & Assured Badge */}
@@ -149,20 +211,45 @@ export function Product({ go, params }) {
           {/* Bank & Promotional Offers */}
           <BankOffers />
 
-          {/* Size Selector */}
-          {(p.cat === 'fashion' || p.cat === 'kids') && (
+          {/* Size / Age (Years / Months) Selector */}
+          {showVariants && availableVariants.length > 0 && (
             <View style={{ marginTop: 18 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Text style={sx.h2}>Select Size</Text>
-                <Text style={{ color: C.brand, fontSize: 12, fontWeight: '700' }}>Size Guide</Text>
+                <Text style={sx.h2}>
+                  {isAgeBased ? 'Select Age (Years / Months)' : 'Select Size'}
+                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <MC name={isAgeBased ? 'baby-face-outline' : 'ruler'} size={14} color={C.brand} />
+                  <Text style={{ color: C.brand, fontSize: 12, fontWeight: '700', marginLeft: 4 }}>
+                    {isAgeBased ? 'Age Guide' : 'Size Guide'}
+                  </Text>
+                </View>
               </View>
-              <View style={{ flexDirection: 'row', marginTop: 8, gap: 8 }}>
-                {['S', 'M', 'L', 'XL', 'XXL'].map((z) => (
-                  <TouchableOpacity key={z} onPress={() => setSize(z)} style={[sx.size, size === z && sx.sizeOn]}>
-                    <Text style={{ color: size === z ? C.brand : C.ink, fontWeight: '800', fontSize: 13 }}>{z}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10 }}>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  {availableVariants.map((z) => {
+                    const on = selectedVariant === z;
+                    return (
+                      <TouchableOpacity
+                        key={z}
+                        onPress={() => setSelectedVariant(z)}
+                        style={[
+                          sx.size,
+                          on && sx.sizeOn,
+                          (isAgeBased || z.length > 3) && { minWidth: 70, paddingHorizontal: 12 },
+                        ]}
+                      >
+                        <Text style={{ color: on ? C.brand : C.ink, fontWeight: '800', fontSize: (isAgeBased || z.length > 3) ? 12 : 13 }}>
+                          {z}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </ScrollView>
+              <Text style={{ color: C.ink3, fontSize: 11.5, marginTop: 6 }}>
+                Selected: <Text style={{ color: C.brand, fontWeight: '800' }}>{selectedVariant}</Text>
+              </Text>
             </View>
           )}
 
@@ -280,49 +367,6 @@ export function Product({ go, params }) {
                 ))}
               </View>
               <TextInput
-                placeholder="Share your experience with this product..."
-                placeholderTextColor={C.ink3}
-                multiline
-                value={myReviewText}
-                onChangeText={setMyReviewText}
-                style={sx.revInput}
-              />
-              <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
-                <Btn title="Cancel" tone="ghost" style={{ flex: 1 }} onPress={() => setWritingReview(false)} />
-                <Btn title="Submit Review" tone="green" style={{ flex: 1 }} disabled={!myReviewText.trim()} onPress={submitReview} />
-              </View>
-            </View>
-          )}
-
-          {/* Ratings & Customer Reviews Breakdown */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 24 }}>
-            <Text style={sx.h2}>Ratings & Reviews</Text>
-            <TouchableOpacity onPress={() => setWritingReview(!writingReview)} style={sx.writeRevBtn}>
-              <MC name="pencil-outline" size={14} color={C.brand} />
-              <Text style={{ color: C.brand, fontWeight: '800', fontSize: 12, marginLeft: 4 }}>Write a Review</Text>
-            </TouchableOpacity>
-          </View>
-
-          {reviewSubmitted && (
-            <View style={sx.revThanks}>
-              <MC name="check-circle" size={16} color={C.green} />
-              <Text style={{ color: '#059669', fontWeight: '800', fontSize: 12, marginLeft: 6 }}>
-                Thank you! Your verified review has been published.
-              </Text>
-            </View>
-          )}
-
-          {writingReview && (
-            <View style={[sx.writeCard, shadow]}>
-              <Text style={{ fontWeight: '800', color: C.ink, fontSize: 13.5, marginBottom: 8 }}>Your Rating</Text>
-              <View style={{ flexDirection: 'row', gap: 10, marginBottom: 12 }}>
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <TouchableOpacity key={star} onPress={() => setMyRating(star)}>
-                    <MC name="star" size={26} color={star <= myRating ? C.accent : C.line} />
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <TextInput
                 placeholder="Share your genuine experience with this product..."
                 placeholderTextColor={C.ink3}
                 multiline
@@ -398,14 +442,20 @@ export function Product({ go, params }) {
           icon="cart-plus"
           tone="ghost"
           style={{ flex: 1, marginRight: 10 }}
-          onPress={() => { dispatch({ type: 'ADD_CART', id: p.id }); go('cart'); }}
+          onPress={() => {
+            dispatch({ type: 'ADD_CART', id: p.id, size: showVariants ? selectedVariant : null });
+            go('cart');
+          }}
         />
         <Btn
           title="Buy Now"
           icon="lightning-bolt"
           tone="accent"
           style={{ flex: 1.1 }}
-          onPress={() => { dispatch({ type: 'ADD_CART', id: p.id }); go('checkout'); }}
+          onPress={() => {
+            dispatch({ type: 'ADD_CART', id: p.id, size: showVariants ? selectedVariant : null });
+            go('checkout');
+          }}
         />
       </View>
     </View>
@@ -436,13 +486,25 @@ export function Cart({ go }) {
           </Text>
         </View>
 
-        {cartLines.map((l) => (
-          <View key={l.id} style={[sx.cartRow, shadow]}>
+        {cartLines.map((l, idx) => (
+          <View key={l.key || (l.id + '-' + idx)} style={[sx.cartRow, shadow]}>
             <View style={{ width: 80 }}>
               <Thumb img={l.product.img} title={l.product.title} tint={l.product.tint} size={80} />
             </View>
             <View style={{ flex: 1, marginLeft: 12 }}>
               <Text numberOfLines={2} style={{ color: C.ink, fontWeight: '700', fontSize: 13 }}>{l.product.title}</Text>
+              
+              {/* Selected Size / Age Badge */}
+              {!!l.size && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+                  <Badge
+                    text={l.size.includes('Year') || l.size.includes('Month') || l.size.includes('Y') ? `Age: ${l.size}` : `Size: ${l.size}`}
+                    tone="brand"
+                    small
+                  />
+                </View>
+              )}
+
               <Text style={{ color: C.ink3, fontSize: 11, marginTop: 2 }}>{SELLERS[l.product.seller]?.name || 'Verified Seller'}</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
                 <Text style={{ fontWeight: '900', color: C.ink, fontSize: 15.5 }}>{money(l.product.price)}</Text>
@@ -458,11 +520,11 @@ export function Cart({ go }) {
 
               <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10 }}>
                 <View style={sx.stepper}>
-                  <TouchableOpacity onPress={() => dispatch({ type: 'QTY', id: l.id, qty: l.qty - 1 })} style={sx.step}><MC name="minus" size={15} color={C.brand} /></TouchableOpacity>
+                  <TouchableOpacity onPress={() => dispatch({ type: 'QTY', id: l.id, key: l.key, size: l.size, qty: l.qty - 1 })} style={sx.step}><MC name="minus" size={15} color={C.brand} /></TouchableOpacity>
                   <Text style={{ width: 30, textAlign: 'center', fontWeight: '800', color: C.ink }}>{l.qty}</Text>
-                  <TouchableOpacity onPress={() => dispatch({ type: 'QTY', id: l.id, qty: l.qty + 1 })} style={sx.step}><MC name="plus" size={15} color={C.brand} /></TouchableOpacity>
+                  <TouchableOpacity onPress={() => dispatch({ type: 'QTY', id: l.id, key: l.key, size: l.size, qty: l.qty + 1 })} style={sx.step}><MC name="plus" size={15} color={C.brand} /></TouchableOpacity>
                 </View>
-                <TouchableOpacity onPress={() => dispatch({ type: 'RM_CART', id: l.id })} style={{ marginLeft: 16 }}>
+                <TouchableOpacity onPress={() => dispatch({ type: 'RM_CART', id: l.id, key: l.key, size: l.size })} style={{ marginLeft: 16 }}>
                   <Text style={{ color: C.red, fontWeight: '800', fontSize: 12.5 }}>Remove</Text>
                 </TouchableOpacity>
               </View>
@@ -576,4 +638,26 @@ export const sx = StyleSheet.create({
   stepper: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: C.line, borderRadius: R.sm },
   step: { width: 30, height: 28, alignItems: 'center', justifyContent: 'center' },
   bill: { backgroundColor: C.surface, borderRadius: R.lg, padding: 16, marginTop: 4 },
+  imgCountBadge: {
+    position: 'absolute', bottom: 32, right: 16, backgroundColor: 'rgba(15,23,42,0.85)',
+    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 14,
+  },
+  videoBadge: {
+    position: 'absolute', top: 90, left: 16, backgroundColor: 'rgba(15,23,42,0.85)',
+    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 14,
+  },
+  thumbStrip: {
+    backgroundColor: '#fff', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: C.line,
+  },
+  thumbStripItem: {
+    width: 62, height: 62, borderRadius: 8, borderWidth: 1.5, borderColor: C.line,
+    overflow: 'hidden', position: 'relative',
+  },
+  thumbStripItemActive: {
+    borderColor: C.brand, borderWidth: 2.5,
+  },
+  mainCoverPill: {
+    position: 'absolute', bottom: 2, left: 2, backgroundColor: C.brand,
+    paddingHorizontal: 4, paddingVertical: 1, borderRadius: 2,
+  },
 });

@@ -138,9 +138,9 @@ export function SellerOrders({ go }) {
                   <Badge text={o.status} tone={o.status === 'Cancelled' ? 'red' : o.status === 'Delivered' ? 'green' : 'brand'} />
                 </View>
 
-                {o.items.map((it) => (
-                  <Text key={it.id} style={{ color: C.ink, fontSize: 13, fontWeight: '700', marginTop: 8 }}>
-                    {it.title} × {it.qty}
+                {o.items.map((it, itIdx) => (
+                  <Text key={it.id || itIdx} style={{ color: C.ink, fontSize: 13, fontWeight: '700', marginTop: 8 }}>
+                    {it.title} {it.size ? `· [${it.size.includes('Year') || it.size.includes('Month') || it.size.includes('Y') ? 'Age: ' : 'Size: '}${it.size}]` : ''} × {it.qty}
                   </Text>
                 ))}
 

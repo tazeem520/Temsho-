@@ -420,19 +420,34 @@ function reducer(s, a) {
     }
 
     case 'ADD_CART': {
-      const ex = s.cart.find((c) => c.id === a.id);
+      const lineKey = a.id + (a.size ? `::${a.size}` : '');
+      const ex = s.cart.find((c) => (c.key || (c.id + (c.size ? `::${c.size}` : ''))) === lineKey);
       return ex
-        ? { ...s, cart: s.cart.map((c) => (c.id === a.id ? { ...c, qty: c.qty + 1 } : c)) }
-        : { ...s, cart: [...s.cart, { id: a.id, qty: 1 }] };
+        ? {
+            ...s,
+            cart: s.cart.map((c) =>
+              (c.key || (c.id + (c.size ? `::${c.size}` : ''))) === lineKey
+                ? { ...c, qty: c.qty + (a.qty || 1) }
+                : c
+            ),
+          }
+        : {
+            ...s,
+            cart: [...s.cart, { id: a.id, key: lineKey, qty: a.qty || 1, size: a.size || null }],
+          };
     }
 
-    case 'QTY':
+    case 'QTY': {
+      const match = (c) => (a.key ? c.key === a.key : (c.id === a.id && (!a.size || c.size === a.size)));
       return a.qty <= 0
-        ? { ...s, cart: s.cart.filter((c) => c.id !== a.id) }
-        : { ...s, cart: s.cart.map((c) => (c.id === a.id ? { ...c, qty: a.qty } : c)) };
+        ? { ...s, cart: s.cart.filter((c) => !match(c)) }
+        : { ...s, cart: s.cart.map((c) => (match(c) ? { ...c, qty: a.qty } : c)) };
+    }
 
-    case 'RM_CART':
-      return { ...s, cart: s.cart.filter((c) => c.id !== a.id) };
+    case 'RM_CART': {
+      const match = (c) => (a.key ? c.key === a.key : (c.id === a.id && (!a.size || c.size === a.size)));
+      return { ...s, cart: s.cart.filter((c) => !match(c)) };
+    }
 
     case 'WISH':
       return {

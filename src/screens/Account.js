@@ -74,27 +74,14 @@ export function Account({ go }) {
 
         {/* OWNER ADMIN CTA */}
         {isOwner && (
-          <>
-            <TouchableOpacity activeOpacity={0.9} onPress={() => go('admin')} style={[ac.ownerCta, shadow]}>
-              <View style={ac.crown}><MC name="crown" size={22} color={C.accent} /></View>
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={{ color: '#fff', fontWeight: '900', fontSize: 15 }}>Owner Admin Panel</Text>
-                <Text style={{ color: '#ffffffcc', fontSize: 12, marginTop: 2 }}>Seller Directory, Payouts & Audit Ledger (9044468663)</Text>
-              </View>
-              <MC name="chevron-right" size={22} color="#fff" />
-            </TouchableOpacity>
-
-            <TouchableOpacity activeOpacity={0.9} onPress={() => go('admin-owner-payment')} style={[ac.ownerPayCard, shadow]}>
-              <View style={ac.crownSmall}><MC name="bank-transfer" size={20} color="#059669" /></View>
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={{ color: '#064E3B', fontWeight: '900', fontSize: 14 }}>Owner Payout Setup (Logistics & Bank)</Text>
-                <Text style={{ color: '#047857', fontSize: 11.5, marginTop: 2 }}>
-                  Set your UPI ID & Bank Account for ₹49 delivery logistics collections
-                </Text>
-              </View>
-              <MC name="chevron-right" size={20} color="#059669" />
-            </TouchableOpacity>
-          </>
+          <TouchableOpacity activeOpacity={0.9} onPress={() => go('admin')} style={[ac.ownerCta, shadow]}>
+            <View style={ac.crown}><MC name="crown" size={22} color={C.accent} /></View>
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={{ color: '#fff', fontWeight: '900', fontSize: 15 }}>Owner Admin Panel</Text>
+              <Text style={{ color: '#ffffffcc', fontSize: 12, marginTop: 2 }}>Seller Directory, Payouts & Audit Ledger (9044468663)</Text>
+            </View>
+            <MC name="chevron-right" size={22} color="#fff" />
+          </TouchableOpacity>
         )}
 
         {/* SELLER CTA */}
@@ -109,29 +96,6 @@ export function Account({ go }) {
             </Text>
           </View>
           <MC name="chevron-right" size={22} color="#fff" />
-        </TouchableOpacity>
-
-        {/* PAYMENT METHODS & BANK/UPI DETAILS CARD (REQUIREMENT 1 & 2) */}
-        <TouchableOpacity
-          activeOpacity={0.88}
-          onPress={() => go(u?.isSeller ? 'shop-settings' : 'payment-settings')}
-          style={[ac.paymentCard, shadow]}
-        >
-          <View style={ac.payoutIco}>
-            <MC name="bank-transfer" size={22} color="#059669" />
-          </View>
-          <View style={{ flex: 1, marginLeft: 12 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text style={{ color: '#064E3B', fontWeight: '900', fontSize: 14 }}>
-                {u?.isSeller ? 'Seller Bank & Payout Details' : 'Payment Settings & UPI'}
-              </Text>
-              <View style={ac.activeBadge}><Text style={{ color: '#fff', fontSize: 8.5, fontWeight: '900' }}>DIRECT PAY</Text></View>
-            </View>
-            <Text style={{ color: '#047857', fontSize: 11.5, marginTop: 2 }}>
-              {state.shop?.upi ? `UPI: ${state.shop.upi} · Bank: ${state.shop.bankName || 'Direct'}` : 'Add UPI ID & Bank Account for receiving payments'}
-            </Text>
-          </View>
-          <MC name="chevron-right" size={20} color="#059669" />
         </TouchableOpacity>
 
         {/* Main Orders & Activity Links */}
@@ -409,7 +373,13 @@ export function BecomeSeller({ go }) {
   );
 }
 
-/* ---------------- SELLER DASHBOARD (WITH UNLIMITED PHOTOS & VIDEO) ---------------- */
+/* ---------------- SELLER DASHBOARD (WITH UNLIMITED PHOTOS, SIZES & AGE VARIANTS) ---------------- */
+const STANDARD_SIZES = ['S', 'M', 'L', 'XL', 'XXL', '3XL', '28', '30', '32', '34', '36', '38', 'UK 6', 'UK 7', 'UK 8', 'UK 9', 'UK 10', 'Free Size'];
+const KIDS_AGE_VARIANTS = [
+  '0-6 Months', '6-12 Months', '1-2 Years', '2-3 Years', '3-4 Years', '4-5 Years',
+  '5-6 Years', '6-7 Years', '7-8 Years', '8-9 Years', '9-10 Years', '11-12 Years', '13-14 Years', '15-16 Years'
+];
+
 export function Seller({ go }) {
   const { state, dispatch } = useApp();
   const u = state.user;
@@ -419,13 +389,75 @@ export function Seller({ go }) {
   );
   const [add, setAdd] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [f, setF] = useState({ title: '', price: '', mrp: '', cat: 'fashion', desc: '', images: [], video: null });
+  const [customSizeText, setCustomSizeText] = useState('');
+  const [f, setF] = useState({
+    title: '',
+    price: '',
+    mrp: '',
+    cat: 'fashion',
+    desc: '',
+    images: [],
+    video: null,
+    variantType: 'size', // 'none' | 'size' | 'age'
+    sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+  });
+
+  const handleSelectCat = (catId) => {
+    if (catId === 'kids') {
+      setF((x) => ({
+        ...x,
+        cat: catId,
+        variantType: 'age',
+        sizes: ['1-2 Years', '2-3 Years', '3-4 Years', '5-6 Years', '7-8 Years'],
+      }));
+    } else if (catId === 'fashion') {
+      setF((x) => ({
+        ...x,
+        cat: catId,
+        variantType: 'size',
+        sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+      }));
+    } else if (catId === 'footwear') {
+      setF((x) => ({
+        ...x,
+        cat: catId,
+        variantType: 'size',
+        sizes: ['UK 6', 'UK 7', 'UK 8', 'UK 9', 'UK 10'],
+      }));
+    } else {
+      setF((x) => ({
+        ...x,
+        cat: catId,
+        variantType: 'none',
+        sizes: [],
+      }));
+    }
+  };
+
+  const toggleVariant = (item) => {
+    const cur = f.sizes || [];
+    if (cur.includes(item)) {
+      setF((x) => ({ ...x, sizes: cur.filter((s) => s !== item) }));
+    } else {
+      setF((x) => ({ ...x, sizes: [...cur, item] }));
+    }
+  };
+
+  const addCustomVariant = () => {
+    const text = customSizeText.trim();
+    if (!text) return;
+    const cur = f.sizes || [];
+    if (!cur.includes(text)) {
+      setF((x) => ({ ...x, sizes: [...cur, text] }));
+    }
+    setCustomSizeText('');
+  };
 
   const pickPhotos = async () => {
     try {
       const r = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
-        quality: 0.75,
+        quality: 0.8,
         allowsMultipleSelection: true,
         selectionLimit: 0,
       });
@@ -435,7 +467,7 @@ export function Seller({ go }) {
       }
     } catch (e) {
       try {
-        const r2 = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.75 });
+        const r2 = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
         if (!r2.canceled && r2.assets?.[0]?.uri) {
           setF((x) => ({ ...x, images: [...(x.images || []), { uri: r2.assets[0].uri }] }));
         }
@@ -445,7 +477,7 @@ export function Seller({ go }) {
 
   const takePhoto = async () => {
     try {
-      const r = await ImagePicker.launchCameraAsync({ quality: 0.75 });
+      const r = await ImagePicker.launchCameraAsync({ quality: 0.8 });
       if (!r.canceled && r.assets?.[0]?.uri) {
         setF((x) => ({ ...x, images: [...(x.images || []), { uri: r.assets[0].uri }] }));
       }
@@ -469,10 +501,21 @@ export function Seller({ go }) {
     setF((x) => ({ ...x, images: (x.images || []).filter((_, i) => i !== idx) }));
   };
 
+  const makeCoverPhoto = (idx) => {
+    if (idx === 0) return;
+    setF((x) => {
+      const list = [...(x.images || [])];
+      const target = list.splice(idx, 1)[0];
+      return { ...x, images: [target, ...list] };
+    });
+  };
+
   const save = async () => {
     const cat = CATEGORIES.find((c) => c.id === f.cat);
     setSaving(true);
-    const mainImg = (f.images && f.images[0]) || null;
+    const mainImg = (f.images && f.images[0]) ? (f.images[0].uri || f.images[0]) : null;
+    const allImgs = (f.images || []).map((im) => (typeof im === 'object' && im !== null && im.uri ? im.uri : im));
+
     let cloudProd = null;
     if (cloud.cloudOn()) {
       try {
@@ -480,11 +523,13 @@ export function Seller({ go }) {
           {
             ...f,
             img: mainImg,
-            images: f.images,
+            images: allImgs.length > 0 ? allImgs : (mainImg ? [mainImg] : []),
             video: f.video?.uri || null,
             price: Number(f.price),
             mrp: Number(f.mrp || f.price),
             sellerPhone: userPhone,
+            variantType: f.variantType || 'none',
+            sizes: f.variantType !== 'none' ? (f.sizes || []) : [],
           },
           state.user?.cloudId,
           state.shop?.cloudId
@@ -494,16 +539,22 @@ export function Seller({ go }) {
 
     const localProd = cloudProd || {
       id: 'my' + Date.now(),
-      title: f.title, cat: f.cat,
-      price: Number(f.price), mrp: Number(f.mrp || f.price),
-      rating: 0, ratingCount: 0, seller: 'me',
+      title: f.title,
+      cat: f.cat,
+      price: Number(f.price),
+      mrp: Number(f.mrp || f.price),
+      rating: 0,
+      ratingCount: 0,
+      seller: 'me',
       sellerPhone: userPhone,
       sellerName: u.shopName || state.shop?.name || 'My Shop',
       sellerCity: u.shopCity || state.shop?.city || 'India',
       sellerUpi: state.shop?.upi || '',
       img: mainImg,
-      images: f.images || (mainImg ? [mainImg] : []),
+      images: allImgs.length > 0 ? allImgs : (mainImg ? [mainImg] : []),
       video: f.video?.uri || null,
+      variantType: f.variantType || 'none',
+      sizes: f.variantType !== 'none' ? (f.sizes || []) : [],
       tint: cat?.tint || '#F3F4F6',
       desc: f.desc || 'Product listed by verified seller.',
       tags: ['New Arrival', 'Cash on Delivery'],
@@ -519,7 +570,17 @@ export function Seller({ go }) {
     }
 
     setSaving(false);
-    setF({ title: '', price: '', mrp: '', cat: 'fashion', desc: '', images: [], video: null });
+    setF({
+      title: '',
+      price: '',
+      mrp: '',
+      cat: 'fashion',
+      desc: '',
+      images: [],
+      video: null,
+      variantType: 'size',
+      sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+    });
     setAdd(false);
   };
 
@@ -577,25 +638,168 @@ export function Seller({ go }) {
         ) : (
           <View style={[ac.card, shadow, { padding: 18, marginTop: 16 }]}>
             <Text style={{ fontWeight: '900', color: C.ink, fontSize: 16, marginBottom: 14 }}>New Product Listing</Text>
-            <Field label="Product Title" placeholder="e.g. Handcrafted Cotton Shirt" value={f.title} onChangeText={(v) => setF({ ...f, title: v })} />
+            <Field label="Product Title *" placeholder="e.g. Handcrafted Cotton Kurti / Kids Denim" value={f.title} onChangeText={(v) => setF({ ...f, title: v })} />
+            
             <View style={{ flexDirection: 'row', gap: 10 }}>
-              <View style={{ flex: 1 }}><Field label="Selling Price (₹)" keyboardType="number-pad" placeholder="799" value={f.price} onChangeText={(v) => setF({ ...f, price: v.replace(/\D/g, '') })} /></View>
-              <View style={{ flex: 1 }}><Field label="MRP (₹)" keyboardType="number-pad" placeholder="1499" value={f.mrp} onChangeText={(v) => setF({ ...f, mrp: v.replace(/\D/g, '') })} /></View>
+              <View style={{ flex: 1 }}>
+                <Field label="Selling Price (₹) *" keyboardType="number-pad" placeholder="799" value={f.price} onChangeText={(v) => setF({ ...f, price: v.replace(/\D/g, '') })} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Field label="MRP (₹)" keyboardType="number-pad" placeholder="1499" value={f.mrp} onChangeText={(v) => setF({ ...f, mrp: v.replace(/\D/g, '') })} />
+              </View>
             </View>
-            <Text style={{ color: C.ink2, fontSize: 12, fontWeight: '700', marginBottom: 6 }}>Category</Text>
+
+            {/* Category Selector */}
+            <Text style={{ color: C.ink2, fontSize: 12, fontWeight: '700', marginBottom: 6 }}>Category *</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
               {CATEGORIES.map((c) => (
-                <TouchableOpacity key={c.id} onPress={() => setF({ ...f, cat: c.id })} style={[ac.chip, { flexDirection: 'row', alignItems: 'center' }, f.cat === c.id && { backgroundColor: C.brand, borderColor: C.brand }]}>
+                <TouchableOpacity
+                  key={c.id}
+                  onPress={() => handleSelectCat(c.id)}
+                  style={[
+                    ac.chip,
+                    { flexDirection: 'row', alignItems: 'center' },
+                    f.cat === c.id && { backgroundColor: C.brand, borderColor: C.brand }
+                  ]}
+                >
                   <MC name={c.icon} size={13} color={f.cat === c.id ? '#fff' : C.ink2} style={{ marginRight: 5 }} />
                   <Text style={{ color: f.cat === c.id ? '#fff' : C.ink2, fontSize: 12.5, fontWeight: '600' }}>{c.name}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
 
+            {/* SIZE / AGE IN YEARS VARIANTS CONFIGURATION */}
+            <View style={{ marginBottom: 16, backgroundColor: '#F8FAFC', borderRadius: R.md, padding: 12, borderWidth: 1, borderColor: C.line }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <Text style={{ color: C.ink, fontSize: 13, fontWeight: '800' }}>
+                  Product Sizes & Age Options
+                </Text>
+                {f.variantType !== 'none' && (
+                  <Text style={{ color: C.brand, fontSize: 11, fontWeight: '800' }}>
+                    {f.sizes?.length || 0} options selected
+                  </Text>
+                )}
+              </View>
+
+              {/* 3 Variant Modes: No Size, Sizes, Kids Age */}
+              <View style={ac.variantTabRow}>
+                {[
+                  { id: 'none', label: 'No Size (One Size)' },
+                  { id: 'size', label: 'Sizes (S, M, L...)' },
+                  { id: 'age', label: 'Kids Age (Years/Months)' },
+                ].map((tab) => {
+                  const on = f.variantType === tab.id;
+                  return (
+                    <TouchableOpacity
+                      key={tab.id}
+                      onPress={() => setF({
+                        ...f,
+                        variantType: tab.id,
+                        sizes: tab.id === 'size' ? (f.sizes?.length > 0 ? f.sizes : ['S', 'M', 'L', 'XL'])
+                          : tab.id === 'age' ? (f.sizes?.length > 0 ? f.sizes : ['1-2 Years', '2-3 Years', '3-4 Years'])
+                          : [],
+                      })}
+                      style={[ac.variantTabBtn, on && ac.variantTabBtnActive]}
+                    >
+                      <Text style={[ac.variantTabLabel, on && ac.variantTabLabelActive]}>{tab.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {/* SIZES CHIPS */}
+              {f.variantType === 'size' && (
+                <View style={{ marginTop: 6 }}>
+                  <Text style={{ color: C.ink3, fontSize: 11, fontWeight: '700', marginBottom: 6 }}>
+                    Tap to select available sizes:
+                  </Text>
+                  <View style={ac.pillGrid}>
+                    {STANDARD_SIZES.map((sz) => {
+                      const sel = (f.sizes || []).includes(sz);
+                      return (
+                        <TouchableOpacity
+                          key={sz}
+                          onPress={() => toggleVariant(sz)}
+                          style={[ac.pillItem, sel && ac.pillItemActive]}
+                        >
+                          <Text style={[ac.pillText, sel && ac.pillTextActive]}>{sz}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+
+                  {/* Add Custom Size Input */}
+                  <View style={{ flexDirection: 'row', gap: 6, marginTop: 4 }}>
+                    <TextInput
+                      value={customSizeText}
+                      onChangeText={setCustomSizeText}
+                      placeholder="Add custom size (e.g. 40, UK 8.5)"
+                      placeholderTextColor={C.ink3}
+                      style={{
+                        flex: 1, backgroundColor: '#fff', borderWidth: 1, borderColor: C.line,
+                        borderRadius: R.sm, paddingHorizontal: 10, paddingVertical: 6, fontSize: 12, color: C.ink,
+                      }}
+                    />
+                    <TouchableOpacity
+                      onPress={addCustomVariant}
+                      style={{ backgroundColor: C.brand, paddingHorizontal: 12, justifyContent: 'center', borderRadius: R.sm }}
+                    >
+                      <Text style={{ color: '#fff', fontSize: 11.5, fontWeight: '800' }}>+ Add Size</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+
+              {/* KIDS AGE IN YEARS/MONTHS CHIPS */}
+              {f.variantType === 'age' && (
+                <View style={{ marginTop: 6 }}>
+                  <Text style={{ color: C.ink3, fontSize: 11, fontWeight: '700', marginBottom: 6 }}>
+                    Tap to select available Age / Years:
+                  </Text>
+                  <View style={ac.pillGrid}>
+                    {KIDS_AGE_VARIANTS.map((ag) => {
+                      const sel = (f.sizes || []).includes(ag);
+                      return (
+                        <TouchableOpacity
+                          key={ag}
+                          onPress={() => toggleVariant(ag)}
+                          style={[ac.pillItem, sel && ac.pillItemActive]}
+                        >
+                          <Text style={[ac.pillText, sel && ac.pillTextActive]}>{ag}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+
+                  {/* Add Custom Age Input */}
+                  <View style={{ flexDirection: 'row', gap: 6, marginTop: 4 }}>
+                    <TextInput
+                      value={customSizeText}
+                      onChangeText={setCustomSizeText}
+                      placeholder="Add custom age (e.g. 10-12 Years, Newborn)"
+                      placeholderTextColor={C.ink3}
+                      style={{
+                        flex: 1, backgroundColor: '#fff', borderWidth: 1, borderColor: C.line,
+                        borderRadius: R.sm, paddingHorizontal: 10, paddingVertical: 6, fontSize: 12, color: C.ink,
+                      }}
+                    />
+                    <TouchableOpacity
+                      onPress={addCustomVariant}
+                      style={{ backgroundColor: C.brand, paddingHorizontal: 12, justifyContent: 'center', borderRadius: R.sm }}
+                    >
+                      <Text style={{ color: '#fff', fontSize: 11.5, fontWeight: '800' }}>+ Add Age</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+            </View>
+
             {/* Unlimited Photos Upload Section */}
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
               <Text style={{ color: C.ink, fontSize: 13, fontWeight: '800' }}>Product Photos (Unlimited)</Text>
-              <Text style={{ color: C.ink3, fontSize: 11 }}>{f.images?.length || 0} photos uploaded</Text>
+              <Text style={{ color: C.brand, fontSize: 11, fontWeight: '800' }}>
+                📸 {f.images?.length || 0} photos uploaded
+              </Text>
             </View>
 
             {/* Photos Preview Horizontal Scroll */}
@@ -603,8 +807,14 @@ export function Seller({ go }) {
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }}>
                 {f.images.map((img, idx) => (
                   <View key={idx} style={ac.photoThumbWrapper}>
-                    <Image source={img} style={ac.photoThumb} resizeMode="cover" />
-                    {idx === 0 && <View style={ac.mainTag}><Text style={{ color: '#fff', fontSize: 8.5, fontWeight: '900' }}>MAIN</Text></View>}
+                    <Image source={typeof img === 'string' ? { uri: img } : img} style={ac.photoThumb} resizeMode="cover" />
+                    {idx === 0 ? (
+                      <View style={ac.mainTag}><Text style={{ color: '#fff', fontSize: 8.5, fontWeight: '900' }}>MAIN</Text></View>
+                    ) : (
+                      <TouchableOpacity onPress={() => makeCoverPhoto(idx)} style={ac.makeCoverPill}>
+                        <Text style={{ color: '#fff', fontSize: 7.5, fontWeight: '800' }}>Set Main</Text>
+                      </TouchableOpacity>
+                    )}
                     <TouchableOpacity onPress={() => removePhoto(idx)} style={ac.removePhotoIco}>
                       <MC name="close" size={14} color="#fff" />
                     </TouchableOpacity>
@@ -616,7 +826,7 @@ export function Seller({ go }) {
             <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
               <TouchableOpacity onPress={pickPhotos} activeOpacity={0.85} style={[ac.uploadBoxBtn, { flex: 1 }]}>
                 <MC name="image-multiple-outline" size={20} color={C.brand} />
-                <Text style={{ color: C.brand, fontSize: 12, fontWeight: '800', marginLeft: 6 }}>+ Add Photos</Text>
+                <Text style={{ color: C.brand, fontSize: 12, fontWeight: '800', marginLeft: 6 }}>+ Add Photos (Unlimited)</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={takePhoto} activeOpacity={0.85} style={[ac.uploadBoxBtn, { flex: 0.9 }]}>
                 <MC name="camera-outline" size={20} color={C.brand} />
@@ -645,10 +855,10 @@ export function Seller({ go }) {
             )}
 
             <View style={{ height: 6 }} />
-            <Field label="Description & Highlights" placeholder="Material, size, origin and specifications…" multiline value={f.desc} onChangeText={(v) => setF({ ...f, desc: v })} style={{ height: 90, textAlignVertical: 'top' }} />
+            <Field label="Description & Highlights" placeholder="Material, size details, origin and specifications…" multiline value={f.desc} onChangeText={(v) => setF({ ...f, desc: v })} style={{ height: 90, textAlignVertical: 'top' }} />
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <Btn title="Cancel" tone="ghost" style={{ flex: 1 }} onPress={() => setAdd(false)} />
-              <Btn title="Publish Live" tone="green" style={{ flex: 1 }} disabled={!f.title || !f.price || (!f.images || f.images.length === 0)} onPress={save} />
+              <Btn title={saving ? "Publishing..." : "Publish Live"} tone="green" style={{ flex: 1 }} disabled={saving || !f.title || !f.price || (!f.images || f.images.length === 0)} onPress={save} />
             </View>
           </View>
         )}
@@ -668,9 +878,10 @@ export function Seller({ go }) {
               <View style={{ flex: 1, marginLeft: 12 }}>
                 <Text numberOfLines={2} style={{ color: C.ink, fontWeight: '700', fontSize: 13.5 }}>{p.title}</Text>
                 <Text style={{ color: C.ink, fontWeight: '900', marginTop: 4 }}>{money(p.price)}</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
                   <Badge text="ACTIVE" tone="green" small />
                   {p.images && p.images.length > 1 && <Badge text={`${p.images.length} Photos`} tone="brand" small />}
+                  {p.sizes && p.sizes.length > 0 && <Badge text={`${p.sizes.length} ${p.variantType === 'age' ? 'Ages' : 'Sizes'}`} tone="accent" small />}
                   {p.video && <Badge text="Video" tone="accent" small />}
                 </View>
               </View>
@@ -925,7 +1136,18 @@ const ac = StyleSheet.create({
   photoThumbWrapper: { width: 74, height: 74, borderRadius: R.md, marginRight: 8, overflow: 'hidden', position: 'relative', borderWidth: 1, borderColor: C.line },
   photoThumb: { width: '100%', height: '100%' },
   mainTag: { position: 'absolute', bottom: 2, left: 2, backgroundColor: C.brand, paddingHorizontal: 4, paddingVertical: 1, borderRadius: 3 },
+  makeCoverPill: { position: 'absolute', bottom: 2, right: 2, backgroundColor: 'rgba(15,23,42,0.85)', paddingHorizontal: 5, paddingVertical: 2, borderRadius: 3 },
   removePhotoIco: { position: 'absolute', top: 2, right: 2, backgroundColor: 'rgba(0,0,0,0.65)', width: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+  variantTabRow: { flexDirection: 'row', backgroundColor: '#E2E8F0', borderRadius: R.md, padding: 3, marginBottom: 10 },
+  variantTabBtn: { flex: 1, paddingVertical: 8, alignItems: 'center', justifyContent: 'center', borderRadius: R.sm },
+  variantTabBtnActive: { backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 3, elevation: 2 },
+  variantTabLabel: { fontSize: 11, fontWeight: '700', color: C.ink3 },
+  variantTabLabelActive: { color: C.brand, fontWeight: '900' },
+  pillGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
+  pillItem: { paddingHorizontal: 11, paddingVertical: 6, borderRadius: R.sm, borderWidth: 1.5, borderColor: C.line, backgroundColor: '#fff' },
+  pillItemActive: { backgroundColor: C.brand, borderColor: C.brand },
+  pillText: { fontSize: 12, fontWeight: '700', color: C.ink },
+  pillTextActive: { color: '#fff', fontWeight: '900' },
   uploadBoxBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     backgroundColor: C.brandSoft, borderWidth: 1.5, borderColor: C.brand,
