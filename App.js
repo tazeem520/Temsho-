@@ -31,6 +31,7 @@ import {
   AdminShiprocket,
 } from './src/screens/Admin';
 import { DeliveryBoy } from './src/screens/DeliveryBoy';
+import { NetworkGuardian } from './src/components/NetworkGuardian';
 
 const SCREENS = {
   home: Home, search: Search, category: Category, offers: Offers, product: Product, cart: Cart,
@@ -286,7 +287,9 @@ export default function App() {
         <View style={s.root}>
           <View style={s.phone}>
             <StatusBar style="light" />
-            <Shell />
+            <NetworkGuardian>
+              <Shell />
+            </NetworkGuardian>
           </View>
         </View>
       </AppProvider>

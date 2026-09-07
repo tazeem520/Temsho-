@@ -116,7 +116,7 @@ export function Account({ go }) {
         </View>
 
         <Text style={{ textAlign: 'center', color: C.ink3, fontSize: 11.5, marginTop: 24, lineHeight: 18 }}>
-          Temsho v1.0.7{'\n'}Crafted in India · Built by humans, for humans
+          Temsho v1.0.8{'\n'}Crafted in India · Built by humans, for humans
         </Text>
       </ScrollView>
     </View>
