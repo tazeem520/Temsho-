@@ -7,26 +7,37 @@ import { supabase, isConfigured } from './supabase';
 
 export const cloudOn = () => isConfigured;
 
-const mapProduct = (r) => ({
-  id: r.id,
-  title: r.title,
-  desc: r.description || '',
-  cat: r.category || 'general',
-  price: Number(r.price) || 0,
-  mrp: Number(r.mrp || r.price) || 0,
-  img: r.image_url ? { uri: r.image_url } : null,
-  rating: Number(r.rating) || 4.5,
-  ratingCount: 0,
-  seller: r.seller_id || 'seller',
-  sellerName: r.shops?.name || 'Temsho Verified Seller',
-  sellerCity: r.shops?.city || 'India',
-  sellerUpi: r.shops?.upi || '',
-  sellerContact: r.shops?.contact || '',
-  tint: '#EFF1F6',
-  tags: ['Verified Seller', 'No Bot Guarantee'],
-  cloud: true,
-  createdAt: r.created_at,
-});
+const mapProduct = (r) => {
+  const images = (r.images && Array.isArray(r.images) && r.images.length > 0)
+    ? r.images.map((im) => (typeof im === 'string' ? { uri: im } : im))
+    : (r.image_url ? [{ uri: r.image_url }] : []);
+
+  return {
+    id: r.id,
+    title: r.title,
+    desc: r.description || '',
+    cat: r.category || 'fashion',
+    price: Number(r.price) || 0,
+    mrp: Number(r.mrp || r.price) || 0,
+    img: r.image_url ? { uri: r.image_url } : (images[0] || null),
+    images: images.length > 0 ? images : (r.image_url ? [{ uri: r.image_url }] : []),
+    video: r.video_url ? { uri: r.video_url } : null,
+    variantType: r.variant_type || (r.category === 'kids' ? 'age' : 'size'),
+    sizes: Array.isArray(r.sizes) ? r.sizes : [],
+    rating: Number(r.rating) || 4.8,
+    ratingCount: 0,
+    seller: r.seller_id || 'seller',
+    sellerPhone: r.seller_phone || r.shops?.contact || '',
+    sellerName: r.shops?.name || 'Temsho Verified Seller',
+    sellerCity: r.shops?.city || 'India',
+    sellerUpi: r.shops?.upi || '',
+    sellerContact: r.shops?.contact || '',
+    tint: '#EFF1F6',
+    tags: ['Verified Seller', 'No Bot Guarantee'],
+    cloud: true,
+    createdAt: r.created_at,
+  };
+};
 
 /* -------- 🛍️ PRODUCTS -------- */
 export async function pullProducts() {
@@ -52,16 +63,20 @@ export async function pullProducts() {
 export async function pushProduct(p, user = null, shop = null) {
   if (!isConfigured) return null;
   try {
-    let imageUrl = null;
-    if (p.img?.uri) {
-      try {
-        imageUrl = await uploadPhoto(p.img.uri);
-      } catch (imgErr) {
-        imageUrl = p.img.uri;
-      }
-    } else if (typeof p.img === 'string') {
-      imageUrl = p.img;
+    let uploadedImageUrls = [];
+    if (p.images && p.images.length > 0) {
+      uploadedImageUrls = await Promise.all(
+        p.images.map(async (im) => {
+          const uri = typeof im === 'object' && im !== null && im.uri ? im.uri : im;
+          return uploadPhoto(uri);
+        })
+      );
+    } else if (p.img) {
+      const uri = typeof p.img === 'object' && p.img !== null && p.img.uri ? p.img.uri : p.img;
+      const single = await uploadPhoto(uri);
+      if (single) uploadedImageUrls = [single];
     }
+    const primaryImageUrl = uploadedImageUrls[0] || (typeof p.img === 'string' ? p.img : p.img?.uri) || null;
 
     // Extract valid UUID or null to prevent postgres uuid mismatch errors
     let sellerId = null;
@@ -82,7 +97,7 @@ export async function pushProduct(p, user = null, shop = null) {
         category: p.cat || 'fashion',
         price: Number(p.price) || 0,
         mrp: Number(p.mrp || p.price) || 0,
-        image_url: imageUrl,
+        image_url: primaryImageUrl,
         is_live: true,
       })
       .select('*, shops(name, city, upi, contact)')
@@ -92,7 +107,13 @@ export async function pushProduct(p, user = null, shop = null) {
       console.log('pushProduct error:', error.message);
       return null;
     }
-    return mapProduct(data);
+    const mapped = mapProduct(data);
+    return {
+      ...mapped,
+      images: uploadedImageUrls.length > 0 ? uploadedImageUrls.map(u => ({ uri: u })) : mapped.images,
+      variantType: p.variantType || mapped.variantType,
+      sizes: p.sizes || mapped.sizes,
+    };
   } catch (e) {
     console.log('pushProduct err:', e.message);
     return null;

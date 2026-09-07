@@ -155,10 +155,11 @@ export const ProductCard = ({ p, onPress, width, sellerName }) => {
   const mrp = Number(p.mrp) || Number(p.price) || 0;
   const price = Number(p.price) || 0;
   const off = mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
+  const mainImg = p.img || (p.images && p.images[0]) || null;
   return (
     <TouchableOpacity activeOpacity={0.9} onPress={onPress} style={[st.card, shadow, { width }]}>
       <View style={{ position: 'relative' }}>
-        <Thumb img={p.img} title={p.title} tint={p.tint} size={138} radius={0} />
+        <Thumb img={mainImg} title={p.title} tint={p.tint} size={138} radius={0} />
         {off >= 10 && (
           <View style={st.dealTag}>
             <Text style={{ color: '#fff', fontSize: 9.5, fontWeight: '900' }}>{off}% OFF</Text>
@@ -184,8 +185,15 @@ export const ProductCard = ({ p, onPress, width, sellerName }) => {
           <TemshoAssuredBadge small />
         </View>
 
+        {p.sizes && p.sizes.length > 0 && (
+          <Text numberOfLines={1} style={{ color: C.brand, fontSize: 10.5, fontWeight: '700', marginTop: 4 }}>
+            {p.variantType === 'age' ? 'Ages: ' : 'Sizes: '}
+            {p.sizes.slice(0, 3).join(', ')}{p.sizes.length > 3 ? '...' : ''}
+          </Text>
+        )}
+
         {!!sellerName && (
-          <Text numberOfLines={1} style={{ color: C.ink3, fontSize: 10.5, marginTop: 5 }}>
+          <Text numberOfLines={1} style={{ color: C.ink3, fontSize: 10.5, marginTop: 4 }}>
             By {sellerName}
           </Text>
         )}
