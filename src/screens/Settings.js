@@ -97,12 +97,12 @@ export function Settings({ go }) {
             on={st.notifWhatsapp} onChange={(v) => dispatch({ type: 'UPDATE_SETTINGS', patch: { notifWhatsapp: v } })} last />
         </Group>
 
-        <Group title="PRIVACY & LEGAL (DPDP 2023)">
+        <Group title="PRIVACY & LEGAL">
           <Toggle icon="history" label="Save Search History" sub="Keep recent searches for fast access"
             on={st.saveHistory} onChange={(v) => dispatch({ type: 'UPDATE_SETTINGS', patch: { saveHistory: v } })} />
-          <Row icon="shield-check-outline" label="No Bot, Only Humans Policy" onPress={() => go('policy')} />
+          <Row icon="shield-check-outline" label="Trust & Marketplace Policy" onPress={() => go('policy')} />
           <Row icon="file-document-outline" label="Privacy Policy & Terms" onPress={() => go('privacy-policy')} />
-          <Row icon="headset" label="Contact Human Support" onPress={() => go('support')} last />
+          <Row icon="headset" label="Customer Support & Helpdesk" onPress={() => go('support')} last />
         </Group>
 
         <Group title="DANGER ZONE">
@@ -114,7 +114,7 @@ export function Settings({ go }) {
           <View style={[se.card, shadow, { marginTop: 12, padding: 16, borderWidth: 1.5, borderColor: C.red }]}>
             <Text style={{ color: C.ink, fontWeight: '800', fontSize: 14 }}>Permanently Delete Account?</Text>
             <Text style={{ color: C.ink2, fontSize: 12.5, lineHeight: 19, marginTop: 6 }}>
-              All your account details, order history, and shop listings will be permanently deleted in compliance with DPDP Act 2023. This action cannot be undone.
+              All your account details, order history, and shop listings will be permanently deleted in compliance with DPDP Act. This action cannot be undone.
             </Text>
             <View style={{ flexDirection: 'row', gap: 10, marginTop: 14 }}>
               <Btn title="Cancel" tone="ghost" style={{ flex: 1 }} onPress={() => setConfirmDel(false)} />
@@ -124,7 +124,7 @@ export function Settings({ go }) {
         )}
 
         <Text style={{ textAlign: 'center', color: C.ink3, fontSize: 11, marginTop: 26, lineHeight: 17 }}>
-          Temsho v1.0.8{'\n'}Made in India · For humans, by humans
+          Temsho v1.0.8{'\n'}Made in India · Direct & Transparent Marketplace
         </Text>
       </ScrollView>
     </View>
@@ -271,19 +271,64 @@ export function ChangePhone({ go }) {
 /* ---------------- LANGUAGE ---------------- */
 export function Language({ go }) {
   const { state, dispatch } = useApp();
+  const [savedLang, setSavedLang] = useState(state.settings.lang || 'English');
+
+  const selectLanguage = (l) => {
+    setSavedLang(l);
+    dispatch({ type: 'UPDATE_SETTINGS', patch: { lang: l } });
+    setTimeout(() => {
+      go(-1);
+    }, 300);
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <Header title="Language" go={go} />
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+      <Header title="Select App Language / भाषा" go={go} />
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 50 }}>
+        <Text style={[se.gTitle, { marginTop: 4, marginBottom: 10 }]}>CHOOSE YOUR PREFERRED LANGUAGE</Text>
         <View style={[se.card, shadow]}>
-          {LANGS.map((l, i) => (
-            <TouchableOpacity key={l} onPress={() => dispatch({ type: 'UPDATE_SETTINGS', patch: { lang: l } })}
-              style={[se.row, i === LANGS.length - 1 && { borderBottomWidth: 0 }]}>
-              <MC name={state.settings.lang === l ? 'radiobox-marked' : 'radiobox-blank'} size={19} color={state.settings.lang === l ? C.brand : C.ink3} />
-              <Text style={{ flex: 1, marginLeft: 14, color: C.ink, fontWeight: '600', fontSize: 14 }}>{l}</Text>
-            </TouchableOpacity>
-          ))}
+          {LANGS.map((l, i) => {
+            const isSelected = savedLang === l;
+            return (
+              <TouchableOpacity
+                key={l}
+                activeOpacity={0.7}
+                onPress={() => selectLanguage(l)}
+                style={[
+                  se.row,
+                  isSelected && { backgroundColor: '#EFF6FF' },
+                  i === LANGS.length - 1 && { borderBottomWidth: 0 },
+                ]}
+              >
+                <MC
+                  name={isSelected ? 'check-circle' : 'circle-outline'}
+                  size={21}
+                  color={isSelected ? C.brand : C.ink3}
+                />
+                <Text
+                  style={{
+                    flex: 1,
+                    marginLeft: 14,
+                    color: isSelected ? C.brand : C.ink,
+                    fontWeight: isSelected ? '900' : '600',
+                    fontSize: 14.5,
+                  }}
+                >
+                  {l}
+                </Text>
+                {isSelected && (
+                  <View style={{ backgroundColor: C.brandSoft, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12 }}>
+                    <Text style={{ color: C.brand, fontWeight: '800', fontSize: 11 }}>Active</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
         </View>
+
+        <Text style={{ color: C.ink3, fontSize: 11.5, textAlign: 'center', marginTop: 18, lineHeight: 17 }}>
+          Language preference is automatically synced across your buyer, seller, and admin screens.
+        </Text>
       </ScrollView>
     </View>
   );

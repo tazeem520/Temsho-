@@ -248,7 +248,7 @@ export function Checkout({ go }) {
         <View style={ck.directBox}>
           <MC name="shield-check-outline" size={18} color={C.green} />
           <Text style={{ flex: 1, marginLeft: 10, color: '#059669', fontSize: 11.5, fontWeight: '700', lineHeight: 17 }}>
-            100% Secure & Verified Payments. No bots, direct human settlement.
+            100% Secure & Direct Payments. Verified merchant settlement.
           </Text>
         </View>
 
@@ -305,9 +305,9 @@ export function Checkout({ go }) {
         </View>
 
         <View style={ck.human}>
-          <MC name="account-check-outline" size={17} color={C.green} />
+          <MC name="shield-check-outline" size={17} color={C.green} />
           <Text style={{ flex: 1, marginLeft: 10, color: C.ink2, fontSize: 11.5, lineHeight: 17 }}>
-            Every order is verified and dispatched by real humans. Dedicated human support is available 24x7.
+            Every order is verified and dispatched directly by the seller. Dedicated customer support is available 24x7.
           </Text>
         </View>
       </ScrollView>
@@ -516,7 +516,7 @@ export function Orders({ go }) {
                     Linking.openURL(waUrl).catch(() => {});
                   }}
                 />
-                <Btn title="Human Support" icon="headset" tone="ghost" style={{ flex: 1, minWidth: 120 }} onPress={() => go('support')} />
+                <Btn title="Help & Support" icon="headset" tone="ghost" style={{ flex: 1, minWidth: 120 }} onPress={() => go('support')} />
               </View>
 
               {retFor === o.id && (

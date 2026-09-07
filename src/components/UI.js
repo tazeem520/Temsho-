@@ -28,15 +28,15 @@ export const Badge = ({ text, tone = 'brand', small }) => {
 export const TemshoAssuredBadge = ({ small }) => (
   <View style={[st.assuredBadge, small && { paddingVertical: 2, paddingHorizontal: 6 }]}>
     <MaterialCommunityIcons name="check-decagram" size={small ? 12 : 14} color="#059669" />
-    <Text style={[st.assuredText, small && { fontSize: 9.5 }]}>Verified Human</Text>
+    <Text style={[st.assuredText, small && { fontSize: 9.5 }]}>Verified Assured</Text>
   </View>
 );
 
 export const HumanTag = ({ small }) => (
   <View style={[st.human, small && { paddingVertical: 2, paddingHorizontal: 6 }]}>
-    <MaterialCommunityIcons name="account-check" size={small ? 11 : 13} color="#059669" />
+    <MaterialCommunityIcons name="shield-check" size={small ? 11 : 13} color="#059669" />
     <Text style={{ color: '#059669', fontSize: small ? 9 : 10.5, fontWeight: '800', marginLeft: 4 }}>
-      100% HUMAN SELLER
+      VERIFIED SELLER
     </Text>
   </View>
 );

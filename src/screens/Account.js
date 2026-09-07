@@ -16,7 +16,7 @@ export function Account({ go }) {
   const u = state.user;
   const wish = state.products.filter((p) => state.wishlist.includes(p.id));
 
-  const shareMessage = `🛍️ Temsho — India's Verified Human Marketplace!\nNo bots, 100% real human sellers. Buy directly with full transparency.\n\nInvite Code: *${u?.referral || 'TEM2026X'}*\nDownload App: https://temsho.in`;
+  const shareMessage = `🛍️ Temsho — India's Trusted Online Marketplace!\nBuy directly from verified Indian sellers with full transparency.\n\nInvite Code: *${u?.referral || 'TEM2026X'}*\nDownload App: https://temsho.in`;
 
   const shareWhatsApp = () => {
     const url = `https://wa.me/?text=${encodeURIComponent(shareMessage)}`;
@@ -42,6 +42,12 @@ export function Account({ go }) {
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <Text style={{ color: '#fff', fontSize: 19, fontWeight: '900' }}>My Account</Text>
           <View style={{ flex: 1 }} />
+          <TouchableOpacity onPress={() => go('language')} style={[ac.gear, { marginRight: 8, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, width: 'auto' }]}>
+            <MC name="translate" size={17} color="#fff" />
+            <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800', marginLeft: 4 }}>
+              {state.settings.lang || 'English'}
+            </Text>
+          </TouchableOpacity>
           <TouchableOpacity onPress={() => go('settings')} style={ac.gear}>
             <MC name="cog-outline" size={20} color="#fff" />
           </TouchableOpacity>
@@ -54,7 +60,7 @@ export function Account({ go }) {
             <Text style={{ fontWeight: '900', color: C.ink, fontSize: 16.5 }}>{u?.name || 'Valued User'}</Text>
             <Text style={{ color: C.ink3, fontSize: 13, marginTop: 2, fontWeight: '600' }}>+91 {u?.phone}</Text>
             <View style={{ flexDirection: 'row', gap: 6, marginTop: 8, alignItems: 'center' }}>
-              <HumanTag small />
+              <Badge text="VERIFIED ACCOUNT" tone="green" small />
               {u?.isSeller && <Badge text="VERIFIED SELLER" tone="accent" small />}
             </View>
           </View>
@@ -62,12 +68,26 @@ export function Account({ go }) {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 14, paddingBottom: 50 }}>
+        {/* Language Quick Switcher Card (Accessible to All Buyers, Sellers, Owners) */}
+        <TouchableOpacity activeOpacity={0.88} onPress={() => go('language')} style={[ac.card, shadow, { padding: 14, flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0', marginBottom: 12 }]}>
+          <View style={{ width: 38, height: 38, borderRadius: 10, backgroundColor: C.brandSoft, alignItems: 'center', justifyContent: 'center' }}>
+            <MC name="translate" size={20} color={C.brand} />
+          </View>
+          <View style={{ flex: 1, marginLeft: 12 }}>
+            <Text style={{ color: C.ink, fontWeight: '800', fontSize: 13.5 }}>App Language / भाषा</Text>
+            <Text style={{ color: C.brand, fontSize: 11.5, fontWeight: '700', marginTop: 1 }}>
+              Current: {state.settings.lang || 'English'} (Tap to change)
+            </Text>
+          </View>
+          <MC name="chevron-right" size={20} color={C.ink3} />
+        </TouchableOpacity>
+
         {/* Share with Friends Banner */}
         <TouchableOpacity activeOpacity={0.85} onPress={shareWhatsApp} style={[ac.shareBanner, shadow]}>
           <MC name="whatsapp" size={24} color="#25D366" />
           <View style={{ flex: 1, marginLeft: 12 }}>
             <Text style={{ color: C.ink, fontWeight: '900', fontSize: 13.5 }}>Invite Friends to Temsho</Text>
-            <Text style={{ color: C.ink3, fontSize: 11, marginTop: 1 }}>Share the genuine human marketplace via WhatsApp</Text>
+            <Text style={{ color: C.ink3, fontSize: 11, marginTop: 1 }}>Share the trusted online marketplace via WhatsApp</Text>
           </View>
           <MC name="share-variant" size={18} color={C.brand} />
         </TouchableOpacity>
@@ -108,15 +128,16 @@ export function Account({ go }) {
 
         {/* Support & Legal */}
         <View style={[ac.card, shadow, { marginTop: 14 }]}>
-          <Row e="headset" t="Contact Real Human Support" s="24x7 dedicated human team" onPress={() => go('support')} />
-          <Row e="shield-check-outline" t="No Bot, Only Humans Policy" s="Our marketplace commitment" onPress={() => go('policy')} />
-          <Row e="file-document-outline" t="Privacy Policy & Terms" s="DPDP Act 2023 compliant" onPress={() => go('privacy-policy')} />
+          <Row e="translate" t="App Language" s={state.settings.lang || 'English'} onPress={() => go('language')} />
+          <Row e="headset" t="Customer Support & Helpdesk" s="24x7 dedicated support team" onPress={() => go('support')} />
+          <Row e="shield-check-outline" t="Trust & Marketplace Policy" s="Our customer commitment" onPress={() => go('policy')} />
+          <Row e="file-document-outline" t="Privacy Policy & Terms" s="DPDP Act compliant" onPress={() => go('privacy-policy')} />
           <Row e="cog-outline" t="Settings & Preferences" s="Profile, location, language" onPress={() => go('settings')} />
           <Row e="logout" t="Log Out" tone="red" onPress={() => dispatch({ type: 'LOGOUT' })} />
         </View>
 
         <Text style={{ textAlign: 'center', color: C.ink3, fontSize: 11.5, marginTop: 24, lineHeight: 18 }}>
-          Temsho v1.0.8{'\n'}Crafted in India · Built by humans, for humans
+          Temsho v1.0.8{'\n'}Crafted in India · Direct & Transparent Marketplace
         </Text>
       </ScrollView>
     </View>
@@ -903,7 +924,7 @@ export function Seller({ go }) {
   );
 }
 
-/* ---------------- REAL HUMAN SUPPORT ---------------- */
+/* ---------------- DEDICATED CUSTOMER SUPPORT ---------------- */
 export function Support({ go }) {
   const { state, dispatch } = useApp();
   const [t, setT] = useState('');
@@ -926,14 +947,14 @@ export function Support({ go }) {
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <Header title="Real Human Support" go={go} />
+      <Header title="Customer Support" go={go} />
       <View style={ac.agentBar}>
         <Avatar name="Temsho Support" hue={C.brand} size={44} />
         <View style={{ flex: 1, marginLeft: 12 }}>
           <Text style={{ fontWeight: '900', color: C.ink, fontSize: 14 }}>Temsho Dedicated Helpdesk</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 3 }}>
             <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: C.green }} />
-            <Text style={{ color: C.green, fontSize: 11.5, fontWeight: '700', marginLeft: 5 }}>Online · 100% Real Humans</Text>
+            <Text style={{ color: C.green, fontSize: 11.5, fontWeight: '700', marginLeft: 5 }}>Online · Ready to Assist</Text>
           </View>
         </View>
         <TouchableOpacity onPress={openWhatsApp} style={ac.callBtn}>
@@ -947,7 +968,7 @@ export function Support({ go }) {
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 20 }}>
         <View style={ac.notice}>
           <Text style={{ color: C.ink2, fontSize: 11.5, textAlign: 'center', lineHeight: 17 }}>
-            No AI chatbots or simulated replies.{'\n'}Direct connection to genuine human executive via WhatsApp & Call.
+            Direct customer assistance.{'\n'}Connect with our dedicated support team via WhatsApp & Call.
           </Text>
         </View>
 
@@ -956,7 +977,7 @@ export function Support({ go }) {
           <MC name="whatsapp" size={26} color="#25D366" />
           <View style={{ flex: 1, marginLeft: 12 }}>
             <Text style={{ color: C.ink, fontWeight: '900', fontSize: 14 }}>Chat on WhatsApp (+91 9044468663)</Text>
-            <Text style={{ color: C.ink3, fontSize: 11, marginTop: 2 }}>Instant response from real human support staff</Text>
+            <Text style={{ color: C.ink3, fontSize: 11, marginTop: 2 }}>Instant response from our support desk</Text>
           </View>
           <MC name="chevron-right" size={20} color={C.green} />
         </TouchableOpacity>
@@ -989,22 +1010,22 @@ export function Support({ go }) {
 /* ---------------- POLICY ---------------- */
 export function Policy({ go }) {
   const items = [
-    ['cellphone-check', 'Mobile Number Login Only', 'No Aadhaar, no PAN, no biometric checks. Fast, secure OTP verification.'],
-    ['numeric-1-circle-outline', 'One Number = One Human', 'Strict prevention of duplicate accounts, automated bots, and bot farms.'],
-    ['headset', 'Real Human Support', 'Zero AI chatbots on support. You always talk to a dedicated human representative.'],
-    ['star-check-outline', 'Genuine Reviews Only', 'Reviews can only be posted after confirmed deliveries. Paid or fake reviews are strictly banned.'],
-    ['cancel', 'No Dark Patterns', 'No artificial urgency timers or manipulated viewer counts. Complete pricing transparency.'],
-    ['database-lock-outline', 'India Data Residency', 'User data is securely processed in India and never sold to third-party brokers.'],
+    ['cellphone-check', 'Mobile Number Login Only', 'Fast, secure OTP verification with zero paperwork required.'],
+    ['shield-account', 'Verified Community', 'Strict prevention of duplicate accounts, spam, and fraud.'],
+    ['headset', 'Dedicated Support Team', 'Direct access to friendly customer service executives.'],
+    ['star-check-outline', 'Genuine Reviews Only', 'Reviews can only be posted after confirmed deliveries.'],
+    ['cancel', 'Transparent Pricing', 'No hidden markups or misleading discounts. Complete pricing clarity.'],
+    ['database-lock-outline', 'India Data Residency', 'User data is securely processed in India and never sold to third parties.'],
   ];
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <Header title="Human-Only Policy" go={go} />
+      <Header title="Marketplace Policy" go={go} />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
         <View style={[ac.card, shadow, { padding: 20 }]}>
-          <View style={ac.bigIco}><MC name="account-check-outline" size={26} color={C.brand} /></View>
-          <Text style={{ fontSize: 20, fontWeight: '900', color: C.ink, marginTop: 12 }}>No Bots. Only Humans.</Text>
+          <View style={ac.bigIco}><MC name="shield-check-outline" size={26} color={C.brand} /></View>
+          <Text style={{ fontSize: 20, fontWeight: '900', color: C.ink, marginTop: 12 }}>Temsho Trust & Transparency</Text>
           <Text style={{ color: C.ink2, fontSize: 13.5, lineHeight: 21, marginTop: 8 }}>
-            Temsho is designed as an open, authentic marketplace where buyers, sellers, and support staff are 100% genuine humans.
+            Temsho is an authentic, transparent marketplace connecting buyers and sellers across India with direct payments and genuine products.
           </Text>
         </View>
         {items.map(([e, t, d]) => (

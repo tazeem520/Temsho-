@@ -61,8 +61,15 @@ export function Home({ go }) {
             </View>
           </View>
 
-          {/* Quick Actions (Wishlist & Notifications) */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          {/* Quick Actions (Language, Wishlist & Notifications) */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <TouchableOpacity onPress={() => go('language')} style={st.langBtn}>
+              <MC name="translate" size={15} color="#fff" />
+              <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800', marginLeft: 3 }}>
+                {(state.settings?.lang || 'English').slice(0, 3).toUpperCase()}
+              </Text>
+            </TouchableOpacity>
+
             <TouchableOpacity onPress={() => go('wishlist')} style={st.headIcoBtn}>
               <MC name="heart-outline" size={20} color="#fff" />
               {state.wishlist.length > 0 && <View style={st.dotSm} />}
@@ -167,7 +174,7 @@ export function Home({ go }) {
 
         {/* Trust Badges Bar */}
         <View style={st.trustStrip}>
-          {[['account-check-outline', '100% Humans', 'Zero Bots'],
+          {[['shield-check', 'Verified Sellers', '100% Genuine'],
             ['backup-restore', '7 Days Return', 'Free Doorstep Pickup'],
             ['cash-check', 'Cash on Delivery', 'Pay at Doorstep'],
             ['truck-fast-outline', 'Free Shipping', 'On Orders ₹499+']].map(([ic, t, s]) => (
@@ -270,7 +277,7 @@ export function Home({ go }) {
             <MC name="storefront-outline" size={48} color={C.brand} />
             <Text style={{ fontSize: 18, fontWeight: '900', color: C.ink, marginTop: 12 }}>Welcome to Temsho</Text>
             <Text style={{ color: C.ink2, fontSize: 13, textAlign: 'center', marginTop: 6, lineHeight: 19, paddingHorizontal: 20 }}>
-              No bot-generated products here. Start selling your own real products with real photos, or explore categories!
+              Start selling your products directly to buyers across India, or explore our curated categories!
             </Text>
             <View style={{ flexDirection: 'row', gap: 10, marginTop: 18, width: '100%' }}>
               <Btn title="List a Product" icon="plus" tone="brand" style={{ flex: 1 }} onPress={() => go('become-seller')} />
@@ -279,12 +286,12 @@ export function Home({ go }) {
           </View>
         )}
 
-        {/* 24x7 Real Human Support Banner */}
+        {/* 24x7 Customer Support Banner */}
         <TouchableOpacity activeOpacity={0.9} onPress={() => go('support')} style={[st.supportCta, shadow]}>
           <View style={st.ctaIcon}><MC name="headset" size={22} color={C.brand} /></View>
           <View style={{ flex: 1, marginLeft: 12 }}>
-            <Text style={{ color: C.ink, fontWeight: '900', fontSize: 14.5 }}>Need assistance? Talk to a Real Human</Text>
-            <Text style={{ color: C.ink2, fontSize: 12, marginTop: 3 }}>24x7 Dedicated Executive · No AI Chatbots</Text>
+            <Text style={{ color: C.ink, fontWeight: '900', fontSize: 14.5 }}>Need assistance? Contact Customer Support</Text>
+            <Text style={{ color: C.ink2, fontSize: 12, marginTop: 3 }}>24x7 Dedicated Helpdesk · Instant WhatsApp & Call Support</Text>
           </View>
           <MC name="chevron-right" size={22} color={C.brand} />
         </TouchableOpacity>
@@ -694,6 +701,7 @@ export const st = StyleSheet.create({
   explorePlus: { color: '#ffffffcc', fontSize: 10.5, fontWeight: '700' },
   plusTag: { color: '#FDE047', fontSize: 10.5, fontWeight: '900' },
   headIcoBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: '#ffffff26', alignItems: 'center', justifyContent: 'center' },
+  langBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffffff26', paddingHorizontal: 8, paddingVertical: 6, borderRadius: R.pill },
   deliverBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, marginBottom: 8 },
   dotSm: { position: 'absolute', top: 5, right: 5, width: 7, height: 7, borderRadius: 4, backgroundColor: C.red },
   pageDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#E5E7EB', marginHorizontal: 3 },

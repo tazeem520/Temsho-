@@ -528,7 +528,7 @@ export function AdminSellers({ go }) {
         <View style={[ad.kpiSummaryCard, { backgroundColor: totalPendingAll > 0 ? '#FEF2F2' : '#F8FAFC', borderColor: totalPendingAll > 0 ? '#FECACA' : '#E2E8F0' }]}>
           <Text style={{ color: totalPendingAll > 0 ? '#991B1B' : '#475569', fontSize: 11, fontWeight: '800' }}>PENDING DUES</Text>
           <Text style={{ color: totalPendingAll > 0 ? '#DC2626' : '#0F172A', fontSize: 18, fontWeight: '900', marginTop: 2 }}>{money(totalPendingAll)}</Text>
-          <Text style={{ color: totalPendingAll > 0 ? '#F87171' : '#94A3B8', fontSize: 9.5, fontWeight: '700', marginTop: 2 }}>Dena Baaki Hai</Text>
+          <Text style={{ color: totalPendingAll > 0 ? '#F87171' : '#94A3B8', fontSize: 9.5, fontWeight: '700', marginTop: 2 }}>Pending Due Amount</Text>
         </View>
       </View>
 
@@ -588,17 +588,17 @@ export function AdminSellers({ go }) {
                 <View style={ad.financialStrip}>
                   <View style={{ flex: 1, alignItems: 'center' }}>
                     <Text style={{ fontSize: 15, fontWeight: '900', color: C.ink }}>{money(gross)}</Text>
-                    <Text style={{ fontSize: 10, color: C.ink3, fontWeight: '700', marginTop: 1 }}>Kul Bikri (Gross)</Text>
+                    <Text style={{ fontSize: 10, color: C.ink3, fontWeight: '700', marginTop: 1 }}>Gross Product Sales</Text>
                   </View>
                   <View style={{ width: 1, backgroundColor: C.line, height: '80%' }} />
                   <View style={{ flex: 1, alignItems: 'center' }}>
                     <Text style={{ fontSize: 15, fontWeight: '900', color: C.green }}>{money(settled)}</Text>
-                    <Text style={{ fontSize: 10, color: C.ink3, fontWeight: '700', marginTop: 1 }}>Transfer Done</Text>
+                    <Text style={{ fontSize: 10, color: C.ink3, fontWeight: '700', marginTop: 1 }}>Settled & Paid</Text>
                   </View>
                   <View style={{ width: 1, backgroundColor: C.line, height: '80%' }} />
                   <View style={{ flex: 1, alignItems: 'center' }}>
                     <Text style={{ fontSize: 15, fontWeight: '900', color: pending > 0 ? C.red : C.ink2 }}>{money(pending)}</Text>
-                    <Text style={{ fontSize: 10, color: pending > 0 ? C.red : C.ink3, fontWeight: '700', marginTop: 1 }}>Dena Baaki (Due)</Text>
+                    <Text style={{ fontSize: 10, color: pending > 0 ? C.red : C.ink3, fontWeight: '700', marginTop: 1 }}>Pending Settlement</Text>
                   </View>
                 </View>
 
@@ -1636,7 +1636,7 @@ export function AdminBrand({ go }) {
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
         <Card style={{ padding: 18 }}>
           <Field label="App Display Name" placeholder="Temsho" value={f.appName} onChangeText={(v) => setF({ ...f, appName: v })} />
-          <Field label="Tagline" placeholder="India's Verified Human Marketplace" value={f.tagline} onChangeText={(v) => setF({ ...f, tagline: v })} />
+          <Field label="Tagline" placeholder="India's Trusted Online Marketplace" value={f.tagline} onChangeText={(v) => setF({ ...f, tagline: v })} />
           <Btn title={done ? 'Saved Successfully' : 'Save Changes'} icon={done ? 'check' : 'content-save-outline'} tone={done ? 'green' : 'brand'}
             onPress={() => { dispatch({ type: 'ADMIN_SET', patch: f }); setDone(true); setTimeout(() => setDone(false), 1400); }} />
         </Card>

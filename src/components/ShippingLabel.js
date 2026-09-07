@@ -68,7 +68,7 @@ export function ShippingLabelModal({ visible, onClose, order, sellerInfo }) {
               <View style={sl.slipHeader}>
                 <View style={{ flex: 1 }}>
                   <Text style={sl.brandTitle}>TEMSHO LOGISTICS</Text>
-                  <Text style={sl.brandSub}>Doorstep Express Delivery · 100% Verified Humans</Text>
+                  <Text style={sl.brandSub}>Doorstep Express Delivery · Verified Merchants</Text>
                 </View>
                 <View style={sl.badgeStandard}>
                   <Text style={sl.badgeStandardTxt}>STANDARD EXP</Text>
@@ -196,7 +196,7 @@ export function ShippingLabelModal({ visible, onClose, order, sellerInfo }) {
 
               {/* Slip Footer */}
               <View style={sl.slipFooter}>
-                <Text style={sl.footerBrand}>TEMSHO INDIA · NO BOTS, ONLY HUMANS · DIRECT PAYMENTS</Text>
+                <Text style={sl.footerBrand}>TEMSHO INDIA · DIRECT MARKETPLACE · VERIFIED PAYMENTS</Text>
                 <Text style={sl.footerNet}>{courier}</Text>
               </View>
             </View>

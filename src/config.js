@@ -1,10 +1,9 @@
 // ============================================================
-//  TEMSHO — Poore Bharat Ka Apna Bazaar
-//  No Bot, Only Humans.
+//  TEMSHO — India's Trusted Online Marketplace
+//  Direct Merchant Settlements · Verified Community
 //  👑 OWNER PRIVACY GUARANTEE:
-//  Owner ki personal details (Phone/Email) sirf yahan config me hain
-//  aur Admin authentication ke liye use hoti hain.
-//  App ke UI me buyer/seller ko kahin bhi owner ki personal details nahi dikhti.
+//  Owner credentials are strictly stored in config for admin authentication.
+//  Owner's personal contact details are never exposed in buyer/seller UI.
 // ============================================================
 
 /* ---------- 👑 OWNER CREDENTIALS ---------- */
@@ -53,7 +52,7 @@ export const SHIPROCKET = {
 /* ---------- ⚙️ DEFAULT SETTINGS (Admin Panel se badalte hain) ---------- */
 export const DEFAULT_ADMIN = {
   appName: 'Temsho',
-  tagline: 'Poore Bharat ka apna bazaar',
+  tagline: "India's Trusted Online Marketplace",
   supportName: 'Priya S.',
   supportHours: '24x7',
   supportPhone: '9044468663',

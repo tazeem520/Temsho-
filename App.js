@@ -139,16 +139,16 @@ function AppSplashIntro({ onFinish }) {
         {/* Brand & Tagline */}
         <Animated.View style={{ alignItems: 'center', opacity: textFade, marginTop: 24 }}>
           <Text style={s.splashBrandTitle}>Temsho</Text>
-          <Text style={s.splashBrandSub}>POORE BHARAT KA APNA BAZAAR</Text>
+          <Text style={s.splashBrandSub}>INDIA'S TRUSTED ONLINE MARKETPLACE</Text>
 
           <View style={s.pledgeBadge}>
-            <MC name="account-check" size={16} color="#4ADE80" />
-            <Text style={s.pledgeText}>No Bots · 100% Real Humans</Text>
+            <MC name="shield-check" size={16} color="#4ADE80" />
+            <Text style={s.pledgeText}>Verified Sellers · Direct Payouts</Text>
           </View>
 
           <View style={{ flexDirection: 'row', gap: 8, marginTop: 20 }}>
             <View style={s.miniPill}><Text style={s.miniPillText}>⚡ Instant WhatsApp OTP</Text></View>
-            <View style={s.miniPill}><Text style={s.miniPillText}>🤝 Direct UPI Payouts</Text></View>
+            <View style={s.miniPill}><Text style={s.miniPillText}>🤝 Direct UPI Payments</Text></View>
           </View>
         </Animated.View>
       </Animated.View>
@@ -178,7 +178,7 @@ function Shell() {
       <View style={{ flex: 1, backgroundColor: C.brandNavy, alignItems: 'center', justifyContent: 'center' }}>
         <MC name="storefront" size={54} color="#fff" />
         <Text style={{ color: '#fff', fontSize: 24, fontWeight: '900', marginTop: 14, letterSpacing: -0.5 }}>Temsho</Text>
-        <Text style={{ color: '#ffffffaa', fontSize: 13, fontWeight: '600', marginTop: 6 }}>No bots. Only humans.</Text>
+        <Text style={{ color: '#ffffffaa', fontSize: 13, fontWeight: '600', marginTop: 6 }}>India's Trusted Marketplace</Text>
         <ActivityIndicator color="#fff" style={{ marginTop: 26 }} />
       </View>
     );

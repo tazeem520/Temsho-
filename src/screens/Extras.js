@@ -57,7 +57,7 @@ export function Wallet({ go }) {
   const [copied, setCopied] = useState(false);
 
   const shareCode = u?.referral || 'TEM2026X';
-  const shareMessage = `🛍️ Temsho — India's Verified Human Marketplace!\nNo bots, only real humans. Buy direct from verified producers.\n\nUse invite code: *${shareCode}* at checkout!\nJoin: https://temsho.in`;
+  const shareMessage = `🛍️ Temsho — India's Trusted Online Marketplace!\nBuy direct from verified Indian sellers.\n\nUse invite code: *${shareCode}* at checkout!\nJoin: https://temsho.in`;
 
   const shareWhatsApp = () => {
     const url = `https://wa.me/?text=${encodeURIComponent(shareMessage)}`;
@@ -75,7 +75,7 @@ export function Wallet({ go }) {
         <View style={[nt.card, shadow]}>
           <Text style={{ fontWeight: '900', color: C.ink, fontSize: 17 }}>Invite Friends to Temsho</Text>
           <Text style={{ color: C.ink2, fontSize: 13, lineHeight: 19, marginTop: 6 }}>
-            Share your personal referral code with friends and family to help them discover verified human sellers across India.
+            Share your personal referral code with friends and family to help them discover verified Indian sellers and quality products.
           </Text>
           <View style={nt.codeBox}>
             <Text style={{ flex: 1, color: C.brand, fontWeight: '900', fontSize: 18, letterSpacing: 2 }}>{shareCode}</Text>

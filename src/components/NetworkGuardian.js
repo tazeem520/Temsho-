@@ -157,7 +157,7 @@ export function NetworkGuardian({ children }) {
           {/* Title & Subtitle */}
           <Text style={s.title}>Internet Connection Required</Text>
           <Text style={s.sub}>
-            Temsho requires an active internet connection to browse genuine products, verify sellers, connect with human support, and process live orders.
+            Temsho requires an active internet connection to browse genuine products, verify sellers, connect with customer support, and process live orders.
           </Text>
 
           {/* Checklist Card */}

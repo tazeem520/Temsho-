@@ -31,9 +31,9 @@ export const BANNERS = [
   },
   {
     id: 'b2',
-    title: '100% Human Marketplace 🤝',
-    sub: 'No Bots, Only Real Humans · Buy Directly from Verified Sellers',
-    tag: 'TEMSHO PLEDGE',
+    title: 'Verified Direct Marketplace 🤝',
+    sub: 'Direct Payouts · Buy Directly from Verified Indian Sellers',
+    tag: 'TEMSHO ASSURED',
     icon: 'shield-check',
     from: '#059669',
     to: '#10B981',

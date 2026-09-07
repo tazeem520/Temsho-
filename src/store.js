@@ -19,7 +19,20 @@ const USER_KEY_PREFIX = '@temsho/account_';
 const refCode = (phone) => 'TEM' + (phone ? String(phone).slice(-4) : '2026') + 'X';
 const cleanPhone = (p) => String(p || '').replace(/\D/g, '').slice(-10);
 
-const LANGS = ['English', 'Hindi', 'Bengali', 'Marathi', 'Tamil', 'Telugu', 'Gujarati', 'Kannada', 'Malayalam', 'Punjabi'];
+const LANGS = [
+  'English',
+  'Hindi (हिन्दी)',
+  'Hinglish',
+  'Bengali (বাংলা)',
+  'Marathi (मराठी)',
+  'Tamil (தமிழ்)',
+  'Telugu (తెలుగు)',
+  'Gujarati (ગુજરાતી)',
+  'Kannada (ಕನ್ನಡ)',
+  'Punjabi (ਪੰਜਾਬੀ)',
+  'Malayalam (മലയാളം)',
+  'Odia (ଓଡ଼ିଆ)',
+];
 export { LANGS };
 
 const formatLogTime = (ts = Date.now()) => {
@@ -84,12 +97,12 @@ const init = {
   coupon: null,
   addresses: [],
   notifications: [
-    { id: 'n1', icon: 'party-popper', title: 'Welcome to Temsho!', body: 'Shop directly from verified human sellers with 100% transparency.', at: Date.now() - 3600000, read: false },
-    { id: 'n2', icon: 'shield-check-outline', title: '100% Human Marketplace', body: 'No bots or automated shops on Temsho. Every seller is a real verified human.', at: Date.now() - 86400000, read: false },
+    { id: 'n1', icon: 'party-popper', title: 'Welcome to Temsho!', body: 'Shop directly from verified Indian sellers with 100% transparency.', at: Date.now() - 3600000, read: false },
+    { id: 'n2', icon: 'shield-check-outline', title: 'Verified Seller Community', body: 'Shop directly from trusted, verified Indian sellers on Temsho.', at: Date.now() - 86400000, read: false },
     { id: 'n3', icon: 'truck-fast-outline', title: 'Free Delivery Active', body: 'Enjoy free delivery across India on all orders above ₹499.', at: Date.now() - 172800000, read: false },
   ],
   supportChat: [
-    { id: 'm0', who: 'agent', agent: 'Priya S.', text: 'Hello! I am Priya, your dedicated Temsho Support Executive. There are no bots here — I am a real human assistant. How may I help you today?', at: Date.now() },
+    { id: 'm0', who: 'agent', agent: 'Priya S.', text: 'Hello! I am Priya, your dedicated Temsho Support Executive. How may I help you today?', at: Date.now() },
   ],
   deliveryMode: 'standard',
 };

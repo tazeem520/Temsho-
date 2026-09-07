@@ -33,7 +33,7 @@ const mapProduct = (r) => {
     sellerUpi: r.shops?.upi || '',
     sellerContact: r.shops?.contact || '',
     tint: '#EFF1F6',
-    tags: ['Verified Seller', 'No Bot Guarantee'],
+    tags: ['Verified Seller', 'Quality Assured'],
     cloud: true,
     createdAt: r.created_at,
   };

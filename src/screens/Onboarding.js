@@ -107,18 +107,18 @@ export default function Onboarding() {
         </View>
         <View style={{ marginLeft: 10 }}>
           <Text style={{ fontSize: 22, fontWeight: '900', color: C.brandNavy, letterSpacing: -0.5 }}>Temsho</Text>
-          <Text style={{ color: C.ink2, fontSize: 11.5, fontWeight: '600' }}>Verified Human Marketplace</Text>
+          <Text style={{ color: C.ink2, fontSize: 11.5, fontWeight: '600' }}>India's Trusted Marketplace</Text>
         </View>
       </View>
 
-      {/* Human-Only Pledge Banner */}
+      {/* Trust Banner */}
       <View style={[st.pledge, shadow]}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <MC name="account-check" size={19} color={C.green} />
-          <Text style={{ color: C.ink, fontWeight: '900', fontSize: 14, marginLeft: 6 }}>No Bots. Only Humans.</Text>
+          <MC name="shield-check" size={19} color={C.green} />
+          <Text style={{ color: C.ink, fontWeight: '900', fontSize: 14, marginLeft: 6 }}>Fast & Secure Login</Text>
         </View>
         <Text style={{ color: C.ink2, fontSize: 11.5, lineHeight: 16, marginTop: 4 }}>
-          Fast mobile OTP login. No Aadhaar, PAN, or documents needed. Real humans on support.
+          Instant mobile OTP login. Direct seller payments and dedicated customer support.
         </Text>
       </View>
 

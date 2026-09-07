@@ -403,7 +403,7 @@ export function Product({ go, params }) {
                   {r.v && (
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
                       <MC name="check-decagram" size={13} color={C.green} />
-                      <Text style={{ color: C.green, fontSize: 11, fontWeight: '800', marginLeft: 4 }}>Verified Human Buyer</Text>
+                      <Text style={{ color: C.green, fontSize: 11, fontWeight: '800', marginLeft: 4 }}>Verified Buyer</Text>
                     </View>
                   )}
                 </View>
