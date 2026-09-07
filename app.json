@@ -2,18 +2,18 @@
   "expo": {
     "name": "Temsho",
     "slug": "temsho",
-    "version": "1.0.6",
+    "version": "1.0.7",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.temsho.app",
-      "buildNumber": "7"
+      "buildNumber": "8"
     },
     "android": {
       "package": "com.temsho.app",
-      "versionCode": 7,
+      "versionCode": 8,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#2B2D6E"

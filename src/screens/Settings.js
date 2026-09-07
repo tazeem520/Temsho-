@@ -124,7 +124,7 @@ export function Settings({ go }) {
         )}
 
         <Text style={{ textAlign: 'center', color: C.ink3, fontSize: 11, marginTop: 26, lineHeight: 17 }}>
-          Temsho v1.0.6{'\n'}Made in India · For humans, by humans
+          Temsho v1.0.7{'\n'}Made in India · For humans, by humans
         </Text>
       </ScrollView>
     </View>

@@ -57,7 +57,7 @@ const init = {
       'SYSTEM',
       'Temsho Ledger Initialized',
       'Audit ledger active — tracking all product additions, deletions, orders, and seller registrations.',
-      { system: 'Temsho Core v1.0.5' }
+      { system: 'Temsho Core v1.0.7' }
     ),
   ],
   settings: {

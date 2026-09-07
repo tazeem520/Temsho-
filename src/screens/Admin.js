@@ -1528,7 +1528,7 @@ export function AdminPlayStore({ go }) {
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
         <View style={[ad.card, shadow, { padding: 18 }]}>
           <Text style={{ fontWeight: '900', color: C.ink, fontSize: 16 }}>Google Play & Indus Console Ready</Text>
-          <Text style={{ color: C.ink3, fontSize: 12, marginTop: 2 }}>Package: com.temsho.app · v1.0.5</Text>
+          <Text style={{ color: C.ink3, fontSize: 12, marginTop: 2 }}>Package: com.temsho.app · v1.0.7</Text>
         </View>
       </ScrollView>
     </View>

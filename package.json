@@ -1,6 +1,6 @@
 {
   "name": "temsho",
-  "version": "1.0.0",
+  "version": "1.0.7",
   "main": "index.js",
   "dependencies": {
     "@expo/metro-runtime": "~57.0.14",
