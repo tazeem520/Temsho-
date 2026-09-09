@@ -8,11 +8,11 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.temsho.app",
+      "bundleIdentifier": "in.temsho.app",
       "buildNumber": "9"
     },
     "android": {
-      "package": "com.temsho.app",
+      "package": "in.temsho.app",
       "versionCode": 9,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",

@@ -7,7 +7,7 @@
 // ============================================================
 
 /* ---------- 👑 OWNER CREDENTIALS ---------- */
-export const OWNER_PHONES = ['9044468663'];
+export const OWNER_PHONES = ['9044468663', '9044461613'];
 export const OWNER_EMAILS = ['tazeemahmadsbn12@gmail.com', 'tazeemahmadsbn12@gmail.co'];
 
 export const isOwner = (phone) =>
