@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Switch } from 'react-native';
 import { MaterialCommunityIcons as MC } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { C, R, shadow } from '../theme';
 import { Btn, Field, Avatar } from '../components/UI';
 import { Header } from './Product';
@@ -377,6 +378,18 @@ export function ShopSettings({ go }) {
   const [f, setF] = useState({ ...sh });
   const [done, setDone] = useState(false);
 
+  const pickQr = async () => {
+    try {
+      const res = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 0.85,
+      });
+      if (!res.canceled && res.assets?.[0]?.uri) {
+        setF((prev) => ({ ...prev, qrImg: res.assets[0].uri }));
+      }
+    } catch (e) {}
+  };
+
   const save = () => {
     dispatch({ type: 'UPDATE_SHOP', patch: f });
     if (cloud.cloudOn()) {
@@ -429,6 +442,35 @@ export function ShopSettings({ go }) {
           <Field label="Bank Name" placeholder="State Bank of India" value={f.bankName} onChangeText={(v) => setF({ ...f, bankName: v })} />
           <Field label="Account Number" placeholder="XXXXXXXXXXXX" keyboardType="number-pad" value={f.accNo} onChangeText={(v) => setF({ ...f, accNo: v.replace(/\D/g, '') })} />
           <Field label="IFSC Code" placeholder="SBIN0001234" autoCapitalize="characters" value={f.ifsc} onChangeText={(v) => setF({ ...f, ifsc: v.toUpperCase() })} />
+
+          {/* Shop UPI Payment QR Code Upload */}
+          <Text style={{ color: C.ink2, fontSize: 12, fontWeight: '700', marginTop: 12, marginBottom: 6 }}>
+            Shop Payment QR Code
+          </Text>
+          <TouchableOpacity
+            onPress={pickQr}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: f.qrImg ? C.greenSoft : C.bg,
+              borderWidth: 1.5,
+              borderColor: f.qrImg ? C.green : C.line,
+              borderRadius: R.md,
+              padding: 12,
+              marginBottom: 12,
+            }}
+          >
+            <MC name={f.qrImg ? 'qrcode-scan' : 'qrcode-plus'} size={24} color={f.qrImg ? C.green : C.brand} />
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={{ color: C.ink, fontWeight: '800', fontSize: 13 }}>
+                {f.qrImg ? 'QR Code Image Uploaded ✅' : 'Upload Shop UPI QR Code'}
+              </Text>
+              <Text style={{ color: C.ink3, fontSize: 11, marginTop: 2 }}>
+                {f.qrImg ? 'Tap to change QR image' : 'Used by Owner to settle your earnings directly'}
+              </Text>
+            </View>
+            <MC name="chevron-right" size={20} color={C.ink3} />
+          </TouchableOpacity>
         </View>
 
         <Text style={[se.gTitle, { marginTop: 22 }]}>POLICY & TAXES</Text>

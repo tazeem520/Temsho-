@@ -211,6 +211,19 @@ export function Product({ go, params }) {
           {/* Bank & Promotional Offers */}
           <BankOffers />
 
+          {/* FREE DELIVERY HIGHLIGHT BADGE (MEESHO STRATEGY) */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#ECFDF5', padding: 10, borderRadius: R.md, marginTop: 12, borderWidth: 1, borderColor: '#A7F3D0' }}>
+            <MC name="truck-fast-outline" size={20} color="#059669" />
+            <View style={{ flex: 1, marginLeft: 10 }}>
+              <Text style={{ color: '#065F46', fontSize: 12.5, fontWeight: '800' }}>
+                100% FREE Delivery Across India
+              </Text>
+              <Text style={{ color: '#047857', fontSize: 11, marginTop: 1 }}>
+                Doorstep courier delivery with OTP verification · No hidden charges
+              </Text>
+            </View>
+          </View>
+
           {/* Size / Age (Years / Months) Selector */}
           {showVariants && availableVariants.length > 0 && (
             <View style={{ marginTop: 18 }}>
@@ -478,11 +491,11 @@ export function Cart({ go }) {
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <Header title={`My Cart (${cartLines.length} items)`} go={go} />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 130 }}>
-        {/* Safe & Secure banner */}
-        <View style={sx.safeBanner}>
-          <MC name="shield-check" size={17} color={C.green} />
-          <Text style={{ flex: 1, marginLeft: 8, color: '#059669', fontSize: 11.5, fontWeight: '700' }}>
-            100% Safe & Secure Payments · Direct to Verified Seller
+        {/* Free Delivery & Safe Payments banner */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#ECFDF5', borderRadius: R.md, padding: 10, marginBottom: 12, borderWidth: 1, borderColor: '#A7F3D0' }}>
+          <MC name="truck-fast-outline" size={18} color="#059669" />
+          <Text style={{ flex: 1, marginLeft: 8, color: '#065F46', fontSize: 12, fontWeight: '800' }}>
+            100% FREE Delivery Active on All Orders Across India!
           </Text>
         </View>
 

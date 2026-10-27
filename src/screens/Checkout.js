@@ -263,26 +263,47 @@ export function Checkout({ go }) {
           </TouchableOpacity>
         ))}
 
-        {/* UPI Quick Pay Button if UPI Selected */}
-        {pay === 'upi' && (
-          <View style={[ck.upiPayCard, shadow]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-              <MC name="lightning-bolt" size={18} color={C.accent} />
-              <Text style={{ color: C.ink, fontWeight: '800', fontSize: 13, marginLeft: 6 }}>
-                Instant UPI App Payment
+        {/* UPI Quick Pay & Dynamic QR Code (Owner Official Payment Method) */}
+        {pay === 'upi' && (() => {
+          const ownerUpi = state.admin?.ownerPayment?.deliveryChargeUpi || state.admin?.ownerPayment?.upiId || '9044461613@upi';
+          const ownerPayee = state.admin?.ownerPayment?.payeeName || 'Temsho Official Marketplace';
+
+          return (
+            <View style={[ck.upiPayCard, shadow]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                <MC name="lightning-bolt" size={18} color={C.accent} />
+                <Text style={{ color: C.ink, fontWeight: '800', fontSize: 13, marginLeft: 6 }}>
+                  Temsho Official UPI Payment
+                </Text>
+              </View>
+
+              <Text style={{ color: C.ink2, fontSize: 11.5, marginBottom: 12, lineHeight: 17 }}>
+                Scan the official QR code below or tap to pay <Text style={{ fontWeight: '900', color: C.ink }}>{money(total)}</Text> directly using Google Pay, PhonePe, Paytm or BHIM.
               </Text>
+
+              {/* Dynamic Interactive UPI QR Code */}
+              <View style={{ alignItems: 'center', backgroundColor: '#ffffff', padding: 12, borderRadius: R.md, borderWidth: 1, borderColor: '#A7F3D0', marginBottom: 12 }}>
+                <UpiQR
+                  upi={ownerUpi}
+                  name={ownerPayee}
+                  amount={total}
+                  note="Temsho Order Payment"
+                />
+                <Text style={{ color: C.ink3, fontSize: 10.5, fontWeight: '700', marginTop: 6 }}>
+                  Scan with any UPI App · Verified Merchant
+                </Text>
+              </View>
+
+              {/* 1-Tap Quick Pay Button */}
+              <PayNowBtn
+                upi={ownerUpi}
+                name={ownerPayee}
+                amount={total}
+                note="Temsho Order Payment"
+              />
             </View>
-            <Text style={{ color: C.ink2, fontSize: 11.5, marginBottom: 10 }}>
-              Tap below to pay <Text style={{ fontWeight: '900', color: C.ink }}>{money(total)}</Text> directly using Google Pay, PhonePe, Paytm or BHIM.
-            </Text>
-            <PayNowBtn
-              upi={sellerPays[0]?.upi || '9044468663@paytm'}
-              name={sellerPays[0]?.name || 'Temsho Store'}
-              amount={total}
-              note="Temsho Order Payment"
-            />
-          </View>
-        )}
+          );
+        })()}
 
         {pay === 'cod' && (
           <View style={ck.codInfoBox}>
@@ -356,17 +377,50 @@ export function Success({ go, params }) {
 export function Orders({ go }) {
   const { state, dispatch } = useApp();
   const [tab, setTab] = useState('all');
-  const [retFor, setRetFor] = useState(null);
+  const [retModal, setRetModal] = useState(null);
+  const [retAction, setRetAction] = useState('refund'); // 'refund' | 'exchange'
+  const [retReason, setRetReason] = useState('Size does not fit / Wrong size');
+  const [retUpi, setRetUpi] = useState('');
+  const [retSize, setRetSize] = useState('M');
+  const [retNotes, setRetNotes] = useState('');
 
-  const REASONS = ['Item damaged during transit', 'Wrong product delivered', 'Size does not fit', 'Quality did not match description', 'No longer required'];
+  const REASONS = [
+    'Size does not fit / Wrong size',
+    'Item damaged or defective piece',
+    'Product quality did not match description',
+    'Wrong item delivered by seller',
+    'Don’t like / No longer needed',
+  ];
   const steps = ['Confirmed', 'Packed', 'Shipped', 'Out for Delivery', 'Delivered'];
 
   const list = state.orders.filter((o) =>
     tab === 'all' ? true :
-    tab === 'active' ? !['Delivered', 'Cancelled', 'Return Requested'].includes(o.status) :
+    tab === 'active' ? !['Delivered', 'Cancelled', 'Return Requested', 'Refund Completed'].includes(o.status) :
     tab === 'done' ? o.status === 'Delivered' :
-    ['Cancelled', 'Return Requested'].includes(o.status)
+    ['Cancelled', 'Return Requested', 'Refund Completed'].includes(o.status)
   );
+
+  const openReturnModal = (order) => {
+    setRetModal(order);
+    setRetAction('refund');
+    setRetReason('Size does not fit / Wrong size');
+    setRetUpi(state.user?.phone ? `${state.user.phone}@upi` : '');
+    setRetNotes('');
+  };
+
+  const submitReturn = () => {
+    if (!retModal) return;
+    dispatch({
+      type: 'REQUEST_RETURN',
+      id: retModal.id,
+      reason: retReason,
+      returnAction: retAction,
+      exchangeSize: retAction === 'exchange' ? retSize : null,
+      refundUpi: retAction === 'refund' ? retUpi.trim() : null,
+      notes: retNotes.trim(),
+    });
+    setRetModal(null);
+  };
 
   if (state.orders.length === 0)
     return (
@@ -382,6 +436,149 @@ export function Orders({ go }) {
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <Header title="My Orders" go={go} />
 
+      {/* Return & Exchange Modal */}
+      {retModal && (
+        <Modal animationType="slide" transparent visible={!!retModal}>
+          <View style={ck.qrModalOverlay}>
+            <View style={[ck.qrModalCard, { maxHeight: '90%', width: '100%', maxWidth: 390 }]}>
+              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 10 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                  <Text style={{ fontSize: 16, fontWeight: '900', color: C.ink, flex: 1 }}>
+                    Return or Exchange Order
+                  </Text>
+                  <TouchableOpacity onPress={() => setRetModal(null)} style={{ padding: 4 }}>
+                    <MC name="close" size={22} color={C.ink3} />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Return Action Selector */}
+                <Text style={{ color: C.ink2, fontSize: 12, fontWeight: '800', marginBottom: 6 }}>
+                  Select Resolution
+                </Text>
+                <View style={{ flexDirection: 'row', gap: 10, marginBottom: 14 }}>
+                  <TouchableOpacity
+                    onPress={() => setRetAction('refund')}
+                    style={[
+                      ck.retActionCard,
+                      retAction === 'refund' && ck.retActionCardActive,
+                    ]}
+                  >
+                    <MC name="cash-refund" size={22} color={retAction === 'refund' ? C.green : C.ink3} />
+                    <Text style={[ck.retActionTxt, retAction === 'refund' && { color: '#064E3B' }]}>
+                      100% Refund
+                    </Text>
+                    <Text style={{ color: C.ink3, fontSize: 10, marginTop: 2, textAlign: 'center' }}>
+                      Money back to UPI
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => setRetAction('exchange')}
+                    style={[
+                      ck.retActionCard,
+                      retAction === 'exchange' && ck.retActionCardActive,
+                    ]}
+                  >
+                    <MC name="swap-horizontal-bold" size={22} color={retAction === 'exchange' ? C.brand : C.ink3} />
+                    <Text style={[ck.retActionTxt, retAction === 'exchange' && { color: C.brand }]}>
+                      Free Exchange
+                    </Text>
+                    <Text style={{ color: C.ink3, fontSize: 10, marginTop: 2, textAlign: 'center' }}>
+                      Replacement piece
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Reason Selector */}
+                <Text style={{ color: C.ink2, fontSize: 12, fontWeight: '800', marginBottom: 6 }}>
+                  Reason for {retAction === 'refund' ? 'Return' : 'Exchange'} *
+                </Text>
+                {REASONS.map((r) => (
+                  <TouchableOpacity
+                    key={r}
+                    onPress={() => setRetReason(r)}
+                    style={[
+                      ck.reasonRow,
+                      retReason === r && { borderColor: C.brand, backgroundColor: C.brandSoft },
+                    ]}
+                  >
+                    <Radio on={retReason === r} />
+                    <Text style={{ color: C.ink, fontSize: 12.5, fontWeight: retReason === r ? '800' : '600', marginLeft: 10, flex: 1 }}>
+                      {r}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+
+                {/* If Refund: Input UPI ID */}
+                {retAction === 'refund' && (
+                  <View style={{ marginTop: 12 }}>
+                    <Field
+                      label="Your Refund UPI ID (Instant Transfer) *"
+                      placeholder="e.g. yourname@okaxis or 9876543210@paytm"
+                      autoCapitalize="none"
+                      value={retUpi}
+                      onChangeText={setRetUpi}
+                    />
+                    <Text style={{ color: C.ink3, fontSize: 10.5, marginTop: -4, marginBottom: 8 }}>
+                      Refund of {money(retModal.total)} will be sent directly to this UPI ID upon parcel pickup.
+                    </Text>
+                  </View>
+                )}
+
+                {/* If Exchange: Select Size */}
+                {retAction === 'exchange' && (
+                  <View style={{ marginTop: 10 }}>
+                    <Text style={{ color: C.ink2, fontSize: 12, fontWeight: '800', marginBottom: 6 }}>
+                      Select Replacement Size
+                    </Text>
+                    <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+                      {['S', 'M', 'L', 'XL', 'XXL', '3XL', 'Free Size'].map((sz) => (
+                        <TouchableOpacity
+                          key={sz}
+                          onPress={() => setRetSize(sz)}
+                          style={[
+                            ck.exchangeChip,
+                            retSize === sz && { backgroundColor: C.brand, borderColor: C.brand },
+                          ]}
+                        >
+                          <Text style={{ color: retSize === sz ? '#fff' : C.ink, fontWeight: '800', fontSize: 12 }}>
+                            {sz}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                )}
+
+                {/* Additional Note */}
+                <Field
+                  label="Additional Comments (Optional)"
+                  placeholder="Explain any defects or issues..."
+                  value={retNotes}
+                  onChangeText={setRetNotes}
+                />
+
+                {/* Free Pickup Guarantee Banner */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#EFF6FF', padding: 10, borderRadius: R.md, marginVertical: 10, borderWidth: 1, borderColor: '#BFDBFE' }}>
+                  <MC name="truck-fast-outline" size={18} color="#1E40AF" />
+                  <Text style={{ color: '#1E3A8A', fontSize: 11, fontWeight: '700', marginLeft: 8, flex: 1 }}>
+                    Free Doorstep Pickup: Courier partner will pick the returned parcel from your delivery address.
+                  </Text>
+                </View>
+
+                <Btn
+                  title={`Confirm ${retAction === 'refund' ? 'Return & Refund' : 'Exchange'}`}
+                  icon="check"
+                  tone={retAction === 'refund' ? 'green' : 'brand'}
+                  style={{ width: '100%', marginTop: 6 }}
+                  onPress={submitReturn}
+                />
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+      )}
+
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ maxHeight: 50, flexGrow: 0, backgroundColor: C.surface }} contentContainerStyle={{ paddingHorizontal: 12, alignItems: 'center' }}>
         {[['all', 'All Orders'], ['active', 'In Transit'], ['done', 'Delivered'], ['other', 'Cancelled / Returns']].map(([k, l]) => (
           <TouchableOpacity key={k} onPress={() => setTab(k)} style={[ck.tab, tab === k && { borderBottomColor: C.brand }]}>
@@ -396,17 +593,23 @@ export function Orders({ go }) {
         )}
         {list.map((o) => {
           const si = steps.indexOf(o.status);
-          const bad = ['Cancelled', 'Return Requested'].includes(o.status);
+          const bad = ['Cancelled', 'Return Requested', 'Refund Completed'].includes(o.status);
           const isDone = o.status === 'Delivered';
+          const isReturning = o.status === 'Return Requested';
+          const isRefunded = o.status === 'Refund Completed';
           const firstItem = o.items[0];
           const otp = o.deliveryOtp || '5821';
+          const reverseOtp = o.reverseOtp || o.returnDetails?.reverseOtp || '4921';
 
           return (
             <View key={o.id} style={[ck.box, shadow, { marginBottom: 14 }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
                 <Text style={{ fontWeight: '900', color: C.ink, fontSize: 13.5 }}>#{o.id}</Text>
                 <View style={{ flex: 1 }} />
-                <Badge text={o.status} tone={o.status === 'Cancelled' ? 'red' : o.status === 'Return Requested' ? 'accent' : o.status === 'Delivered' ? 'green' : 'brand'} />
+                <Badge
+                  text={isRefunded ? 'REFUND COMPLETED' : isReturning ? 'RETURN IN PROGRESS' : o.status}
+                  tone={o.status === 'Cancelled' ? 'red' : isRefunded ? 'green' : isReturning ? 'accent' : o.status === 'Delivered' ? 'green' : 'brand'}
+                />
               </View>
               <Text style={{ color: C.ink3, fontSize: 11, marginBottom: 12 }}>
                 Placed on {new Date(o.at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
@@ -450,6 +653,38 @@ export function Orders({ go }) {
                     <Text style={{ color: C.ink3, fontSize: 10.5, marginTop: 1 }}>
                       Share this 4-digit OTP with the delivery partner upon parcel arrival.
                     </Text>
+                  </View>
+                </View>
+              )}
+
+              {/* REVERSE PICKUP OTP BANNER FOR RETURNED ORDERS */}
+              {isReturning && (
+                <View style={[ck.otpBanner, { backgroundColor: '#FEF3C7', borderColor: '#FDE68A' }]}>
+                  <MC name="truck-delivery-outline" size={20} color="#B45309" />
+                  <View style={{ flex: 1, marginLeft: 10 }}>
+                    <Text style={{ color: '#78350F', fontSize: 11.5, fontWeight: '800' }}>
+                      Doorstep Return Pickup OTP: <Text style={{ color: '#B45309', fontSize: 16, fontWeight: '900', letterSpacing: 2 }}>{reverseOtp}</Text>
+                    </Text>
+                    <Text style={{ color: '#92400E', fontSize: 10.5, marginTop: 1 }}>
+                      Share this OTP with the courier pickup agent. {o.returnDetails?.refundUpi ? `Refund will be credited to ${o.returnDetails.refundUpi}.` : ''}
+                    </Text>
+                  </View>
+                </View>
+              )}
+
+              {/* REFUND COMPLETED SUCCESS BANNER */}
+              {isRefunded && (
+                <View style={[ck.otpBanner, { backgroundColor: '#ECFDF5', borderColor: '#A7F3D0' }]}>
+                  <MC name="check-decagram" size={20} color="#059669" />
+                  <View style={{ flex: 1, marginLeft: 10 }}>
+                    <Text style={{ color: '#064E3B', fontSize: 12, fontWeight: '800' }}>
+                      Refund of {money(o.refundAmount || o.total)} Successfully Credited ✅
+                    </Text>
+                    {!!o.refundUtr && (
+                      <Text style={{ color: '#047857', fontSize: 10.5, marginTop: 1 }}>
+                        Bank / UPI Ref: {o.refundUtr}
+                      </Text>
+                    )}
                   </View>
                 </View>
               )}
@@ -502,8 +737,8 @@ export function Orders({ go }) {
                 )}
                 {o.status === 'Delivered' && (
                   <>
-                    <Btn title="Request Return" tone="outline" style={{ flex: 1, minWidth: 130 }} onPress={() => setRetFor(retFor === o.id ? null : o.id)} />
-                    <Btn title="Buy Again" tone="ghost" style={{ flex: 1, minWidth: 130 }} onPress={() => { o.items.forEach((it) => dispatch({ type: 'ADD_CART', id: it.id })); go('cart'); }} />
+                    <Btn title="Return / Exchange" icon="backup-restore" tone="accent" style={{ flex: 1, minWidth: 140 }} onPress={() => openReturnModal(o)} />
+                    <Btn title="Buy Again" tone="ghost" style={{ flex: 0.9, minWidth: 110 }} onPress={() => { o.items.forEach((it) => dispatch({ type: 'ADD_CART', id: it.id })); go('cart'); }} />
                   </>
                 )}
                 <Btn
@@ -512,26 +747,12 @@ export function Orders({ go }) {
                   tone="green"
                   style={{ flex: 1, minWidth: 130 }}
                   onPress={() => {
-                    const waUrl = getWhatsAppConnectUrl('9044468663', o.id, firstItem?.title);
+                    const waUrl = getWhatsAppConnectUrl('9044461613', o.id, firstItem?.title);
                     Linking.openURL(waUrl).catch(() => {});
                   }}
                 />
                 <Btn title="Help & Support" icon="headset" tone="ghost" style={{ flex: 1, minWidth: 120 }} onPress={() => go('support')} />
               </View>
-
-              {retFor === o.id && (
-                <View style={ck.retBox}>
-                  <Text style={{ fontWeight: '800', color: C.ink, fontSize: 13, marginBottom: 8 }}>Select Return Reason</Text>
-                  {REASONS.map((r) => (
-                    <TouchableOpacity key={r} onPress={() => { dispatch({ type: 'RETURN_ORDER', id: o.id, reason: r }); setRetFor(null); }} style={ck.retOpt}>
-                      <Text style={{ color: C.ink2, fontSize: 12.5 }}>{r}</Text>
-                    </TouchableOpacity>
-                  ))}
-                  <Text style={{ color: C.ink3, fontSize: 10.5, marginTop: 6, lineHeight: 15 }}>
-                    Free doorstep pickup within 7 days.
-                  </Text>
-                </View>
-              )}
             </View>
           );
         })}
@@ -597,5 +818,23 @@ const ck = StyleSheet.create({
   codInfoBox: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF3C7',
     borderRadius: R.md, padding: 12, marginTop: 8, borderWidth: 1, borderColor: '#FDE68A',
+  },
+  retActionCard: {
+    flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: C.bg,
+    borderRadius: R.md, padding: 14, borderWidth: 1.5, borderColor: C.line,
+  },
+  retActionCardActive: {
+    borderColor: C.brand, backgroundColor: C.brandSoft,
+  },
+  retActionTxt: {
+    fontWeight: '800', fontSize: 13, color: C.ink, marginTop: 6,
+  },
+  reasonRow: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: C.bg,
+    borderRadius: R.sm, padding: 10, marginBottom: 6, borderWidth: 1, borderColor: C.line,
+  },
+  exchangeChip: {
+    paddingHorizontal: 12, paddingVertical: 8, borderRadius: R.sm,
+    backgroundColor: C.bg, borderWidth: 1, borderColor: C.line,
   },
 });

@@ -6,6 +6,16 @@ import * as cloud from './lib/cloud';
 import * as shiprocket from './lib/shiprocket';
 import { requestNotificationPermission, showSystemNotification } from './lib/notifications';
 
+export const LANGUAGES = [
+  { code: 'en', name: 'English' },
+  { code: 'hi', name: 'Hindi' },
+];
+export const normalizeLangCode = (l) => 'en';
+export const t = (key) => {
+  const map = { home: 'Home', categories: 'Categories', trending_now: 'Deals', account: 'Account', cart: 'Cart' };
+  return map[key] || (key ? String(key).replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : '');
+};
+
 const Ctx = createContext(null);
 export const useApp = () => useContext(Ctx);
 
@@ -14,6 +24,7 @@ const KEY_ALL_PRODUCTS = '@temsho/all_products_catalog';
 const KEY_AUDIT_LOG = '@temsho/owner_audit_log';
 const KEY_ADMIN_SETTINGS = '@temsho/admin_settings';
 const KEY_SETTLEMENTS = '@temsho/seller_settlements_v1';
+const KEY_DELETED_PRODUCT_IDS = '@temsho/deleted_product_ids_v1';
 const USER_KEY_PREFIX = '@temsho/account_';
 
 const refCode = (phone) => 'TEM' + (phone ? String(phone).slice(-4) : '2026') + 'X';
@@ -63,6 +74,7 @@ const init = {
   adminCoupons: [], // Owner-generated dynamic coupons
   adminBanners: BANNERS, // Owner-generated dynamic banners/posters
   sellerSettlements: {}, // Owner payouts ledger { [sellerPhone]: { settledTotal: number, history: [] } }
+  deletedProductIds: [], // Permanently deleted product IDs
   recentlyViewed: [], // Product IDs browsed by customer
   banned: [],
   auditLog: [
@@ -141,53 +153,106 @@ function reducer(s, a) {
     }
 
     case 'RESTORE_USER_ACCOUNT': {
-      const { userAccount, allProducts, auditLog, adminSettings } = a;
-      const phone = userAccount?.user?.phone || a.phone;
+      const { userAccount, cloudData, allProducts, auditLog, adminSettings } = a;
+      const phone = cleanPhone(userAccount?.user?.phone || cloudData?.user?.phone || a.phone || '');
       const owner = isOwner(phone);
 
-      const user = userAccount?.user
-        ? {
-            ...userAccount.user,
-            phone,
-            isOwner: owner,
-            referral: userAccount.user.referral || refCode(phone),
-          }
-        : {
-            phone,
-            name: a.name || 'Valued User',
-            humanVerified: true,
-            isOwner: owner,
-            isSeller: false,
-            referral: refCode(phone),
-          };
-
-      const shop = userAccount?.shop || {
-        name: '', tagline: '', city: '', state: '', pin: '',
+      // 1. Restore Shop (Cloud shop takes highest priority, then local userAccount, then empty)
+      const cloudShop = cloudData?.shop || cloudData?.shopRow;
+      const rawShop = cloudShop ? {
+        name: cloudShop.name || '',
+        tagline: cloudShop.tagline || '',
+        city: cloudShop.city || '',
+        state: cloudShop.state || '',
+        pin: cloudShop.pin || '',
+        pickup: cloudShop.pickup || '',
+        contact: phone,
+        hours: cloudShop.hours || '10:00 AM – 8:00 PM',
+        returnDays: String(cloudShop.returnDays || cloudShop.return_days || '7'),
+        gst: cloudShop.gst || '',
+        payName: cloudShop.payName || cloudShop.pay_name || '',
+        upi: cloudShop.upi || '',
+        bankName: cloudShop.bankName || cloudShop.bank_name || '',
+        accNo: cloudShop.accNo || cloudShop.acc_no || '',
+        ifsc: cloudShop.ifsc || '',
+        acceptUpi: cloudShop.acceptUpi ?? cloudShop.accept_upi ?? true,
+        acceptCod: cloudShop.acceptCod ?? cloudShop.accept_cod ?? true,
+        acceptBank: true,
+      } : (userAccount?.shop || {
+        name: userAccount?.user?.shopName || '',
+        tagline: '', city: userAccount?.user?.shopCity || '', state: '', pin: '',
         pickup: '', contact: phone, hours: '10:00 AM – 8:00 PM',
         returnDays: '7', gst: '',
-        payName: user.name || '', upi: '', bankName: '', accNo: '', ifsc: '',
+        payName: userAccount?.user?.name || '', upi: '', bankName: '', accNo: '', ifsc: '',
         acceptUpi: true, acceptCod: true, acceptBank: true,
+      });
+
+      const hasShop = (!!rawShop?.name && rawShop.name.trim().length > 0) || (!!userAccount?.user?.shopName && userAccount.user.shopName.trim().length > 0);
+      const cloudUser = cloudData?.user || cloudData?.userRow;
+      const isSeller = Boolean(cloudUser?.is_seller || cloudUser?.isSeller || cloudShop?.name || userAccount?.user?.isSeller || hasShop);
+
+      // 2. Restore User Profile
+      const user = {
+        phone,
+        name: cloudUser?.name || userAccount?.user?.name || a.name || 'Valued User',
+        email: cloudUser?.email || userAccount?.user?.email || null,
+        city: cloudUser?.city || userAccount?.user?.city || rawShop.city || '',
+        state: cloudUser?.state || userAccount?.user?.state || rawShop.state || '',
+        pin: cloudUser?.pin || userAccount?.user?.pin || rawShop.pin || '',
+        isSeller,
+        shopName: rawShop.name,
+        shopCity: rawShop.city,
+        isOwner: owner,
+        referral: userAccount?.user?.referral || refCode(phone),
+        cloudId: cloudUser?.id || userAccount?.user?.cloudId || null,
       };
 
-      const myProducts = userAccount?.myProducts || (allProducts || []).filter((p) => p && (p.sellerPhone === phone || p.seller === 'me'));
-      const orders = userAccount?.orders || [];
+      // 3. Restore Orders (Merge cloud orders and local orders, deduplicate by code/id)
+      const cloudOrders = (cloudData?.userOrders || []).map((o) => ({
+        id: o.code || o.id,
+        items: o.items || [],
+        total: Number(o.total) || 0,
+        pay: o.pay_method || 'cod',
+        address: o.address || {},
+        status: o.status || 'Confirmed',
+        eta: o.eta || '3-5 Days',
+        createdAt: o.created_at,
+      }));
+
+      const orderMap = new Map();
+      (userAccount?.orders || []).forEach((o) => { if (o && o.id) orderMap.set(o.id, o); });
+      cloudOrders.forEach((o) => { if (o && o.id) orderMap.set(o.id, { ...(orderMap.get(o.id) || {}), ...o }); });
+      const orders = Array.from(orderMap.values());
+
+      // 4. Restore Products
+      const cloudProds = cloudData?.sellerProducts || [];
+      const myProdsMap = new Map();
+      (userAccount?.myProducts || []).forEach((p) => { if (p && p.id) myProdsMap.set(p.id, p); });
+      cloudProds.forEach((p) => { if (p && p.id) myProdsMap.set(p.id, p); });
+      (allProducts || []).forEach((p) => {
+        if (p && (p.sellerPhone === phone || p.seller === 'me')) myProdsMap.set(p.id, p);
+      });
+      const deletedSet = new Set(a.deletedProductIds || s.deletedProductIds || []);
+      const myProducts = Array.from(myProdsMap.values()).filter((p) => !deletedSet.has(p.id));
+
       const cart = userAccount?.cart || [];
       const wishlist = userAccount?.wishlist || [];
-      const addresses = userAccount?.addresses || [];
+      const addresses = userAccount?.addresses || (cloudUser?.city ? [{ id: 'a1', name: user.name, phone, line: rawShop.pickup || 'Address Line', city: cloudUser.city, pin: cloudUser.pin || '226010', state: cloudUser.state || 'Uttar Pradesh', active: true }] : []);
       const notifications = userAccount?.notifications || s.notifications;
       const supportChat = userAccount?.supportChat || s.supportChat;
       const settings = userAccount?.settings || s.settings;
 
-      const mergedProds = mergeCloudAndLocal(allProducts || s.products, myProducts);
+      const mergedProds = mergeCloudAndLocal(allProducts || s.products, myProducts, a.deletedProductIds || s.deletedProductIds);
 
       return notif(
         {
           ...s,
           ready: true,
           user,
-          shop,
+          shop: rawShop,
           myProducts,
           products: mergedProds,
+          deletedProductIds: a.deletedProductIds || s.deletedProductIds || [],
           orders,
           cart,
           wishlist,
@@ -200,12 +265,29 @@ function reducer(s, a) {
         },
         'hand-wave-outline',
         'Welcome Back!',
-        `Logged in as +91 ${phone}. All your orders, shop data, and listings have been restored.`
+        `Logged in as +91 ${phone}. All past orders, seller shop details, and listings have been restored from cloud.`
       );
     }
 
-    case 'CLOUD_PRODUCTS':
-      return { ...s, products: mergeCloudAndLocal(s.products, a.list), cloudOn: true };
+    case 'CLOUD_PRODUCTS': {
+      const deletedSet = new Set(s.deletedProductIds || []);
+      const map = new Map();
+      (a.list || []).forEach((p) => {
+        if (p && p.id && !deletedSet.has(p.id)) map.set(p.id, p);
+      });
+      (s.products || []).forEach((p) => {
+        if (p && p.id && !deletedSet.has(p.id) && !map.has(p.id)) {
+          map.set(p.id, p);
+        }
+      });
+      const merged = Array.from(map.values());
+      return {
+        ...s,
+        products: merged,
+        myProducts: (s.myProducts || []).filter((p) => p && p.id && !deletedSet.has(p.id)),
+        cloudOn: true,
+      };
+    }
 
     case 'CLOUD_SETTINGS':
       return { ...s, admin: { ...s.admin, ...a.data } };
@@ -323,6 +405,29 @@ function reducer(s, a) {
       );
     }
 
+    case 'RESET_SELLER_PAYOUT': {
+      const { sellerPhone, shopName } = a;
+      const audit = createAuditEntry(
+        'SELLER_PAYOUT_RESET',
+        `Payout Status Reset to Pending: ${shopName || sellerPhone}`,
+        `Owner reopened seller settlement for +91 ${sellerPhone}. Amount moved back to Pending.`,
+        { sellerPhone, shopName }
+      );
+      const curSettlements = { ...(s.sellerSettlements || {}) };
+      delete curSettlements[sellerPhone];
+      return notif(
+        {
+          ...s,
+          sellerSettlements: curSettlements,
+          auditLog: [audit, ...s.auditLog],
+        },
+        'refresh',
+        'Payout Status Reset',
+        `Payout for ${shopName || sellerPhone} moved back to Pending.`,
+        '#2563EB'
+      );
+    }
+
     case 'ADMIN_REMOVE_PRODUCT': {
       const prod = s.products.find((p) => p.id === a.id);
       const audit = createAuditEntry(
@@ -331,10 +436,15 @@ function reducer(s, a) {
         `Deleted by Owner Admin · Price: ₹${prod?.price || 0} · Seller: ${prod?.sellerName || 'Verified Seller'}`,
         { productId: a.id, title: prod?.title, price: prod?.price, seller: prod?.sellerName, deletedBy: 'Owner' }
       );
+      const newDeleted = Array.from(new Set([...(s.deletedProductIds || []), a.id]));
       return {
         ...s,
         products: s.products.filter((p) => p.id !== a.id),
         myProducts: (s.myProducts || []).filter((p) => p.id !== a.id),
+        cart: (s.cart || []).filter((c) => c.id !== a.id),
+        wishlist: (s.wishlist || []).filter((id) => id !== a.id),
+        recentlyViewed: (s.recentlyViewed || []).filter((id) => id !== a.id),
+        deletedProductIds: newDeleted,
         auditLog: [audit, ...s.auditLog],
       };
     }
@@ -400,7 +510,17 @@ function reducer(s, a) {
     }
 
     case 'DELETE_ACCOUNT': {
-      const audit = createAuditEntry('ACCOUNT_DELETED', `Account Deleted: +91 ${s.user?.phone}`, 'User permanently wiped their account.', { phone: s.user?.phone });
+      const phone = s.user?.phone ? cleanPhone(s.user.phone) : null;
+      if (phone) {
+        AsyncStorage.removeItem(USER_KEY_PREFIX + phone).catch(() => {});
+      }
+      AsyncStorage.removeItem(KEY_SESSION).catch(() => {});
+      if (cloud.cloudOn() && phone) {
+        cloud.deleteUserAccount(phone, s.user?.cloudId, s.shop?.cloudId).catch(() => {});
+      }
+      const audit = createAuditEntry('ACCOUNT_DELETED', `Account Deleted: +91 ${phone}`, 'User permanently wiped their account and listings.', { phone });
+      const remainingProducts = s.products.filter((p) => p.sellerPhone !== phone && p.seller !== 'me');
+      AsyncStorage.setItem(KEY_ALL_PRODUCTS, JSON.stringify(remainingProducts)).catch(() => {});
       return {
         ...init,
         ready: true,
@@ -408,22 +528,86 @@ function reducer(s, a) {
         adminCoupons: s.adminCoupons,
         adminBanners: s.adminBanners,
         auditLog: [audit, ...s.auditLog],
-        products: s.products.filter((p) => p.sellerPhone !== s.user?.phone),
+        products: remainingProducts,
       };
     }
 
+    case 'DELETE_SELLER': {
+      const phone = cleanPhone(a.phone);
+      if (phone) {
+        AsyncStorage.removeItem(USER_KEY_PREFIX + phone).catch(() => {});
+        if (cloud.cloudOn()) {
+          cloud.deleteUserAccount(phone).catch(() => {});
+        }
+      }
+      const newSettlements = { ...(s.sellerSettlements || {}) };
+      delete newSettlements[phone];
+      AsyncStorage.setItem(KEY_SETTLEMENTS, JSON.stringify(newSettlements)).catch(() => {});
+
+      const remainingProducts = (s.products || []).filter((p) => cleanPhone(p.sellerPhone || '') !== phone);
+      AsyncStorage.setItem(KEY_ALL_PRODUCTS, JSON.stringify(remainingProducts)).catch(() => {});
+
+      const audit = createAuditEntry(
+        'SELLER_ACCOUNT_DELETED',
+        `Seller Deleted by Owner: +91 ${phone}`,
+        `Seller account +91 ${phone} and all their listings were permanently removed by Owner.`,
+        { phone }
+      );
+
+      return notif(
+        {
+          ...s,
+          products: remainingProducts,
+          sellerSettlements: newSettlements,
+          auditLog: [audit, ...s.auditLog],
+          user: (cleanPhone(s.user?.phone || '') === phone) ? { ...s.user, isSeller: false, shopName: null, shopCity: null } : s.user,
+          shop: (cleanPhone(s.user?.phone || '') === phone) ? null : s.shop,
+        },
+        'delete-outline',
+        'Seller Account Deleted',
+        `Seller +91 ${phone} and their listings have been permanently deleted.`
+      );
+    }
+
     case 'BECOME_SELLER': {
+      const phone = cleanPhone(s.user?.phone || a.shop?.contact || '');
+      const shopObj = { ...s.shop, ...a.shop, name: a.shopName, city: a.shopCity, contact: phone };
+      const updatedUser = { ...s.user, isSeller: true, shopName: a.shopName, shopCity: a.shopCity };
+
+      // Push to Supabase Cloud immediately so it is permanently saved forever
+      if (cloud.cloudOn()) {
+        cloud.upsertUser(updatedUser).catch(() => {});
+        cloud.upsertShop(shopObj, s.user?.cloudId, phone).catch(() => {});
+      }
+
+      // Save to local phone bundle
+      if (phone) {
+        const userKey = USER_KEY_PREFIX + phone;
+        AsyncStorage.setItem(userKey, JSON.stringify({
+          user: updatedUser,
+          shop: shopObj,
+          myProducts: s.myProducts || [],
+          orders: s.orders || [],
+          cart: s.cart || [],
+          wishlist: s.wishlist || [],
+          addresses: s.addresses || [],
+          notifications: s.notifications || [],
+          settings: s.settings || {},
+          savedAt: Date.now(),
+        })).catch(() => {});
+      }
+
       const audit = createAuditEntry(
         'SELLER_REGISTERED',
         `New Seller Registered: ${a.shopName}`,
-        `Seller Phone: +91 ${s.user?.phone} · City: ${a.shopCity} · Payout UPI: ${a.shop?.upi} · Bank: ${a.shop?.bankName || 'Direct UPI'} (Acc: ${a.shop?.accNo ? '***' + a.shop.accNo.slice(-4) : 'N/A'}, IFSC: ${a.shop?.ifsc || 'N/A'})`,
-        { shop: a.shop, shopName: a.shopName, shopCity: a.shopCity, sellerPhone: s.user?.phone }
+        `Seller Phone: +91 ${phone} · City: ${a.shopCity} · Payout UPI: ${a.shop?.upi} · Bank: ${a.shop?.bankName || 'Direct UPI'} (Acc: ${a.shop?.accNo ? '***' + a.shop.accNo.slice(-4) : 'N/A'}, IFSC: ${a.shop?.ifsc || 'N/A'})`,
+        { shop: a.shop, shopName: a.shopName, shopCity: a.shopCity, sellerPhone: phone }
       );
       return notif(
         {
           ...s,
-          shop: { ...s.shop, ...a.shop, name: a.shopName, city: a.shopCity, contact: s.user?.phone || a.shop?.contact },
-          user: { ...s.user, isSeller: true, shopName: a.shopName, shopCity: a.shopCity },
+          shop: shopObj,
+          user: updatedUser,
           auditLog: [audit, ...s.auditLog],
         },
         'storefront-outline',
@@ -608,22 +792,115 @@ function reducer(s, a) {
       );
     }
 
-    case 'RETURN_ORDER': {
+    case 'RETURN_ORDER':
+    case 'REQUEST_RETURN': {
+      const reverseOtp = String(Math.floor(1000 + Math.random() * 9000));
+      const returnDetails = {
+        reason: a.reason || 'General Return',
+        action: a.returnAction || 'refund', // 'refund' | 'exchange'
+        exchangeSize: a.exchangeSize || null,
+        refundUpi: a.refundUpi || a.upi || null,
+        notes: a.notes || '',
+        photo: a.photo || null,
+        requestedAt: Date.now(),
+        reverseOtp,
+        refundStatus: 'Pending',
+      };
+
       const audit = createAuditEntry(
         'ORDER_RETURN_REQUEST',
-        `Return Requested: #${a.id}`,
-        `Customer requested return. Reason: ${a.reason}`,
-        { orderId: a.id, reason: a.reason }
+        `Return/Exchange Requested: #${a.id} (${returnDetails.action.toUpperCase()})`,
+        `Customer requested ${returnDetails.action}. Reason: ${returnDetails.reason} · Refund UPI: ${returnDetails.refundUpi || 'Original Mode'} · Reverse OTP: ${reverseOtp}`,
+        { orderId: a.id, ...returnDetails }
       );
+
       return notif(
         {
           ...s,
-          orders: s.orders.map((o) => (o.id === a.id ? { ...o, status: 'Return Requested', returnReason: a.reason } : o)),
+          orders: s.orders.map((o) =>
+            o.id === a.id
+              ? {
+                  ...o,
+                  status: 'Return Requested',
+                  returnReason: a.reason,
+                  returnDetails,
+                  reverseOtp,
+                }
+              : o
+          ),
           auditLog: [audit, ...s.auditLog],
         },
         'backup-restore',
-        'Return Requested',
-        `Pickup for Order #${a.id} will be scheduled within 2 business days.`
+        'Return Request Submitted',
+        `Your ${returnDetails.action === 'exchange' ? 'exchange' : 'return'} for Order #${a.id} is confirmed. Reverse courier pickup OTP: ${reverseOtp}.`
+      );
+    }
+
+    case 'COMPLETE_REFUND': {
+      const targetOrder = s.orders.find((o) => o.id === a.id);
+      const audit = createAuditEntry(
+        'REFUND_PROCESSED',
+        `Refund Processed: #${a.id} (₹${a.amount || targetOrder?.total || 0})`,
+        `Refund transferred to ${a.refundUpi || 'Customer UPI'}. UTR/Ref: ${a.utr || 'DIRECT_UPI'}`,
+        { orderId: a.id, amount: a.amount, utr: a.utr, upi: a.refundUpi }
+      );
+
+      return notif(
+        {
+          ...s,
+          orders: s.orders.map((o) =>
+            o.id === a.id
+              ? {
+                  ...o,
+                  status: 'Refund Completed',
+                  refundAmount: a.amount || o.total,
+                  refundUtr: a.utr,
+                  refundedAt: Date.now(),
+                  returnDetails: {
+                    ...(o.returnDetails || {}),
+                    refundStatus: 'Completed',
+                    refundUtr: a.utr,
+                  },
+                }
+              : o
+          ),
+          auditLog: [audit, ...s.auditLog],
+        },
+        'cash-check',
+        'Refund Completed',
+        `Refund of ₹${a.amount || targetOrder?.total || 0} for Order #${a.id} has been transferred to your UPI account.`
+      );
+    }
+
+    case 'RAISE_SPF_CLAIM': {
+      const claim = {
+        id: 'SPF_' + Date.now(),
+        orderId: a.orderId,
+        sellerPhone: a.sellerPhone || s.user?.phone,
+        reason: a.reason,
+        amount: Number(a.amount) || 0,
+        photo: a.photo || null,
+        status: 'Approved & Protected',
+        createdAt: Date.now(),
+      };
+
+      const audit = createAuditEntry(
+        'SPF_CLAIM_FILED',
+        `Seller Protection Fund (SPF) Claim: #${a.orderId} (₹${claim.amount})`,
+        `Seller filed protection claim. Reason: ${claim.reason} · 100% Loss Protection active.`,
+        claim
+      );
+
+      return notif(
+        {
+          ...s,
+          spfClaims: [claim, ...(s.spfClaims || [])],
+          orders: s.orders.map((o) => (o.id === a.orderId ? { ...o, spfClaim: claim } : o)),
+          auditLog: [audit, ...s.auditLog],
+        },
+        'shield-check',
+        'SPF Claim Protected',
+        `Seller Protection Fund claim for Order #${a.orderId} has been registered with 100% loss coverage.`
       );
     }
 
@@ -648,6 +925,56 @@ function reducer(s, a) {
       );
     }
 
+    case 'EDIT_PRODUCT': {
+      const p = a.product;
+      const audit = createAuditEntry(
+        'PRODUCT_UPDATED',
+        `Product Updated: ${p.title} (₹${p.price})`,
+        `Seller: ${p.sellerName || s.shop.name || 'Verified Seller'} (+91 ${p.sellerPhone || s.user?.phone}) · Price: ₹${p.price} · Stock: ${p.stock}`,
+        { product: p, sellerPhone: p.sellerPhone || s.user?.phone }
+      );
+      return notif(
+        {
+          ...s,
+          products: s.products.map((item) => (item.id === p.id ? { ...item, ...p } : item)),
+          myProducts: (s.myProducts || []).map((item) => (item.id === p.id ? { ...item, ...p } : item)),
+          auditLog: [audit, ...s.auditLog],
+        },
+        'square-edit-outline',
+        'Product Updated',
+        `"${p.title}" details have been updated successfully.`
+      );
+    }
+
+    case 'TOGGLE_PRODUCT_STATUS': {
+      return {
+        ...s,
+        products: s.products.map((p) => (p.id === a.id ? { ...p, status: p.status === 'paused' ? 'active' : 'paused' } : p)),
+        myProducts: (s.myProducts || []).map((p) => (p.id === a.id ? { ...p, status: p.status === 'paused' ? 'active' : 'paused' } : p)),
+      };
+    }
+
+    case 'UPDATE_PRODUCT_STOCK': {
+      const newStock = Math.max(0, Number(a.stock) || 0);
+      return {
+        ...s,
+        products: s.products.map((p) => (p.id === a.id ? { ...p, stock: newStock } : p)),
+        myProducts: (s.myProducts || []).map((p) => (p.id === a.id ? { ...p, stock: newStock } : p)),
+      };
+    }
+
+    case 'UPDATE_PRODUCT_PRICE': {
+      return {
+        ...s,
+        products: s.products.map((p) =>
+          p.id === a.id ? { ...p, price: Number(a.price) || p.price, mrp: Number(a.mrp) || p.mrp || p.price } : p
+        ),
+        myProducts: (s.myProducts || []).map((p) =>
+          p.id === a.id ? { ...p, price: Number(a.price) || p.price, mrp: Number(a.mrp) || p.mrp || p.price } : p
+        ),
+      };
+    }
+
     case 'RM_PRODUCT': {
       const prod = s.products.find((p) => p.id === a.id);
       const audit = createAuditEntry(
@@ -656,10 +983,15 @@ function reducer(s, a) {
         `Deleted by Seller (+91 ${s.user?.phone}) · Price: ₹${prod?.price || 0} · Category: ${prod?.cat}`,
         { productId: a.id, title: prod?.title, sellerPhone: s.user?.phone }
       );
+      const newDeleted = Array.from(new Set([...(s.deletedProductIds || []), a.id]));
       return {
         ...s,
         products: s.products.filter((p) => p.id !== a.id),
         myProducts: (s.myProducts || []).filter((p) => p.id !== a.id),
+        cart: (s.cart || []).filter((c) => c.id !== a.id),
+        wishlist: (s.wishlist || []).filter((id) => id !== a.id),
+        recentlyViewed: (s.recentlyViewed || []).filter((id) => id !== a.id),
+        deletedProductIds: newDeleted,
         auditLog: [audit, ...s.auditLog],
       };
     }
@@ -693,18 +1025,25 @@ function mergeProducts(saved) {
   return saved;
 }
 
-function mergeCloudAndLocal(localProds = [], cloudProds = []) {
+function mergeCloudAndLocal(localProds = [], cloudProds = [], deletedIds = []) {
   const map = new Map();
-  // Cloud products take precedence and are canonical
-  (cloudProds || []).forEach((p) => {
-    if (p && p.id) map.set(p.id, p);
+  const deletedSet = new Set(deletedIds || []);
+
+  // 1. Base verified marketplace catalog
+  (PRODUCTS || []).forEach((p) => {
+    if (p && p.id && !deletedSet.has(p.id)) map.set(p.id, p);
   });
-  // Also keep any local-only products
+
+  // 2. Local products
   (localProds || []).forEach((p) => {
-    if (p && p.id && !map.has(p.id)) {
-      map.set(p.id, p);
-    }
+    if (p && p.id && !deletedSet.has(p.id)) map.set(p.id, p);
   });
+
+  // 3. Cloud products take precedence and are canonical
+  (cloudProds || []).forEach((p) => {
+    if (p && p.id && !deletedSet.has(p.id)) map.set(p.id, p);
+  });
+
   return Array.from(map.values());
 }
 
@@ -716,12 +1055,13 @@ export function AppProvider({ children }) {
   useEffect(() => {
     (async () => {
       try {
-        const [rawSession, rawProducts, rawAudit, rawAdmin, rawSettlements] = await Promise.all([
+        const [rawSession, rawProducts, rawAudit, rawAdmin, rawSettlements, rawDeleted] = await Promise.all([
           AsyncStorage.getItem(KEY_SESSION),
           AsyncStorage.getItem(KEY_ALL_PRODUCTS),
           AsyncStorage.getItem(KEY_AUDIT_LOG),
           AsyncStorage.getItem(KEY_ADMIN_SETTINGS),
           AsyncStorage.getItem(KEY_SETTLEMENTS),
+          AsyncStorage.getItem(KEY_DELETED_PRODUCT_IDS),
         ]);
 
         let sessionData = rawSession ? JSON.parse(rawSession) : null;
@@ -729,30 +1069,38 @@ export function AppProvider({ children }) {
         let auditList = rawAudit ? JSON.parse(rawAudit) : [];
         let adminPatch = rawAdmin ? JSON.parse(rawAdmin) : null;
         let settlementsData = rawSettlements ? JSON.parse(rawSettlements) : {};
+        let deletedIds = rawDeleted ? JSON.parse(rawDeleted) : [];
 
         if (sessionData && sessionData.user?.phone) {
-          const userKey = USER_KEY_PREFIX + cleanPhone(sessionData.user.phone);
-          const rawUserAcc = await AsyncStorage.getItem(userKey);
+          const userPhone = cleanPhone(sessionData.user.phone);
+          const userKey = USER_KEY_PREFIX + userPhone;
+          const [rawUserAcc, cloudData] = await Promise.all([
+            AsyncStorage.getItem(userKey),
+            cloud.cloudPullUserFullProfile(userPhone),
+          ]);
           const userAcc = rawUserAcc ? JSON.parse(rawUserAcc) : sessionData;
 
           dispatch({
             type: 'RESTORE_USER_ACCOUNT',
-            phone: cleanPhone(sessionData.user.phone),
+            phone: userPhone,
             userAccount: userAcc,
+            cloudData,
             allProducts: allProds,
             auditLog: auditList,
             adminSettings: adminPatch,
             sellerSettlements: settlementsData,
+            deletedProductIds: deletedIds,
           });
         } else if (sessionData) {
           dispatch({
             type: 'HYDRATE',
             data: {
               ...sessionData,
-              products: mergeCloudAndLocal(allProds, sessionData.products),
+              products: mergeCloudAndLocal(allProds, sessionData.products, deletedIds),
               auditLog: auditList.length > 0 ? auditList : sessionData.auditLog,
               admin: adminPatch ? { ...DEFAULT_ADMIN, ...adminPatch } : sessionData.admin,
               sellerSettlements: settlementsData || {},
+              deletedProductIds: deletedIds || [],
             },
           });
         } else {
@@ -778,9 +1126,12 @@ export function AppProvider({ children }) {
     const { ready, ...rest } = state;
     AsyncStorage.setItem(KEY_SESSION, JSON.stringify(rest)).catch(() => {});
 
-    // 2. Save Global Catalog of Products
-    if (state.products && state.products.length > 0) {
-      AsyncStorage.setItem(KEY_ALL_PRODUCTS, JSON.stringify(state.products)).catch(() => {});
+    // 2. Save Global Catalog of Products (Always save, even if empty array)
+    AsyncStorage.setItem(KEY_ALL_PRODUCTS, JSON.stringify(state.products || [])).catch(() => {});
+
+    // 2b. Save Deleted Product IDs
+    if (state.deletedProductIds && state.deletedProductIds.length > 0) {
+      AsyncStorage.setItem(KEY_DELETED_PRODUCT_IDS, JSON.stringify(state.deletedProductIds)).catch(() => {});
     }
 
     // 3. Save Owner Audit Log
@@ -831,7 +1182,7 @@ export function AppProvider({ children }) {
     };
 
     refresh();
-    const interval = setInterval(refresh, 8000); // Poll cloud every 8 seconds for real-time all-India updates
+    const interval = setInterval(refresh, 5000); // Poll cloud every 5 seconds for instant real-time all-India sync
 
     // Realtime subscription for live products
     const unsubProducts = cloud.subscribeToProducts((payload) => {
@@ -863,15 +1214,9 @@ export function AppProvider({ children }) {
 
     const A = state.admin || DEFAULT_ADMIN;
 
-    // Delivery fee calculation based on selected delivery mode
-    let baseDelivery = Number(A.deliveryFee) || 49;
-    if (state.deliveryMode === 'local') baseDelivery = Number(A.localDeliveryFee) || 29;
-    else if (state.deliveryMode === 'indiapost') baseDelivery = 39;
-
-    let delivery = subtotal === 0 || subtotal >= (Number(A.freeDeliveryAbove) || 499) ? 0 : baseDelivery;
-    if (cp?.type === 'freeship' || cp?.ship) delivery = 0;
-
-    const total = Math.max(0, subtotal - couponOff + delivery);
+    // 100% Free Delivery for Buyers across all orders (Meesho Strategy: ₹0 Delivery Charge Always)
+    const delivery = 0;
+    const total = Math.max(0, subtotal - couponOff);
 
     return {
       state, dispatch, byId, cartLines,
@@ -885,6 +1230,8 @@ export function AppProvider({ children }) {
       cloudOn: cloud.cloudOn(),
       cloud,
       shiprocket,
+      t: (key) => t(key, state.settings?.lang || 'en'),
+      lang: state.settings?.lang || 'en',
       unread: (state.notifications || []).filter((n) => !n.read).length,
     };
   }, [state]);
