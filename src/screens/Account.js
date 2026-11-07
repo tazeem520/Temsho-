@@ -196,6 +196,7 @@ export function BecomeSeller({ go }) {
     bankName: '',
     accNo: '',
     ifsc: '',
+    qrImg: '',
     acceptUpi: true,
     acceptCod: true,
     acceptBank: true,
@@ -203,13 +204,25 @@ export function BecomeSeller({ go }) {
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
 
+  const pickQr = async () => {
+    try {
+      const res = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 0.85,
+      });
+      if (!res.canceled && res.assets?.[0]?.uri) {
+        setF((prev) => ({ ...prev, qrImg: res.assets[0].uri }));
+      }
+    } catch (e) {}
+  };
+
   const ok =
     f.shop.trim() &&
     f.city.trim() &&
     f.pin.trim().length === 6 &&
     f.pickup.trim() &&
     f.payName.trim() &&
-    (f.upi.trim() || (f.accNo.trim() && f.ifsc.trim()));
+    (f.upi.trim() || (f.accNo.trim() && f.ifsc.trim()) || f.qrImg);
 
   const launchShop = async () => {
     if (!ok) {
@@ -231,6 +244,7 @@ export function BecomeSeller({ go }) {
       bankName: f.bankName.trim() || 'Direct Bank Settlement',
       accNo: f.accNo.trim(),
       ifsc: f.ifsc.trim().toUpperCase(),
+      qrImg: f.qrImg || null,
       acceptUpi: f.acceptUpi,
       acceptCod: f.acceptCod,
       acceptBank: f.acceptBank,
@@ -354,7 +368,36 @@ export function BecomeSeller({ go }) {
             </View>
           </View>
 
-          <Text style={{ color: C.ink2, fontSize: 12, fontWeight: '700', marginTop: 10, marginBottom: 8 }}>Accepted Payment Channels</Text>
+          {/* Shop UPI Payment QR Code Upload */}
+          <Text style={{ color: C.ink2, fontSize: 12, fontWeight: '700', marginTop: 12, marginBottom: 6 }}>
+            Shop Payment QR Code (Optional)
+          </Text>
+          <TouchableOpacity
+            onPress={pickQr}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: f.qrImg ? C.greenSoft : C.bg,
+              borderWidth: 1.5,
+              borderColor: f.qrImg ? C.green : C.line,
+              borderRadius: R.md,
+              padding: 12,
+              marginBottom: 12,
+            }}
+          >
+            <MC name={f.qrImg ? 'qrcode-scan' : 'qrcode-plus'} size={24} color={f.qrImg ? C.green : C.brand} />
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={{ color: C.ink, fontWeight: '800', fontSize: 13 }}>
+                {f.qrImg ? 'QR Code Image Uploaded ✅' : 'Upload Shop UPI QR Code'}
+              </Text>
+              <Text style={{ color: C.ink3, fontSize: 11, marginTop: 2 }}>
+                {f.qrImg ? 'Tap to change QR image' : 'Used by Owner to settle your earnings directly'}
+              </Text>
+            </View>
+            <MC name="chevron-right" size={20} color={C.ink3} />
+          </TouchableOpacity>
+
+          <Text style={{ color: C.ink2, fontSize: 12, fontWeight: '700', marginTop: 6, marginBottom: 8 }}>Accepted Payment Channels</Text>
           <TouchableOpacity onPress={() => setF({ ...f, acceptUpi: !f.acceptUpi })} style={[ac.payOpt, f.acceptUpi && ac.payOn]}>
             <MC name={f.acceptUpi ? 'checkbox-marked' : 'checkbox-blank-outline'} size={20} color={f.acceptUpi ? C.green : C.ink3} />
             <MC name="cellphone-check" size={19} color={C.brand} style={{ marginLeft: 12 }} />
@@ -413,9 +456,17 @@ export function Seller({ go }) {
   const [customSizeText, setCustomSizeText] = useState('');
   const [f, setF] = useState({
     title: '',
+    brand: '',
+    sku: 'TS-' + Math.floor(1000 + Math.random() * 9000),
     price: '',
     mrp: '',
+    stock: '50',
     cat: 'fashion',
+    color: '',
+    material: '',
+    weight: '250g',
+    dimensions: '15 x 10 x 5 cm',
+    returnDays: '7',
     desc: '',
     images: [],
     video: null,
@@ -543,6 +594,14 @@ export function Seller({ go }) {
         cloudProd = await cloud.pushProduct(
           {
             ...f,
+            brand: f.brand.trim() || 'Verified Indian Seller',
+            sku: f.sku.trim() || 'TS-' + Date.now().toString().slice(-6),
+            stock: Number(f.stock) || 50,
+            color: f.color.trim() || 'Multicolor',
+            material: f.material.trim() || 'Standard Quality Fabric',
+            weight: f.weight.trim() || '250g',
+            dimensions: f.dimensions.trim() || '15 x 10 x 5 cm',
+            returnDays: Number(f.returnDays) || 7,
             img: mainImg,
             images: allImgs.length > 0 ? allImgs : (mainImg ? [mainImg] : []),
             video: f.video?.uri || null,
@@ -561,6 +620,14 @@ export function Seller({ go }) {
     const localProd = cloudProd || {
       id: 'my' + Date.now(),
       title: f.title,
+      brand: f.brand.trim() || 'Verified Indian Seller',
+      sku: f.sku.trim() || 'TS-' + Date.now().toString().slice(-6),
+      stock: Number(f.stock) || 50,
+      color: f.color.trim() || 'Multicolor',
+      material: f.material.trim() || 'Standard Quality Fabric',
+      weight: f.weight.trim() || '250g',
+      dimensions: f.dimensions.trim() || '15 x 10 x 5 cm',
+      returnDays: Number(f.returnDays) || 7,
       cat: f.cat,
       price: Number(f.price),
       mrp: Number(f.mrp || f.price),
@@ -578,7 +645,7 @@ export function Seller({ go }) {
       sizes: f.variantType !== 'none' ? (f.sizes || []) : [],
       tint: cat?.tint || '#F3F4F6',
       desc: f.desc || 'Product listed by verified seller.',
-      tags: ['New Arrival', 'Cash on Delivery'],
+      tags: ['New Arrival', 'Cash on Delivery', '100% Verified'],
     };
 
     dispatch({ type: 'ADD_PRODUCT', product: localProd });
@@ -593,9 +660,17 @@ export function Seller({ go }) {
     setSaving(false);
     setF({
       title: '',
+      brand: '',
+      sku: 'TS-' + Math.floor(1000 + Math.random() * 9000),
       price: '',
       mrp: '',
+      stock: '50',
       cat: 'fashion',
+      color: '',
+      material: '',
+      weight: '250g',
+      dimensions: '15 x 10 x 5 cm',
+      returnDays: '7',
       desc: '',
       images: [],
       video: null,
@@ -658,9 +733,18 @@ export function Seller({ go }) {
           <Btn title="List a New Product" icon="plus" tone="accent" style={{ marginTop: 12 }} onPress={() => setAdd(true)} />
         ) : (
           <View style={[ac.card, shadow, { padding: 18, marginTop: 16 }]}>
-            <Text style={{ fontWeight: '900', color: C.ink, fontSize: 16, marginBottom: 14 }}>New Product Listing</Text>
-            <Field label="Product Title *" placeholder="e.g. Handcrafted Cotton Kurti / Kids Denim" value={f.title} onChangeText={(v) => setF({ ...f, title: v })} />
-            
+            <Text style={{ fontWeight: '900', color: C.ink, fontSize: 16, marginBottom: 14 }}>Flipkart Standard Product Listing</Text>
+            <Field label="Product Title *" placeholder="e.g. Handcrafted Cotton Kurti / Regular Fit Denim" value={f.title} onChangeText={(v) => setF({ ...f, title: v })} />
+
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <View style={{ flex: 1.2 }}>
+                <Field label="Brand / Manufacturer" placeholder="e.g. Roadstar / Self" value={f.brand} onChangeText={(v) => setF({ ...f, brand: v })} />
+              </View>
+              <View style={{ flex: 0.8 }}>
+                <Field label="SKU Code" placeholder="TS-1001" value={f.sku} onChangeText={(v) => setF({ ...f, sku: v })} />
+              </View>
+            </View>
+
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <View style={{ flex: 1 }}>
                 <Field label="Selling Price (₹) *" keyboardType="number-pad" placeholder="799" value={f.price} onChangeText={(v) => setF({ ...f, price: v.replace(/\D/g, '') })} />
@@ -668,6 +752,35 @@ export function Seller({ go }) {
               <View style={{ flex: 1 }}>
                 <Field label="MRP (₹)" keyboardType="number-pad" placeholder="1499" value={f.mrp} onChangeText={(v) => setF({ ...f, mrp: v.replace(/\D/g, '') })} />
               </View>
+              <View style={{ flex: 0.9 }}>
+                <Field label="Stock (Qty) *" keyboardType="number-pad" placeholder="50" value={f.stock} onChangeText={(v) => setF({ ...f, stock: v.replace(/\D/g, '') })} />
+              </View>
+            </View>
+
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <View style={{ flex: 1 }}>
+                <Field label="Fabric / Material" placeholder="e.g. 100% Pure Cotton" value={f.material} onChangeText={(v) => setF({ ...f, material: v })} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Field label="Primary Color" placeholder="e.g. Navy Blue / Maroon" value={f.color} onChangeText={(v) => setF({ ...f, color: v })} />
+              </View>
+            </View>
+
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <View style={{ flex: 1 }}>
+                <Field label="Package Weight" placeholder="250g / 0.5kg" value={f.weight} onChangeText={(v) => setF({ ...f, weight: v })} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Field label="Package Dimensions" placeholder="15 x 10 x 5 cm" value={f.dimensions} onChangeText={(v) => setF({ ...f, dimensions: v })} />
+              </View>
+            </View>
+
+            {/* Meesho / Flipkart Style Free Delivery Note */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#ECFDF5', padding: 10, borderRadius: R.md, marginBottom: 14, borderWidth: 1, borderColor: '#A7F3D0' }}>
+              <MC name="truck-check-outline" size={18} color="#059669" />
+              <Text style={{ flex: 1, marginLeft: 8, color: '#065F46', fontSize: 11.5, fontWeight: '700', lineHeight: 16 }}>
+                100% Free Delivery & 7-Day Doorstep Returns Active. 0% Commission on this listing!
+              </Text>
             </View>
 
             {/* Category Selector */}

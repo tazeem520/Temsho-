@@ -163,10 +163,11 @@ export function Admin({ go }) {
         <Card>
           <Link icon="history" label="1 · Activity & Audit Ledger (History Logs)" sub="Who ordered what, when added, when deleted" to="admin-audit" badge={`${totalLogs}`} />
           <Link icon="storefront-outline" label="2 · Sellers Directory & Financial Ledger" sub="Sellers list, bank accounts, pending & settled payouts" to="admin-sellers" />
-          <Link icon="bank-outline" label="3 · Owner Payment & Delivery Settlements" sub="₹49 delivery logistics UPI & Bank account" to="admin-owner-payment" />
-          <Link icon="truck-fast-outline" label="4 · Shiprocket Courier Integration & Activation" sub="Live API Setup & Cheapest All-India Shipping" to="admin-shiprocket" />
-          <Link icon="cellphone-key" label="5 · OTP Authentication Engine" sub={`Current: ${admin.otpProvider || 'Fast2SMS / Standard'}`} to="admin-otp" />
-          <Link icon="truck-delivery-outline" label="6 · Logistics & Delivery Rates" sub="Delivery fees, Free delivery threshold" to="admin-logistics" last />
+          <Link icon="backup-restore" label="3 · Returns & Refunds Desk" sub="Customer return requests, reverse courier pickup & instant refunds" to="admin-returns" badge={`${state.orders.filter(o => o.status === 'Return Requested').length || ''}`} />
+          <Link icon="bank-outline" label="4 · Owner Payment & Delivery Settlements" sub="Official collection UPI & Bank account" to="admin-owner-payment" />
+          <Link icon="truck-fast-outline" label="5 · Shiprocket Courier Integration & Activation" sub="Live API Setup & Cheapest All-India Shipping" to="admin-shiprocket" />
+          <Link icon="cellphone-key" label="6 · OTP Authentication Engine" sub={`Current: ${admin.otpProvider || 'Fast2SMS / Standard'}`} to="admin-otp" />
+          <Link icon="truck-delivery-outline" label="7 · Logistics & Delivery Rates" sub="Delivery fees, Free delivery threshold" to="admin-logistics" last />
         </Card>
 
         <Text style={ad.sec}>PROMOTIONS & MEDIA (OWNER DYNAMIC TOOLS)</Text>
@@ -286,6 +287,7 @@ export function AdminSellers({ go }) {
   const [q, setQ] = useState('');
   const [filterTab, setFilterTab] = useState('all'); // 'all' | 'pending' | 'settled'
   const [payModal, setPayModal] = useState(null);
+  const [qrModal, setQrModal] = useState(null);
   const [utr, setUtr] = useState('');
   const [amount, setAmount] = useState('');
   const [expandedSeller, setExpandedSeller] = useState(null);
@@ -295,7 +297,7 @@ export function AdminSellers({ go }) {
 
   // 1. Current registered shop
   if (state.shop?.name || state.user?.isSeller || state.user?.phone) {
-    const phone = state.user?.phone || '9044468663';
+    const phone = state.user?.phone || '9044461613';
     const settledInfo = state.sellerSettlements?.[phone] || { settledTotal: 0, history: [] };
     sellersMap.set(phone, {
       phone,
@@ -307,6 +309,7 @@ export function AdminSellers({ go }) {
       accNo: state.shop?.accNo || '308942187654',
       ifsc: state.shop?.ifsc || 'SBIN0001234',
       payName: state.shop?.payName || state.user?.name || 'Seller',
+      qrImg: state.shop?.qrImg || null,
       ordersCount: 0,
       grossSales: 0,
       productsCount: 0,
@@ -448,6 +451,53 @@ export function AdminSellers({ go }) {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <Header title="Seller Financial Directory & Payouts" go={go} />
+
+      {/* Seller QR Modal */}
+      {qrModal && (
+        <Modal animationType="fade" transparent visible={!!qrModal}>
+          <View style={ad.modalOverlay}>
+            <View style={[ad.payoutModalCard, shadow, { alignItems: 'center' }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%', marginBottom: 12 }}>
+                <Text style={{ fontSize: 16, fontWeight: '900', color: C.ink, flex: 1 }}>
+                  Seller Payment QR Code
+                </Text>
+                <TouchableOpacity onPress={() => setQrModal(null)} style={{ padding: 4 }}>
+                  <MC name="close" size={22} color={C.ink3} />
+                </TouchableOpacity>
+              </View>
+
+              <Text style={{ fontWeight: '900', color: C.ink, fontSize: 15, marginBottom: 2 }}>{qrModal.name}</Text>
+              <Text style={{ color: C.ink3, fontSize: 12, marginBottom: 12 }}>+91 {qrModal.phone} · UPI: {qrModal.upi || 'N/A'}</Text>
+
+              {qrModal.qrImg ? (
+                <View style={{ width: 220, height: 220, borderRadius: 12, overflow: 'hidden', borderWidth: 2, borderColor: C.brand, marginVertical: 8 }}>
+                  <Image source={{ uri: qrModal.qrImg }} style={{ width: '100%', height: '100%' }} resizeMode="contain" />
+                </View>
+              ) : (
+                <View style={{ backgroundColor: '#ffffff', padding: 14, borderRadius: 12, borderWidth: 1.5, borderColor: C.brandSoft, marginVertical: 8 }}>
+                  <UpiQR
+                    upi={qrModal.upi || `${qrModal.phone}@upi`}
+                    name={qrModal.payName || qrModal.name}
+                    amount={Math.max(0, (qrModal.grossSales || 0) - (qrModal.settledAmount || 0)) || 500}
+                    note={`Temsho Payout - ${qrModal.name}`}
+                  />
+                </View>
+              )}
+
+              <Text style={{ color: C.ink2, fontSize: 11.5, textAlign: 'center', marginTop: 8, marginBottom: 14 }}>
+                Scan with Google Pay, PhonePe, Paytm or BHIM to pay seller directly.
+              </Text>
+
+              <Btn
+                title="Close"
+                tone="ghost"
+                style={{ width: '100%' }}
+                onPress={() => setQrModal(null)}
+              />
+            </View>
+          </View>
+        </Modal>
+      )}
 
       {/* Payout Modal */}
       {payModal && (
@@ -633,7 +683,18 @@ export function AdminSellers({ go }) {
 
                 {/* DIRECT PAYMENT & SETTLEMENT ACTION PANEL (RIGHT BELOW DETAILS) */}
                 <View style={ad.paymentActionBox}>
-                  <Text style={ad.paySectionTitle}>💳 Pay Seller & Settle Accounts</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <Text style={ad.paySectionTitle}>💳 Pay Seller & Settle Accounts</Text>
+                    <TouchableOpacity
+                      onPress={() => setQrModal(s)}
+                      style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#EFF6FF', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: '#BFDBFE' }}
+                    >
+                      <MC name="qrcode" size={14} color="#1E40AF" />
+                      <Text style={{ color: '#1E40AF', fontSize: 11, fontWeight: '800', marginLeft: 4 }}>
+                        {s.qrImg ? 'View Uploaded QR' : 'View UPI QR'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
 
                   {/* 1. Instant 1-Tap UPI Pay Button */}
                   <TouchableOpacity
@@ -1012,12 +1073,12 @@ export function AdminOwnerPayment({ go }) {
 
   const [f, setF] = useState({
     payeeName: current.payeeName || 'Tazeem Ahmad',
-    deliveryChargeUpi: current.deliveryChargeUpi || current.upiId || '9044468663@upi',
+    deliveryChargeUpi: current.deliveryChargeUpi || current.upiId || '9044461613@upi',
     bankName: current.bankName || 'State Bank of India',
     accountNumber: current.accountNumber || '',
     ifscCode: current.ifscCode || '',
-    codRemittanceMethod: current.codRemittanceMethod || 'upi',
-    notes: current.notes || '₹49 logistics delivery fee payout account',
+    codRemittanceMethod: current.codRemittanceMethod || 'bank_transfer',
+    notes: current.notes || 'Temsho Official Marketplace & Shiprocket COD remittance account',
   });
 
   const [saved, setSaved] = useState(false);
@@ -1044,24 +1105,24 @@ export function AdminOwnerPayment({ go }) {
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <Header title="Owner Payout Setup" go={go} />
+      <Header title="Owner Payment Setup" go={go} />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 50 }}>
         {/* Clean Info Header */}
         <View style={[ad.payoutCardTop, shadow]}>
           <MC name="shield-crown-outline" size={24} color="#059669" />
           <View style={{ flex: 1, marginLeft: 12 }}>
             <Text style={{ fontWeight: '900', color: '#064E3B', fontSize: 14.5 }}>
-              Owner Delivery Fee Account (₹49 / Order)
+              Temsho Official Collection & Settlement Account
             </Text>
             <Text style={{ color: '#047857', fontSize: 11.5, lineHeight: 16, marginTop: 2 }}>
-              Delivery logistics fees collected on customer orders are remitted to this account.
+              Customer online payments and Shiprocket COD remittances are received directly in this account.
             </Text>
           </View>
         </View>
 
         <Card style={{ padding: 18, marginTop: 14 }}>
           <Text style={{ fontWeight: '900', color: C.ink, fontSize: 15, marginBottom: 12 }}>
-            Owner UPI & Bank Details
+            Owner UPI & Bank Account Details
           </Text>
 
           <Field
@@ -1072,8 +1133,8 @@ export function AdminOwnerPayment({ go }) {
           />
 
           <Field
-            label="Owner Delivery Fee UPI ID *"
-            placeholder="e.g. 9044468663@upi or tazeemahmadsbn12@oksbi"
+            label="Official Collection UPI ID *"
+            placeholder="e.g. 9044461613@upi or tazeemahmadsbn12@oksbi"
             autoCapitalize="none"
             value={f.deliveryChargeUpi}
             onChangeText={(v) => setF({ ...f, deliveryChargeUpi: v })}
@@ -1082,7 +1143,7 @@ export function AdminOwnerPayment({ go }) {
           <View style={{ height: 1, backgroundColor: C.line, marginVertical: 14 }} />
 
           <Text style={{ fontWeight: '800', color: C.ink, fontSize: 13, marginBottom: 10 }}>
-            Bank Account Details (Optional)
+            Bank Account Details (For Shiprocket COD Payouts)
           </Text>
 
           <Field
@@ -1094,25 +1155,25 @@ export function AdminOwnerPayment({ go }) {
 
           <Field
             label="Bank Account Number"
-            placeholder="e.g. 308942187654"
+            placeholder="Account No."
             keyboardType="number-pad"
             value={f.accountNumber}
             onChangeText={(v) => setF({ ...f, accountNumber: v.replace(/\D/g, '') })}
           />
 
           <Field
-            label="Bank IFSC Code"
-            placeholder="e.g. SBIN0001234"
+            label="IFSC Code"
+            placeholder="SBIN0001234"
             autoCapitalize="characters"
             value={f.ifscCode}
             onChangeText={(v) => setF({ ...f, ifscCode: v.toUpperCase() })}
           />
 
           <Btn
-            title={saved ? '✓ Saved Successfully' : 'Save Payout Details'}
-            icon={saved ? 'check' : 'content-save-outline'}
+            title={saved ? 'Owner Payment Saved ✅' : 'Save Owner Payment Settings'}
+            icon={saved ? 'check-decagram' : 'content-save-outline'}
             tone={saved ? 'green' : 'brand'}
-            style={{ marginTop: 10 }}
+            style={{ marginTop: 16 }}
             onPress={handleSave}
           />
         </Card>
@@ -1700,6 +1761,235 @@ export function AdminBroadcast({ go }) {
           <Btn title={sent ? 'Sent Successfully' : 'Broadcast to All Users'} icon={sent ? 'check' : 'send'} tone={sent ? 'green' : 'brand'} disabled={!f.title}
             onPress={() => { dispatch({ type: 'ADMIN_BROADCAST', title: f.title, body: f.body }); setSent(true); setTimeout(() => go(-1), 800); }} />
         </Card>
+      </ScrollView>
+    </View>
+  );
+}
+
+/* =============== 6. RETURNS & REFUNDS DESK =============== */
+export function AdminReturns({ go }) {
+  const { state, dispatch } = useApp();
+  const [payModal, setPayModal] = useState(null);
+  const [utr, setUtr] = useState('');
+  const [filter, setFilter] = useState('all'); // 'all' | 'pending' | 'completed'
+
+  const returnOrders = state.orders.filter(
+    (o) => o.status === 'Return Requested' || o.status === 'Refund Completed' || o.returnDetails
+  );
+
+  const filtered = returnOrders.filter((o) => {
+    if (filter === 'pending') return o.status === 'Return Requested';
+    if (filter === 'completed') return o.status === 'Refund Completed';
+    return true;
+  });
+
+  const handleRefund = (o) => {
+    setPayModal(o);
+    setUtr('');
+  };
+
+  const confirmRefund = () => {
+    if (!payModal) return;
+    dispatch({
+      type: 'COMPLETE_REFUND',
+      id: payModal.id,
+      amount: payModal.total,
+      refundUpi: payModal.returnDetails?.refundUpi || `${payModal.customerPhone}@upi`,
+      utr: utr.trim() || 'UPI_REF_' + Date.now(),
+    });
+    setPayModal(null);
+  };
+
+  return (
+    <View style={{ flex: 1, backgroundColor: C.bg }}>
+      <Header title="Returns & Refunds Desk" go={go} />
+
+      {/* Refund Modal */}
+      {payModal && (
+        <Modal animationType="slide" transparent visible={!!payModal}>
+          <View style={ad.modalOverlay}>
+            <View style={[ad.payoutModalCard, shadow]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%', marginBottom: 12 }}>
+                <Text style={{ fontSize: 16, fontWeight: '900', color: C.ink, flex: 1 }}>
+                  Process Customer Refund
+                </Text>
+                <TouchableOpacity onPress={() => setPayModal(null)} style={{ padding: 4 }}>
+                  <MC name="close" size={22} color={C.ink3} />
+                </TouchableOpacity>
+              </View>
+
+              <View style={ad.modalSellerBox}>
+                <Text style={{ fontWeight: '900', color: C.ink, fontSize: 14 }}>Order #{payModal.id} · {payModal.customerName}</Text>
+                <Text style={{ color: C.ink3, fontSize: 12, marginTop: 2 }}>+91 {payModal.customerPhone}</Text>
+                <Text style={{ color: C.green, fontWeight: '800', fontSize: 13, marginTop: 4 }}>
+                  Refund Amount: {money(payModal.total)}
+                </Text>
+                <Text style={{ color: C.brand, fontWeight: '800', fontSize: 12, marginTop: 2 }}>
+                  Customer Refund UPI: {payModal.returnDetails?.refundUpi || `${payModal.customerPhone}@upi`}
+                </Text>
+              </View>
+
+              <Field
+                label="Bank UTR / Transaction Reference ID"
+                placeholder="e.g. 423891028374 or UPI Ref"
+                value={utr}
+                onChangeText={setUtr}
+              />
+
+              {/* 1-Tap UPI Pay to Customer */}
+              <View style={{ marginVertical: 8, width: '100%' }}>
+                <PayNowBtn
+                  upi={payModal.returnDetails?.refundUpi || `${payModal.customerPhone}@upi`}
+                  name={payModal.customerName || 'Customer'}
+                  amount={payModal.total}
+                  note={`Temsho Refund #${payModal.id}`}
+                />
+              </View>
+
+              <Btn
+                title="Mark Refund as Completed"
+                icon="check-decagram"
+                tone="green"
+                style={{ width: '100%', marginTop: 8 }}
+                onPress={confirmRefund}
+              />
+            </View>
+          </View>
+        </Modal>
+      )}
+
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 50 }}>
+        {/* KPI Strip */}
+        <View style={ad.kpiHeaderWrap}>
+          <View style={[ad.kpiSummaryCard, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}>
+            <Text style={{ color: '#1E40AF', fontSize: 11, fontWeight: '800' }}>TOTAL RETURNS</Text>
+            <Text style={{ color: '#1E3A8A', fontSize: 18, fontWeight: '900', marginTop: 2 }}>{returnOrders.length}</Text>
+          </View>
+          <View style={[ad.kpiSummaryCard, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
+            <Text style={{ color: '#991B1B', fontSize: 11, fontWeight: '800' }}>PENDING REFUNDS</Text>
+            <Text style={{ color: '#DC2626', fontSize: 18, fontWeight: '900', marginTop: 2 }}>
+              {returnOrders.filter((o) => o.status === 'Return Requested').length}
+            </Text>
+          </View>
+          <View style={[ad.kpiSummaryCard, { backgroundColor: '#ECFDF5', borderColor: '#A7F3D0' }]}>
+            <Text style={{ color: '#065F46', fontSize: 11, fontWeight: '800' }}>REFUNDED</Text>
+            <Text style={{ color: '#047857', fontSize: 18, fontWeight: '900', marginTop: 2 }}>
+              {returnOrders.filter((o) => o.status === 'Refund Completed').length}
+            </Text>
+          </View>
+        </View>
+
+        {/* Filter Chips */}
+        <View style={{ flexDirection: 'row', gap: 8, marginVertical: 12 }}>
+          {[['all', 'All Requests'], ['pending', '⚠️ Pending Refund'], ['completed', '✅ Refunded']].map(([k, l]) => (
+            <TouchableOpacity
+              key={k}
+              onPress={() => setFilter(k)}
+              style={[ad.chip, filter === k && { backgroundColor: C.brand, borderColor: C.brand }]}
+            >
+              <Text style={{ color: filter === k ? '#fff' : C.ink2, fontSize: 12, fontWeight: '700' }}>{l}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {filtered.length === 0 ? (
+          <View style={[ad.card, shadow, { padding: 24, alignItems: 'center' }]}>
+            <MC name="check-circle-outline" size={36} color={C.green} />
+            <Text style={{ color: C.ink, fontWeight: '800', fontSize: 14, marginTop: 8 }}>No Pending Return Requests</Text>
+            <Text style={{ color: C.ink3, fontSize: 12, marginTop: 4, textAlign: 'center' }}>
+              All customer returns and refunds are up to date.
+            </Text>
+          </View>
+        ) : (
+          filtered.map((o) => {
+            const isPending = o.status === 'Return Requested';
+            const firstItem = o.items[0];
+            const ret = o.returnDetails || {};
+
+            return (
+              <View key={o.id} style={[ad.sellerCard, shadow, { marginBottom: 14 }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={{ fontWeight: '900', color: C.ink, fontSize: 14 }}>Order #{o.id}</Text>
+                  <View style={{ flex: 1 }} />
+                  <Badge
+                    text={isPending ? 'PENDING REFUND' : 'REFUNDED'}
+                    tone={isPending ? 'red' : 'green'}
+                    small
+                  />
+                </View>
+
+                <Text style={{ color: C.ink3, fontSize: 11.5, marginTop: 2 }}>
+                  Customer: <Text style={{ fontWeight: '800', color: C.ink }}>{o.customerName}</Text> · +91 {o.customerPhone}
+                </Text>
+
+                <View style={{ height: 1, backgroundColor: C.line, marginVertical: 8 }} />
+
+                <Text style={{ color: C.ink, fontSize: 12.5, fontWeight: '700' }}>
+                  {firstItem?.title} {firstItem?.size ? `(${firstItem.size})` : ''} × {firstItem?.qty}
+                </Text>
+
+                <View style={[ad.modalSellerBox, { marginTop: 8, backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}>
+                  <Text style={{ color: '#92400E', fontSize: 11.5, fontWeight: '800' }}>
+                    Resolution: {ret.action?.toUpperCase() || 'REFUND'}
+                  </Text>
+                  <Text style={{ color: '#78350F', fontSize: 12, marginTop: 2 }}>
+                    Reason: {o.returnReason || ret.reason || 'General Return'}
+                  </Text>
+                  {ret.notes ? (
+                    <Text style={{ color: '#92400E', fontSize: 11, fontStyle: 'italic', marginTop: 2 }}>
+                      Comment: "{ret.notes}"
+                    </Text>
+                  ) : null}
+                  <Text style={{ color: C.brand, fontSize: 12, fontWeight: '800', marginTop: 4 }}>
+                    Refund UPI: {ret.refundUpi || `${o.customerPhone}@upi`}
+                  </Text>
+                  <Text style={{ color: '#065F46', fontSize: 11, fontWeight: '800', marginTop: 2 }}>
+                    Doorstep Reverse Pickup OTP: {o.reverseOtp || ret.reverseOtp || '4921'}
+                  </Text>
+                </View>
+
+                {/* Refund Action Buttons */}
+                {isPending ? (
+                  <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+                    <TouchableOpacity
+                      activeOpacity={0.88}
+                      onPress={() => {
+                        openUpi({
+                          upi: ret.refundUpi || `${o.customerPhone}@upi`,
+                          name: o.customerName || 'Customer',
+                          amount: o.total,
+                          note: `Temsho Refund #${o.id}`,
+                        });
+                      }}
+                      style={[ad.instantUpiPayBtn, { flex: 1.2 }]}
+                    >
+                      <MC name="cash-refund" size={16} color="#fff" />
+                      <Text style={ad.instantUpiPayTxt}>
+                        Pay {money(o.total)} via UPI
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      activeOpacity={0.88}
+                      onPress={() => handleRefund(o)}
+                      style={[ad.actionSmallBtn, { backgroundColor: '#1E2562', flex: 1 }]}
+                    >
+                      <MC name="check" size={15} color="#fff" />
+                      <Text style={ad.actionSmallTxt}>Mark Refunded</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#ECFDF5', padding: 8, borderRadius: 6, marginTop: 8 }}>
+                    <MC name="check-decagram" size={16} color="#059669" />
+                    <Text style={{ color: '#065F46', fontSize: 11.5, fontWeight: '800', marginLeft: 6 }}>
+                      Refund Completed ({money(o.refundAmount || o.total)}) · Ref: {o.refundUtr || 'DIRECT_UPI'}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            );
+          })
+        )}
       </ScrollView>
     </View>
   );

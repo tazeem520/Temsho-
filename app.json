@@ -9,14 +9,14 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "in.temsho.app",
-      "buildNumber": "9"
+      "buildNumber": "30"
     },
     "android": {
       "package": "in.temsho.app",
-      "versionCode": 9,
+      "versionCode": 30,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#2B2D6E"
+        "backgroundColor": "#1A56DB"
       },
       "permissions": [
         "android.permission.CAMERA",
@@ -32,15 +32,20 @@
       "bundler": "metro",
       "output": "single"
     },
-    "platforms": ["ios", "android", "web"],
-    "primaryColor": "#2B2D6E",
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
+    "primaryColor": "#1A56DB",
     "scheme": "temsho",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#2B2D6E"
+      "backgroundColor": "#1A56DB"
     },
     "plugins": [
+      "./plugins/withAndroidQueries",
       [
         "expo-image-picker",
         {
@@ -52,15 +57,15 @@
         "expo-notifications",
         {
           "icon": "./assets/icon.png",
-          "color": "#2B2D6E"
+          "color": "#1A56DB"
         }
       ]
     ],
     "extra": {
       "eas": {
-        "projectId": "635c68af-4510-426a-92db-0c482241236e"
+        "projectId": "724bf72f-0b64-4f86-bdb8-45d73b2f88f8"
       }
     },
-    "owner": "t1a2z3e4e5m6"
+    "owner": "temsho"
   }
 }
